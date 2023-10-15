@@ -1,0 +1,58 @@
+diff --git a/chapter_2_memory_and_bus_architecture.html b/chapter_2_memory_and_bus_architecture.html
+index 1325c548..1bd8ff79 100644
+--- a/chapter_2_memory_and_bus_architecture.html
++++ b/chapter_2_memory_and_bus_architecture.html
+@@ -12648,7 +12648,7 @@
+         <td>RTC &amp; BKP registers</td>
+         <td class="tl">
+           <i>
+-            <u>Section 49.6: RTC registers</u>
++            <u>Section 49.6.21: RTC registers</u>
+           </i>
+         </td>
+       </tr>
+@@ -12846,7 +12846,7 @@
+         <td>GPV</td>
+         <td class="tl">
+           <i>
+-            <u>Section 2.2.4: AXI interconnect registers</u>
++            <u>Section 2.2.5: AXI interconnect registers</u>
+           </i>
+         </td>
+       </tr>
+diff --git a/chapter_9_reset_and_clock_control_rcc.html b/chapter_9_reset_and_clock_control_rcc.html
+index cf61ff91..eaee81c8 100644
+--- a/chapter_9_reset_and_clock_control_rcc.html
++++ b/chapter_9_reset_and_clock_control_rcc.html
+@@ -10664,13 +10664,15 @@
+     </table>
+     <h4 id="section9.7.38">9.7.38 RCC reset status register (RCC_RSR)</h4>
+     <p>Each CPU has dedicated flags in order to check the reset status of the circuit. Please refer <br/>to <i><u>Section 9.4.4: Reset source identification</u></i> for additional information.</p>
+-    <p>
+-      <b>Register Name Address Offset Reset Value</b>
+-    </p>
+     <table id="table68">
+       <caption>
+         <b>Table 68. RCC_RSR address offset and reset value</b>
+       </caption>
++      <tr>
++        <th>Register Name</th>
++        <th>Address Offset</th>
++        <th>Offset Reset Value</th>
++      </tr>
+       <tr>
+         <td>RCC_RSR</td>
+         <td>0x0D0</td>
+diff --git a/chapter_37_cryptographic_processor_cryp.html b/chapter_37_cryptographic_processor_cryp.html
+index b9733d22..c3145ee6 100644
+--- a/chapter_37_cryptographic_processor_cryp.html
++++ b/chapter_37_cryptographic_processor_cryp.html
+@@ -4580,7 +4580,7 @@
+         </th>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x00<br/>0x00</td>
++        <td rowspan="2">0x00</td>
+         <td>CRYP_CR</td>
+         <td>
+           <span class="tv">Res.</span>

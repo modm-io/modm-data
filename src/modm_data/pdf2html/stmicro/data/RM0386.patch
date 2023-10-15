@@ -1,0 +1,43 @@
+diff --git a/chapter_3_embedded_flash_memory_flash.html b/chapter_3_embedded_flash_memory_flash.html
+index ffbcd9f3..4f2b2ee1 100644
+--- a/chapter_3_embedded_flash_memory_flash.html
++++ b/chapter_3_embedded_flash_memory_flash.html
+@@ -1019,6 +1019,25 @@
+           <p>0: Boot from Flash memory bank 1 or system memory depending on boot pin <br/>state (Default).<br/>1: Boot always from system memory (Dual bank boot mode).</p>
+         </td>
+       </tr>
++      <tr>
++        <td>Bits 3:2</td>
++        <td class="tl">
++          <p><b>BOR_LEV: </b>BOR reset Level</p>
++          <p>These bits contain the supply level threshold that activates/releases the reset. <br/>They can be written to program a new BOR level value into Flash memory. <br/>00: BOR Level 3 (VBOR3), brownout threshold level 3<br/>01: BOR Level 2 (VBOR2), brownout threshold level 2<br/>10: BOR Level 1 (VBOR1), brownout threshold level 1<br/>11: BOR off, POR/PDR reset threshold level is applied</p>
++          <p>
++            <i>Note: For full details on BOR characteristics, refer to the &#8220;Electrical characteristics&#8221; </i>
++            <br/>
++            <i>section of the product datasheet.</i>
++          </p>
++        </td>
++      </tr>
++      <tr>
++        <td class="tl">Bits 1:0</td>
++        <td class="tl">0x3: Not used</td>
++      </tr>
++      <tr>
++        <td colspan="2">Option bytes (word, address 0x1FFE C008)</td>
++      </tr>
+       <tr>
+         <td class="tl">Bit 15</td>
+         <td class="tl">
+diff --git a/chapter_20_cryptographic_processor_cryp.html b/chapter_20_cryptographic_processor_cryp.html
+index 27cf73e4..852f4a4c 100644
+--- a/chapter_20_cryptographic_processor_cryp.html
++++ b/chapter_20_cryptographic_processor_cryp.html
+@@ -4616,7 +4616,7 @@
+         </th>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x00<br/>0x00</td>
++        <td rowspan="2">0x00</td>
+         <td>CRYP_CR</td>
+         <td>
+           <span class="tv">Res.</span>

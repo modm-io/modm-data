@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../style.css"/>
+  </head>
+  <body>
+    <h4 id="section14.3.1">14.3.1 MDMA (D1 domain)</h4>
+    <table id="table104">
+      <caption>
+        <b>Table 104. MDMA</b>
+      </caption>
+      <tr>
+        <th colspan="4">Source</th>
+        <th colspan="4">Destination</th>
+        <th rowspan="2" class="thb">Comment</th>
+      </tr>
+      <tr>
+        <th class="thb">Domain</th>
+        <th class="thb">Bus</th>
+        <th class="thb">Peripheral</th>
+        <th class="thb">Signal</th>
+        <th class="thb">Signal</th>
+        <th class="thb">Peripheral</th>
+        <th class="thb">Bus</th>
+        <th class="thb">Domain</th>
+      </tr>
+      <tr>
+        <td rowspan="8">D2</td>
+        <td rowspan="8">AHB1</td>
+        <td rowspan="8">DMA1</td>
+        <td>dma1_tcif0</td>
+        <td>mdma_str0</td>
+        <td rowspan="17">MDMA</td>
+        <td rowspan="17">AXI</td>
+        <td rowspan="17">D1</td>
+        <td class="tl">DMA1 stream 0 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma1_tcif1</td>
+        <td>mdma_str1</td>
+        <td class="tl">DMA1 stream 1 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma1_tcif2</td>
+        <td>mdma_str2</td>
+        <td class="tl">DMA1 stream 2 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma1_tcif3</td>
+        <td>mdma_str3</td>
+        <td class="tl">DMA1 stream 3 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma1_tcif4</td>
+        <td>mdma_str4</td>
+        <td class="tl">DMA1 stream 4 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma1_tcif5</td>
+        <td>mdma_str5</td>
+        <td class="tl">DMA1 stream 5 transfer <br/>complete flag</td>
+      </tr>
+      <tr>
+        <td>dma1_tcif6</td>
+        <td>mdma_str6</td>
+        <td class="tl">DMA1 stream 6 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma1_tcif7</td>
+        <td>mdma_str7</td>
+        <td class="tl">DMA1 stream 7 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td rowspan="8">D2</td>
+        <td rowspan="8">AHB1</td>
+        <td rowspan="8">DMA2</td>
+        <td>dma2_tcif0</td>
+        <td>mdma_str8</td>
+        <td class="tl">DMA2 stream 0 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma2_tcif1</td>
+        <td>mdma_str9</td>
+        <td class="tl">DMA2 stream 1 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma2_tcif2</td>
+        <td>mdma_str10</td>
+        <td class="tl">DMA2 stream 2 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma2_tcif3</td>
+        <td>mdma_str11</td>
+        <td class="tl">DMA2 stream 3 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma2_tcif4</td>
+        <td>mdma_str12</td>
+        <td class="tl">DMA2 stream 4 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma2_tcif5</td>
+        <td>mdma_str13</td>
+        <td class="tl">DMA2 stream 5 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma2_tcif6</td>
+        <td>mdma_str14</td>
+        <td class="tl">DMA2 stream 6 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma2_tcif7</td>
+        <td>mdma_str15</td>
+        <td class="tl">DMA2 stream 7 transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>D1</td>
+        <td>APB3</td>
+        <td>LTDC</td>
+        <td>ltdc_li_it</td>
+        <td>mdma_str16</td>
+        <td class="tl">LTDC line interrupt</td>
+      </tr>
+      <tr>
+        <td rowspan="5">D1</td>
+        <td rowspan="5">AHB3</td>
+        <td rowspan="5">JPEG</td>
+        <td>jpeg_ift_trg</td>
+        <td>mdma_str17</td>
+        <td rowspan="15">MDMA</td>
+        <td rowspan="15">AXI</td>
+        <td rowspan="15">D1</td>
+        <td>JPEG input FIFO threshold</td>
+      </tr>
+      <tr>
+        <td>jpeg_ifnt_trg</td>
+        <td>mdma_str18</td>
+        <td class="tl">JPEG input FIFO not full</td>
+      </tr>
+      <tr>
+        <td>jpeg_oft_trg</td>
+        <td>mdma_str19</td>
+        <td class="tl">JPEG output FIFO <br/>threshold</td>
+      </tr>
+      <tr>
+        <td>jpeg_ofne_trg</td>
+        <td>mdma_str20</td>
+        <td class="tl">JPEG output FIFO not <br/>empty</td>
+      </tr>
+      <tr>
+        <td>jpeg_oec_trg</td>
+        <td>mdma_str21</td>
+        <td class="tl">JPEG end of conversion</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D1</td>
+        <td rowspan="2">AHB3</td>
+        <td rowspan="2">QUADSPI</td>
+        <td>quadspi_ft_trg</td>
+        <td>mdma_str22</td>
+        <td>QUADSPI FIFO threshold</td>
+      </tr>
+      <tr>
+        <td>quadspi_tc_trg</td>
+        <td>mdma_str23</td>
+        <td class="tl">QUADSPI transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td rowspan="3">D1</td>
+        <td rowspan="3">AHB3</td>
+        <td rowspan="3">DMA2D</td>
+        <td>dma2d_clut_trg</td>
+        <td>mdma_str24</td>
+        <td class="tl">DMA2D CLUT transfer <br/>complete</td>
+      </tr>
+      <tr>
+        <td>dma2d_tc_trg</td>
+        <td>mdma_str25</td>
+        <td>DMA2D transfer complete</td>
+      </tr>
+      <tr>
+        <td>dma2d_tw_trg</td>
+        <td>mdma_str26</td>
+        <td class="tl">DMA2D transfer <br/>watermark</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D1</td>
+        <td rowspan="2">APB3</td>
+        <td rowspan="2">DSI</td>
+        <td>dsi_te_trg</td>
+        <td>mdma_str27</td>
+        <td class="tl">Tearing effect</td>
+      </tr>
+      <tr>
+        <td>dsi_eor_trg</td>
+        <td>mdma_str28</td>
+        <td class="tl">End of refresh</td>
+      </tr>
+      <tr>
+        <td rowspan="3">D1</td>
+        <td rowspan="3">AHB3</td>
+        <td rowspan="3">SDMMC1</td>
+        <td>sdmmc1_<br/>buffend_trg</td>
+        <td>mdma_str30</td>
+        <td class="tl">SDMMC1 internal DMA <br/>buffer end</td>
+      </tr>
+      <tr>
+        <td>sdmmc1_<br/>cmdend_trg</td>
+        <td>mdma_str31</td>
+        <td class="tl">SDMMC1 command end</td>
+      </tr>
+      <tr>
+        <td>sdmmc1_<br/>dataend_trg</td>
+        <td>mdma_str29</td>
+        <td class="tl">End of data</td>
+      </tr>
+    </table>
+    <h4 id="section14.3.2">14.3.2 DMAMUX1, DMA1 and DMA2 (D2 domain)</h4>
+    <table id="table105">
+      <caption>
+        <b>Table 105. DMAMUX1, DMA1 and DMA2 connections<sup>(1)</sup></b>
+      </caption>
+      <tr>
+        <th colspan="4">Source</th>
+        <th colspan="4">Destination</th>
+        <th rowspan="2" class="thb">Comment</th>
+      </tr>
+      <tr>
+        <th class="thb">Domain</th>
+        <th class="thb">Bus</th>
+        <th class="thb">Peripheral</th>
+        <th class="thb">Signal</th>
+        <th class="thb">Signal</th>
+        <th class="thb">Peripheral</th>
+        <th class="thb">Bus</th>
+        <th class="thb">Domain</th>
+      </tr>
+      <tr>
+        <td rowspan="8">D3</td>
+        <td rowspan="8">AHB4</td>
+        <td colspan="2" rowspan="8">
+          <p>dmamux1 internal</p>
+          <p>(Request generator)</p>
+        </td>
+        <td>dmamux1_req_in1</td>
+        <td rowspan="32">DMAMUX1</td>
+        <td rowspan="32">AHB1</td>
+        <td rowspan="32">D2</td>
+        <td rowspan="32">Requests</td>
+      </tr>
+      <tr>
+        <td>dmamux1_req_in2</td>
+      </tr>
+      <tr>
+        <td>dmamux1_req_in3</td>
+      </tr>
+      <tr>
+        <td>dmamux1_req_in4</td>
+      </tr>
+      <tr>
+        <td>NC</td>
+      </tr>
+      <tr>
+        <td>NC</td>
+      </tr>
+      <tr>
+        <td>NC</td>
+      </tr>
+      <tr>
+        <td>NC</td>
+      </tr>
+      <tr>
+        <td>D2</td>
+        <td>AHB1</td>
+        <td>ADC1</td>
+        <td>adc1_dma</td>
+        <td>dmamux1_req_in9</td>
+      </tr>
+      <tr>
+        <td>D2</td>
+        <td>AHB1</td>
+        <td>ADC2</td>
+        <td>adc2_dma</td>
+        <td>dmamux1_req_in10</td>
+      </tr>
+      <tr>
+        <td rowspan="7">D2</td>
+        <td rowspan="7">APB2</td>
+        <td rowspan="7">TIM1</td>
+        <td>tim1_ch1_dma</td>
+        <td>dmamux1_req_in11</td>
+      </tr>
+      <tr>
+        <td>tim1_ch2_dma</td>
+        <td>dmamux1_req_in12</td>
+      </tr>
+      <tr>
+        <td>tim1_ch3_dma</td>
+        <td>dmamux1_req_in13</td>
+      </tr>
+      <tr>
+        <td>tim1_ch4_dma</td>
+        <td>dmamux1_req_in14</td>
+      </tr>
+      <tr>
+        <td>tim1_up_dma</td>
+        <td>dmamux1_req_in15</td>
+      </tr>
+      <tr>
+        <td>tim1_trig_dma</td>
+        <td>dmamux1_req_in16</td>
+      </tr>
+      <tr>
+        <td>tim1_com_dma</td>
+        <td>dmamux1_req_in17</td>
+      </tr>
+      <tr>
+        <td rowspan="5">D2</td>
+        <td rowspan="5">APB1</td>
+        <td rowspan="5">TIM2</td>
+        <td>tim2_ch1_dma</td>
+        <td>dmamux1_req_in18</td>
+      </tr>
+      <tr>
+        <td>tim2_ch2_dma</td>
+        <td>dmamux1_req_in19</td>
+      </tr>
+      <tr>
+        <td>tim2_ch3_dma</td>
+        <td>dmamux1_req_in20</td>
+      </tr>
+      <tr>
+        <td>tim2_ch4_dma</td>
+        <td>dmamux1_req_in21</td>
+      </tr>
+      <tr>
+        <td>tim2_up_dma</td>
+        <td>dmamux1_req_in22</td>
+      </tr>
+      <tr>
+        <td rowspan="6">D2</td>
+        <td rowspan="6">APB1</td>
+        <td rowspan="6">TIM3</td>
+        <td>tim3_ch1_dma</td>
+        <td>dmamux1_req_in23</td>
+      </tr>
+      <tr>
+        <td>tim3_ch2_dma</td>
+        <td>dmamux1_req_in24</td>
+      </tr>
+      <tr>
+        <td>tim3_ch3_dma</td>
+        <td>dmamux1_req_in25</td>
+      </tr>
+      <tr>
+        <td>tim3_ch4_dma</td>
+        <td>dmamux1_req_in26</td>
+      </tr>
+      <tr>
+        <td>tim3_up_dma</td>
+        <td>dmamux1_req_in27</td>
+      </tr>
+      <tr>
+        <td>tim3_trig_dma</td>
+        <td>dmamux1_req_in28</td>
+      </tr>
+      <tr>
+        <td rowspan="4">D2</td>
+        <td rowspan="4">APB1</td>
+        <td rowspan="4">TIM4</td>
+        <td>tim4_ch1_dma</td>
+        <td>dmamux1_req_in29</td>
+      </tr>
+      <tr>
+        <td>tim4_ch2_dma</td>
+        <td>dmamux1_req_in30</td>
+      </tr>
+      <tr>
+        <td>tim4_ch3_dma</td>
+        <td>dmamux1_req_in31</td>
+      </tr>
+      <tr>
+        <td>tim4_up_dma</td>
+        <td>dmamux1_req_in32</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D2</td>
+        <td rowspan="2">APB1</td>
+        <td rowspan="2">I2C1</td>
+        <td>i2c1_rx_dma</td>
+        <td>dmamux1_req_in33</td>
+        <td rowspan="32">DMAMUX1</td>
+        <td rowspan="32">AHB1</td>
+        <td rowspan="32">D2</td>
+        <td rowspan="32">Requests</td>
+      </tr>
+      <tr>
+        <td>i2c1_tx_dma</td>
+        <td>dmamux1_req_in34</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D2</td>
+        <td rowspan="2">APB1</td>
+        <td rowspan="2">I2C2</td>
+        <td>i2c2_rx_dma</td>
+        <td>dmamux1_req_in35</td>
+      </tr>
+      <tr>
+        <td>i2c2_tx_dma</td>
+        <td>dmamux1_req_in36</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D2</td>
+        <td rowspan="2">APB2</td>
+        <td rowspan="2">SPI1</td>
+        <td>spi1_rx_dma</td>
+        <td>dmamux1_req_in37</td>
+      </tr>
+      <tr>
+        <td>spi1_tx_dma</td>
+        <td>dmamux1_req_in38</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D2</td>
+        <td rowspan="2">APB1</td>
+        <td rowspan="2">SPI2</td>
+        <td>spi2_rx_dma</td>
+        <td>dmamux1_req_in39</td>
+      </tr>
+      <tr>
+        <td>spi2_tx_dma</td>
+        <td>dmamux1_req_in40</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D2</td>
+        <td rowspan="2">APB2</td>
+        <td rowspan="2">USART1</td>
+        <td>usart1_rx_dma</td>
+        <td>dmamux1_req_in41</td>
+      </tr>
+      <tr>
+        <td>usart1_tx_dma</td>
+        <td>dmamux1_req_in42</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D2</td>
+        <td rowspan="2">APB1</td>
+        <td rowspan="2">USART2</td>
+        <td>usart2_rx_dma</td>
+        <td>dmamux1_req_in43</td>
+      </tr>
+      <tr>
+        <td>usart2_tx_dma</td>
+        <td>dmamux1_req_in44</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D2</td>
+        <td rowspan="2">APB1</td>
+        <td rowspan="2">USART3</td>
+        <td>usart3_rx_dma</td>
+        <td>dmamux1_req_in45</td>
+      </tr>
+      <tr>
+        <td>usart3_tx_dma</td>
+        <td>dmamux1_req_in46</td>
+      </tr>
+      <tr>
+        <td rowspan="7">D2</td>
+        <td rowspan="7">APB2</td>
+        <td rowspan="7">TIM8</td>
+        <td>tim8_ch1_dma</td>
+        <td>dmamux1_req_in47</td>
+      </tr>
+      <tr>
+        <td>tim8_ch2_dma</td>
+        <td>dmamux1_req_in48</td>
+      </tr>
+      <tr>
+        <td>tim8_ch3_dma</td>
+        <td>dmamux1_req_in49</td>
+      </tr>
+      <tr>
+        <td>tim8_ch4_dma</td>
+        <td>dmamux1_req_in50</td>
+      </tr>
+      <tr>
+        <td>tim8_up_dma</td>
+        <td>dmamux1_req_in51</td>
+      </tr>
+      <tr>
+        <td>tim8_trig_dma</td>
+        <td>dmamux1_req_in52</td>
+      </tr>
+      <tr>
+        <td>tim8_com_dma</td>
+        <td>dmamux1_req_in53</td>
+      </tr>
+      <tr>
+        <td>-</td>
+        <td>-</td>
+        <td>NC</td>
+        <td>NC</td>
+        <td>NC</td>
+      </tr>
+      <tr>
+        <td rowspan="6">D1</td>
+        <td rowspan="6">APB1</td>
+        <td rowspan="6">TIM3</td>
+        <td>tim5_ch1_dma</td>
+        <td>dmamux1_req_in55</td>
+      </tr>
+      <tr>
+        <td>tim5_ch2_dma</td>
+        <td>dmamux1_req_in56</td>
+      </tr>
+      <tr>
+        <td>tim5_ch3_dma</td>
+        <td>dmamux1_req_in57</td>
+      </tr>
+      <tr>
+        <td>tim5_ch4_dma</td>
+        <td>dmamux1_req_in58</td>
+      </tr>
+      <tr>
+        <td>tim5_up_dma</td>
+        <td>dmamux1_req_in59</td>
+      </tr>
+      <tr>
+        <td>tim5_trig_dma</td>
+        <td>dmamux1_req_in60</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D2</td>
+        <td rowspan="2">APB1</td>
+        <td rowspan="2">SPI3</td>
+        <td>spi3_rx_dma</td>
+        <td>dmamux1_req_in61</td>
+      </tr>
+      <tr>
+        <td>spi3_tx_dma</td>
+        <td>dmamux1_req_in62</td>
+      </tr>
+      <tr>
+        <td rowspan="2">D1</td>
+        <td rowspan="2">APB1</td>
+        <td rowspan="2">UART4</td>
+        <td>uart4_rx_dma</td>
+        <td>dmamux1_req_in63</td>
+      </tr>
+      <tr>
+        <td>uart4_tx_dma</td>
+        <td>dmamux1_req_in64</td>
+      </tr>
+    </table>
+    <h4 id="section29.7.6">29.7.6 COMP register map</h4>
+    <p>The following table summarizes the comparator registers.</p>
+    <table id="table244">
+      <caption>
+        <b>Table 244. COMP register map and reset values</b>
+      </caption>
+      <tr>
+        <th class="thb">Offset</th>
+        <th class="thb">Register <br/>name</th>
+        <th class="thb">
+          <span class="tv">31</span>
+        </th>
+        <th class="thb">
+          <span class="tv">30</span>
+        </th>
+        <th class="thb">
+          <span class="tv">29</span>
+        </th>
+        <th class="thb">
+          <span class="tv">28</span>
+        </th>
+        <th class="thb">
+          <span class="tv">27</span>
+        </th>
+        <th class="thb">
+          <span class="tv">26</span>
+        </th>
+        <th class="thb">
+          <span class="tv">25</span>
+        </th>
+        <th class="thb">
+          <span class="tv">24</span>
+        </th>
+        <th class="thb">
+          <span class="tv">23</span>
+        </th>
+        <th class="thb">
+          <span class="tv">22</span>
+        </th>
+        <th class="thb">
+          <span class="tv">21</span>
+        </th>
+        <th class="thb">
+          <span class="tv">20</span>
+        </th>
+        <th class="thb">
+          <span class="tv">19</span>
+        </th>
+        <th class="thb">
+          <span class="tv">18</span>
+        </th>
+        <th class="thb">
+          <span class="tv">17</span>
+        </th>
+        <th class="thb">
+          <span class="tv">16</span>
+        </th>
+        <th class="thb">
+          <span class="tv">15</span>
+        </th>
+        <th class="thb">
+          <span class="tv">14</span>
+        </th>
+        <th class="thb">
+          <span class="tv">13</span>
+        </th>
+        <th class="thb">
+          <span class="tv">12</span>
+        </th>
+        <th class="thb">
+          <span class="tv">11</span>
+        </th>
+        <th class="thb">
+          <span class="tv">10</span>
+        </th>
+        <th class="thb">
+          <span class="tv">9</span>
+        </th>
+        <th class="thb">
+          <span class="tv">8</span>
+        </th>
+        <th class="thb">
+          <span class="tv">7</span>
+        </th>
+        <th class="thb">
+          <span class="tv">6</span>
+        </th>
+        <th class="thb">
+          <span class="tv">5</span>
+        </th>
+        <th class="thb">
+          <span class="tv">4</span>
+        </th>
+        <th class="thb">
+          <span class="tv">3</span>
+        </th>
+        <th class="thb">
+          <span class="tv">2</span>
+        </th>
+        <th class="thb">
+          <span class="tv">1</span>
+        </th>
+        <th class="thb">
+          <span class="tv">0</span>
+        </th>
+      </tr>
+      <tr>
+        <td rowspan="2">0x00</td>
+        <td>
+          <b>COMP_SR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">C2IF</span>
+        </td>
+        <td>
+          <span class="tv">C1IF</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">C2VAL</span>
+        </td>
+        <td>
+          <span class="tv">C1VAL</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x04</td>
+        <td>
+          <b>COMP_ICFR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">CC2IF</span>
+        </td>
+        <td>
+          <span class="tv">CC1IF</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+      </tr>
+      <tr>
+        <td rowspan="2">0x08</td>
+        <td>
+          <b>COMP_OR</b>
+          <br/>
+          <b>(OR_CFG=0)</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">OR15</span>
+        </td>
+        <td>
+          <span class="tv">OR14</span>
+        </td>
+        <td>
+          <span class="tv">OR13</span>
+        </td>
+        <td>
+          <span class="tv">OR12</span>
+        </td>
+        <td>
+          <span class="tv">OR11</span>
+        </td>
+        <td colspan="11">AFOP</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x08</td>
+        <td>
+          <b>COMP_OR</b>
+          <br/>
+          <b>(OR_CFG=1)</b>
+        </td>
+        <td>
+          <span class="tv">OR31</span>
+        </td>
+        <td>
+          <span class="tv">OR30</span>
+        </td>
+        <td>
+          <span class="tv">OR29</span>
+        </td>
+        <td>
+          <span class="tv">OR28</span>
+        </td>
+        <td>
+          <span class="tv">OR27</span>
+        </td>
+        <td>
+          <span class="tv">OR26</span>
+        </td>
+        <td>
+          <span class="tv">OR25</span>
+        </td>
+        <td>
+          <span class="tv">OR24</span>
+        </td>
+        <td>
+          <span class="tv">OR23</span>
+        </td>
+        <td>
+          <span class="tv">OR22</span>
+        </td>
+        <td>
+          <span class="tv">OR21</span>
+        </td>
+        <td>
+          <span class="tv">OR20</span>
+        </td>
+        <td>
+          <span class="tv">OR19</span>
+        </td>
+        <td>
+          <span class="tv">OR18</span>
+        </td>
+        <td>
+          <span class="tv">OR17</span>
+        </td>
+        <td>
+          <span class="tv">OR16</span>
+        </td>
+        <td>
+          <span class="tv">OR15</span>
+        </td>
+        <td>
+          <span class="tv">OR14</span>
+        </td>
+        <td>
+          <span class="tv">OR13</span>
+        </td>
+        <td>
+          <span class="tv">OR12</span>
+        </td>
+        <td>
+          <span class="tv">OR11</span>
+        </td>
+        <td colspan="11">AFOP</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x0C</td>
+        <td>
+          <b>COMP_CFG</b>
+          <br/>
+          <b>R1</b>
+        </td>
+        <td>
+          <span class="tv">LOCK</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="4">
+          <span class="tv">BLANKING</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">INPSEL</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="3">
+          <span class="tv">INMSEL</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">PWRMODE</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">HYST</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">ITEN</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">POLARITY</span>
+        </td>
+        <td>
+          <span class="tv">SCALEN</span>
+        </td>
+        <td>
+          <span class="tv">BRGEN</span>
+        </td>
+        <td>
+          <span class="tv">EN</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x10</td>
+        <td>
+          <b>COMP_CFG</b>
+          <br/>
+          <b>R2</b>
+        </td>
+        <td>
+          <span class="tv">LOCK</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="4">
+          <span class="tv">BLANKING</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">INPSEL</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="3">
+          <span class="tv">INMSEL</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">PWRMODE</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">HYST</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">ITEN</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">WINMODE</span>
+        </td>
+        <td>
+          <span class="tv">POLARITY</span>
+        </td>
+        <td>
+          <span class="tv">SCALEN</span>
+        </td>
+        <td>
+          <span class="tv">BRGEN</span>
+        </td>
+        <td>
+          <span class="tv">EN</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+    </table>
+    <p>Refer to <i><u>Section 2.3 on page 134</u></i> for the register boundary addresses.</p>
+    <table id="table574">
+      <caption id="page3055">
+        <b>Table 574. RDES2 normal descriptor (write-back format)</b>
+      </caption>
+      <tr>
+        <th class="thb">Bit</th>
+        <th class="thb">Name</th>
+        <th class="thb">Description</th>
+      </tr>
+      <tr>
+        <td>31:29</td>
+        <td>L3L4FM</td>
+        <td class="tl">
+          <p>
+            <b>Layer 3 and Layer 4 Filter Number Matched</b>
+          </p>
+          <p>These bits indicate the number of the Layer 3 and Layer 4 Filter that <br/>matched the received packet:</p>
+          <ul>
+            <li>000: Filter 0</li>
+            <li>001: Filter 1</li>
+            <li>010: Filter 2</li>
+            <li>011: Filter 3</li>
+            <li>100: Filter 4</li>
+            <li>101: Filter 5</li>
+            <li>110: Filter 6</li>
+            <li>111: Filter 7</li>
+          </ul>
+          <p>This field is valid only when bit 28 or bit 27 is set high. When more than one <br/>filter matches, these bits give the number of lowest filter.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>28</td>
+        <td>L4FM</td>
+        <td class="tl">
+          <p>
+            <b>Layer 4 Filter Match</b>
+          </p>
+          <p>When this bit is set, it indicates that the received packet matches one of the <br/>enabled Layer 4 Port Number fields. This status is given only when one of <br/>the following conditions is true:</p>
+          <ul>
+            <li>Layer 3 fields are not enabled and all enabled Layer 4 fields match</li>
+            <li>All enabled Layer 3 and Layer 4 filter fields match</li>
+          </ul>
+          <p>When more than one filter matches, this bit gives the layer 4 filter status of <br/>filter indicated by bits[31:29].</p>
+        </td>
+      </tr>
+      <tr>
+        <td>27</td>
+        <td>L3FM</td>
+        <td class="tl">
+          <p>
+            <b>Layer 3 Filter Match</b>
+          </p>
+          <p>When this bit is set, it indicates that the received packet matches one of the <br/>enabled Layer 3 IP Address fields. This status is given only when one of the <br/>following conditions is true:</p>
+          <ul>
+            <li>All enabled Layer 3 fields match and all enabled Layer 4 fields are <br/>bypassed</li>
+            <li>All enabled filter fields match</li>
+          </ul>
+          <p>When more than one filter matches, this bit gives the layer 3 filter status of <br/>filter indicated by bits[31:29].</p>
+        </td>
+      </tr>
+      <tr>
+        <td>26:19</td>
+        <td>MADRM</td>
+        <td class="tl">
+          <p>
+            <b>MAC Address Match or Hash Value</b>
+          </p>
+          <p>When the HF bit is reset, this field contains the MAC address register <br/>number that matched the Destination address of the received packet. This <br/>field is valid only if the DAF bit is reset.</p>
+          <p>When the HF bit is set, this field contains the Hash value computed by the <br/>MAC. A packet passes the Hash filter when the bit corresponding to the <br/>Hash value is set in the Hash filter register.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>18</td>
+        <td>HF</td>
+        <td class="tl">
+          <p>
+            <b>Hash Filter Status</b>
+          </p>
+          <p>When this bit is set, it indicates that the packet passed the MAC address <br/>Hash filter. its[26:19] indicate the Hash value.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>17</td>
+        <td>DAF</td>
+        <td class="tl">
+          <p>
+            <b>Destination Address Filter Fail</b>
+          </p>
+          <p>When this bit is set, it indicates that the packet failed the DA Filter in the <br/>MAC.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>16</td>
+        <td>SAF</td>
+        <td class="tl">
+          <p>
+            <b>SA Address Filter Fail</b>
+          </p>
+          <p>When this bit is set, it indicates that the packet failed the SA Filter in the <br/>MAC.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>15</td>
+        <td>VF</td>
+        <td class="tl">
+          <p>
+            <b>VLAN Filter Status</b>
+          </p>
+          <p>When this bit is set, it indicates that the VLAN Tag of received packet passed <br/>the VLAN filter.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>14:11</td>
+        <td colspan="2" class="tl">Reserved</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td>ARPNR</td>
+        <td class="tl">
+          <p>
+            <b>ARP Reply Not Generated</b>
+          </p>
+          <p>When this bit is set, it indicates that the MAC did not generate the ARP <br/>Reply for received ARP Request packet. This bit is set when the MAC is <br/>busy transmitting ARP reply to earlier ARP request (only one ARP request is <br/>processed at a time).</p>
+        </td>
+      </tr>
+      <tr>
+        <td>9:0</td>
+        <td colspan="2" class="tl">Reserved</td>
+      </tr>
+    </table>
+    <ul>
+      <li>RDES3 normal descriptor (write-back format)</li>
+    </ul>
+    <table class="rt">
+      <tr>
+        <td>31</td>
+        <td>30</td>
+        <td>29</td>
+        <td>28</td>
+        <td>27</td>
+        <td>26</td>
+        <td>25</td>
+        <td>24</td>
+        <td>23</td>
+        <td>22</td>
+        <td>21</td>
+        <td>20</td>
+        <td>19</td>
+        <td>18</td>
+        <td>17</td>
+        <td>16</td>
+        <td>15</td>
+        <td>14</td>
+        <td>13</td>
+        <td>12</td>
+        <td>11</td>
+        <td>10</td>
+        <td>9</td>
+        <td>8</td>
+        <td>7</td>
+        <td>6</td>
+        <td>5</td>
+        <td>4</td>
+        <td>3</td>
+        <td>2</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>OWN</td>
+        <td>CTXT</td>
+        <td>FD</td>
+        <td>LD</td>
+        <td>RS2V</td>
+        <td>RS1V</td>
+        <td>RS0V</td>
+        <td>CE</td>
+        <td>GP</td>
+        <td>RWT</td>
+        <td>OE</td>
+        <td>RE</td>
+        <td>DE</td>
+        <td colspan="3">LT</td>
+        <td>ES</td>
+        <td colspan="15">PL</td>
+      </tr>
+    </table>
+    <table id="table575">
+      <caption>
+        <b>Table 575. RDES3 normal descriptor (write-back format)</b>
+      </caption>
+      <tr>
+        <th class="thb">Bit</th>
+        <th class="thb">Name</th>
+        <th class="thb">Description</th>
+      </tr>
+      <tr>
+        <td>31</td>
+        <td>OWN</td>
+        <td class="tl">
+          <p>
+            <b>Own bit</b>
+          </p>
+          <p>1: The DMA owns the descriptor. <br/>0: The application owns the descriptor.</p>
+          <p>The DMA clears this bit when either of the following conditions is true:</p>
+          <ul>
+            <li>The DMA completes the packet reception</li>
+            <li>The buffers associated with the descriptor are full</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td>30</td>
+        <td>CTXT</td>
+        <td class="tl">
+          <p>
+            <b>Receive Context Descriptor</b>
+          </p>
+          <p>When this bit is set, it indicates that the current descriptor is a context <br/>type descriptor. The DMA writes 0 to this bit for normal receive <br/>descriptor.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>29</td>
+        <td>FD</td>
+        <td class="tl">
+          <p>
+            <b>First Descriptor</b>
+          </p>
+          <p>When this bit is set, it indicates that this descriptor contains the first <br/>buffer of the packet. If the size of the first buffer is 0, the second buffer <br/>contains the beginning of the packet. If the size of the second buffer is <br/>also 0, the next descriptor contains the beginning of the packet.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>28</td>
+        <td>LD</td>
+        <td class="tl">
+          <p>
+            <b>Last Descriptor</b>
+          </p>
+          <p>When this bit is set, it indicates that the buffers to which this descriptor <br/>is pointing are the last buffers of the packet.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>27</td>
+        <td>RS2V</td>
+        <td class="tl">
+          <p>
+            <b>Receive Status RDES2 Valid</b>
+          </p>
+          <p>When this bit is set, it indicates that the status in RDES2 is valid and it is <br/>written by the DMA. This bit is valid only when the LD bit of RDES3 is <br/>set.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>26</td>
+        <td>RS1V</td>
+        <td class="tl">
+          <p>
+            <b>Receive Status RDES1 Valid</b>
+          </p>
+          <p>When this bit is set, it indicates that the status in RDES1 is valid and it is <br/>written by the DMA. This bit is valid only when the LD bit of RDES3 is <br/>set.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>25</td>
+        <td>RS0V</td>
+        <td class="tl">
+          <p>
+            <b>Receive Status RDES0 Valid</b>
+          </p>
+          <p>When this bit is set, it indicates that the status in RDES0 is valid and it is <br/>written by the DMA. This bit is valid only when the LD bit of RDES3 is <br/>set.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>24</td>
+        <td>CE</td>
+        <td class="tl">
+          <p>
+            <b>CRC Error</b>
+          </p>
+          <p>When this bit is set, it indicates that a Cyclic Redundancy Check (CRC) <br/>Error occurred on the received packet. This field is valid only when the <br/>LD bit of RDES3 is set.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>23</td>
+        <td>GP</td>
+        <td class="tl">
+          <p>
+            <b>Giant Packet</b>
+          </p>
+          <p>When this bit is set, it indicates that the packet length exceeds the <br/>specified maximum Ethernet size of 1518, 1522, or 2000 bytes (9018 or <br/>9022 bytes if jumbo packet enable is set).</p>
+          <p>
+            <i>Note: Giant packet indicates only the packet length. It does not cause </i>
+            <br/>
+            <i>any packet truncation.</i>
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>22</td>
+        <td>RWT</td>
+        <td class="tl">
+          <p>
+            <b>Receive Watchdog Timeout</b>
+          </p>
+          <p>When this bit is set, it indicates that the Receive Watchdog Timer has <br/>expired while receiving the current packet. The current packet is <br/>truncated after watchdog timeout.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>21</td>
+        <td>OE</td>
+        <td class="tl">
+          <p>
+            <b>Overflow Error</b>
+          </p>
+          <p>When this bit is set, it indicates that the received packet is damaged <br/>because of buffer overflow in Rx FIFO.</p>
+          <p>
+            <i>Note: This bit is set only when the DMA transfers a partial packet to </i>
+            <br/>
+            <i>the application. This happens only when the Rx FIFO is </i>
+            <br/>
+            <i>operating in the threshold mode. In the store-and-forward mode, </i>
+            <br/>
+            <i>all partial packets are dropped completely in Rx FIFO.</i>
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>20</td>
+        <td>RE</td>
+        <td class="tl">
+          <p>
+            <b>Receive Error</b>
+          </p>
+          <p>When this bit is set, it indicates that the ETH_RX_ER signal is asserted <br/>while the ETH_RX_DV signal is asserted during packet reception.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>19</td>
+        <td>DE</td>
+        <td class="tl">
+          <p>
+            <b>Dribble Bit Error</b>
+          </p>
+          <p>When this bit is set, it indicates that the received packet has a non-<br/>integer multiple of bytes (odd nibbles). This bit is valid only in the MII <br/>Mode.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>18:16</td>
+        <td>LT</td>
+        <td class="tl">
+          <p>
+            <b>Length/Type Field</b>
+          </p>
+          <p>This field indicates if the packet received is a length packet or a type <br/>packet. The encoding of the 3 bits is as follows:</p>
+          <ul>
+            <li>000: The packet is a length packet</li>
+            <li>001: The packet is a type packet.</li>
+            <li>011: The packet is a ARP Request packet type</li>
+            <li>100: The packet is a type packet with VLAN Tag</li>
+            <li>101: The packet is a type packet with Double VLAN Tag</li>
+            <li>110: The packet is a MAC Control packet type</li>
+            <li>111: The packet is a OAM packet type</li>
+            <li>010: Reserved</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td>15</td>
+        <td>ES</td>
+        <td class="tl">
+          <p>
+            <b>Error Summary</b>
+          </p>
+          <ul>
+            <li>When this bit is set, it indicates the logical OR of the following bits:</li>
+            <li>RDES3[24]: CRC Error</li>
+            <li>RDES3[19]: Dribble Error</li>
+            <li>RDES3[20]: Receive Error</li>
+            <li>RDES3[22]: Watchdog Timeout</li>
+            <li>RDES3[21]: Overflow Error</li>
+            <li>RDES3[23]: Giant Packet</li>
+          </ul>
+          <p>This field is valid only when the LD bit of RDES3 is set.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>14:0</td>
+        <td>PL</td>
+        <td class="tl">
+          <p>
+            <b>Packet Length</b>
+          </p>
+          <p>These bits indicate the byte length of the received packet that was <br/>transferred to system memory (including CRC).</p>
+          <p>This field is valid when the LD bit of RDES3 is set and either the <br/>Descriptor Error (RDES3[13]) or Overflow Error bits are reset. The <br/>packet length also includes the two bytes appended to the Ethernet <br/>packet when IP checksum calculation is enabled and the received<br/>packet is not a MAC control packet.</p>
+          <p>This field is valid when the LD bit of RDES3 is set. When the Last <br/>Descriptor and Error Summary bits are not set, this field indicates the <br/>accumulated number of bytes that have been transferred for the current <br/>packet.</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

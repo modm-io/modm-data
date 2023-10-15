@@ -1,0 +1,13 @@
+diff --git a/chapter_0_introduction.html b/chapter_0_introduction.html
+index a93efa6f..6a9bf870 100644
+--- a/chapter_0_introduction.html
++++ b/chapter_0_introduction.html
+@@ -47,7 +47,7 @@
+       </tr>
+       <tr>
+         <td>STM32G041x8</td>
+-        <td>STM32G041C8, STM32G041F8,<br/> STM32G041G8, STM32G041K8,<br/> STM32G031Y8</td>
++        <td>STM32G041C8, STM32G041F8,<br/> STM32G041G8, STM32G041K8,<br/> STM32G041Y8</td>
+       </tr>
+     </table>
+   </body>

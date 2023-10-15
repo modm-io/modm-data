@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../style.css"/>
+  </head>
+  <body>
+    <table id="table49">
+      <caption id="page51">
+        <b>Table 49. SPI timing table</b>
+      </caption>
+      <tr>
+        <th/>
+        <th>No.</th>
+        <th>Parameter</th>
+        <th>Symbol</th>
+        <th>Min.</th>
+        <th>Max.</th>
+        <th>Unit</th>
+        <th/>
+      </tr>
+      <tr>
+        <th class="thb"/>
+        <th class="thb"/>
+        <th class="thb"/>
+        <th class="thb"/>
+        <th class="thb"/>
+        <th class="thb"/>
+        <th class="thb"/>
+        <th class="thb"/>
+      </tr>
+      <tr>
+        <td/>
+        <td>-</td>
+        <td class="tl">SPI operating frequency</td>
+        <td>fOP</td>
+        <td>-</td>
+        <td>5</td>
+        <td>MHz</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>A</td>
+        <td class="tl">Clock (SCK) high time</td>
+        <td>t<sub>WSCKh</sub></td>
+        <td>49</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>B</td>
+        <td class="tl">Clock (SCK) low time</td>
+        <td>t<sub>WSCKl</sub></td>
+        <td>95</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>C</td>
+        <td class="tl">SCK period</td>
+        <td>t<sub>SCK</sub></td>
+        <td>200</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>D</td>
+        <td class="tl">Clock (SCK) and CS fall time</td>
+        <td>t<sub>f</sub></td>
+        <td>5.5</td>
+        <td>50</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>E</td>
+        <td class="tl">Clock (SCK) and CS rise time</td>
+        <td>t<sub>r</sub></td>
+        <td>5.5</td>
+        <td>50</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>F</td>
+        <td class="tl">Data input (MOSI) setup time</td>
+        <td>t<sub>su</sub></td>
+        <td>10</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>G</td>
+        <td class="tl">Data input (MOSI) hold time</td>
+        <td>t<sub>hi</sub></td>
+        <td>10</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>H</td>
+        <td class="tl">Data output (MISO) access time</td>
+        <td>t<sub>a</sub></td>
+        <td>-</td>
+        <td>60</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>I</td>
+        <td class="tl">Data output (MISO) valid after SCK</td>
+        <td>t<sub>v</sub></td>
+        <td>-</td>
+        <td>60</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>K</td>
+        <td class="tl">Data output (MISO) disable time</td>
+        <td>t<sub>dis</sub></td>
+        <td>-</td>
+        <td>100</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>L</td>
+        <td class="tl">Enable (SS) lead time</td>
+        <td>t<sub>lead</sub></td>
+        <td>10</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>M</td>
+        <td class="tl">Enable (SS) lag time</td>
+        <td>t<sub>lag</sub></td>
+        <td>25</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>N</td>
+        <td class="tl">Sequential transfer delay</td>
+        <td>t<sub>td</sub></td>
+        <td>1.9</td>
+        <td>-</td>
+        <td>&#956;s</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>P</td>
+        <td class="tl">Clock enable time</td>
+        <td>t<sub>CLE</sub></td>
+        <td>10</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+      <tr>
+        <td/>
+        <td>Q</td>
+        <td class="tl">Clock disable time</td>
+        <td>t<sub>CLD</sub></td>
+        <td>10</td>
+        <td>-</td>
+        <td>ns</td>
+        <td/>
+      </tr>
+    </table>
+    <p>
+      <b>Timing reference: 0.2 Vs - 0.8 Vs (Vs = V<sub>VDDD</sub>-D<sub>GND</sub>)</b>
+    </p>
+    <p>Explanation:</p>
+    <ol>
+      <li value="c">Q: SCK stable (low or high) before CS falling</li>
+      <li value="d">P: SCK stable (low or high) after CS rising</li>
+    </ol>
+    <h3 id="section5.4">5.4 Error management</h3>
+    <p>The device replies with an error response if one of the following errors has occurred:</p>
+    <table id="table50">
+      <caption>
+        <b>Table 50. Error flags and description</b>
+      </caption>
+      <tr>
+        <th/>
+        <th>Flags</th>
+        <th>Description</th>
+        <th/>
+      </tr>
+      <tr>
+        <th rowspan="2" class="thb"/>
+        <th/>
+        <th/>
+        <th rowspan="2" class="thb"/>
+      </tr>
+      <tr>
+        <th class="thb"/>
+        <th class="thb"/>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">REG_CTRL_0_WR_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when there is a request error writing the REG_CTRL_0(Address=0x00) register</td>
+        <td rowspan="17"/>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">LOSSCAP</td>
+        <td class="tl">&#8216;1&#8217;: when there a loss of cap on VREG PAD (set only during power-up)</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">END_OF_PWRUP</td>
+        <td class="tl">&#8216;1&#8217;: when power-up sequencer has finished initialization (completed charge pump test, <br/>cap-loss test, fast offset cancel);</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">RST_ACTIVE</td>
+        <td class="tl">&#8216;1&#8217;: when soft reset is issued</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">SPI_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when SPI error occurs</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">EEPROM_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when EEPROM error (e.g mismatch in CRC) occurs during power-up</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">OFF_CANC_CHY_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when offset cancellation error for CHY occur</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">OFF_CANC_CHX_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when offset cancellation error for CHX occurs</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">REG_CONFIG_WR_ERR</td>
+        <td>&#8216;1&#8217;:when there is a request error writing the REG_CONFIG (Address=0x012) register</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">REG_CTRL_1_WR_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when there is a request error writing the REG_CTRL_1 (Address=0x01) register</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">A2D_SAT_CHY</td>
+        <td class="tl">&#8216;1&#8217;: when A2D saturates for CHY</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">A2D_SAT_CHX</td>
+        <td class="tl">&#8216;1&#8217;: when A2D saturates for CHX</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">CHARGE_PUMP_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when charge pump test fails at power-up</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">VREG_LOW_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when VREG falls below its LOW threshold</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">VREG_HIGH_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when VREG goes above its HIGH threshold</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">VDD_LOW_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when VDD falls below its LOW threshold</td>
+      </tr>
+      <tr>
+        <td/>
+        <td class="tl">VDD_HIGH_ERR</td>
+        <td class="tl">&#8216;1&#8217;: when VDD goes above its HIGH threshold</td>
+      </tr>
+    </table>
+  </body>
+</html>

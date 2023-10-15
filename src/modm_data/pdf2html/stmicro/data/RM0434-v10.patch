@@ -1,0 +1,31 @@
+diff --git a/chapter_41_debug_support_dbg.html b/chapter_41_debug_support_dbg.html
+index 6a4ecd94..2993088f 100644
+--- a/chapter_41_debug_support_dbg.html
++++ b/chapter_41_debug_support_dbg.html
+@@ -9360,7 +9360,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0S4</td>
++        <td rowspan="2">0x0A4</td>
+         <td>CTI_OUTENR1</td>
+         <td>
+           <span class="tv">Res.</span>
+@@ -9484,7 +9484,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0S8</td>
++        <td rowspan="2">0x0A8</td>
+         <td>CTI_OUTENR2</td>
+         <td>
+           <span class="tv">Res.</span>
+@@ -9608,7 +9608,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0SC</td>
++        <td rowspan="2">0x0AC</td>
+         <td>CTI_OUTENR3</td>
+         <td>
+           <span class="tv">Res.</span>

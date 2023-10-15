@@ -1,0 +1,14 @@
+diff --git a/chapter_8_ordering_information.html b/chapter_8_ordering_information.html
+index a6d25eeb..d5f5d60f 100644
+--- a/chapter_8_ordering_information.html
++++ b/chapter_8_ordering_information.html
+@@ -26,7 +26,8 @@
+     <p>H = TFBGA</p>
+     <p>I = UFBGA</p>
+     <p>U = UFQFPN</p>
+-    <p>Y = Standard WLCSP pins</p>
++    <p>Y = WLCSP pins</p>
++    <p>E = WLCSP</p>
+     <p>Temperature range</p>
+     <p>6 = Industrial temperature range, &#8211;40 to 85 &#176;C</p>
+     <p>7 = Industrial temperature range, &#8211;40 to 105 &#176;C</p>

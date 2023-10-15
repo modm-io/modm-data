@@ -1,0 +1,13 @@
+diff --git a/chapter_15_nested_vectored_interrupt_controller_nvic.html b/chapter_15_nested_vectored_interrupt_controller_nvic.html
+index 52d9f4f1..b83c2476 100644
+--- a/chapter_15_nested_vectored_interrupt_controller_nvic.html
++++ b/chapter_15_nested_vectored_interrupt_controller_nvic.html
+@@ -905,7 +905,7 @@
+     </table>
+     <table id="table77">
+       <caption>
+-        <b>Table 77. STM32L4P5xx and STM32Q5xx vector table</b>
++        <b>Table 77. STM32L4P5xx and STM32L4Q5xx vector table</b>
+       </caption>
+       <tr>
+         <th class="thb">

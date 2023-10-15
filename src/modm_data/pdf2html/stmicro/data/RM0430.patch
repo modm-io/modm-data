@@ -1,0 +1,26 @@
+diff --git a/chapter_20_basic_timers_tim67.html b/chapter_20_basic_timers_tim67.html
+index 23ac4412..927863bb 100644
+--- a/chapter_20_basic_timers_tim67.html
++++ b/chapter_20_basic_timers_tim67.html
+@@ -724,7 +724,7 @@
+     <p>TIMx registers are mapped as 16-bit addressable registers as described in the table below:</p>
+     <table id="table114">
+       <caption>
+-        <b>Table 114. TIM6 register map and reset values</b>
++        <b>Table 114. TIM6/7 register map and reset values</b>
+       </caption>
+       <tr>
+         <th class="thb">Offset</th>
+diff --git a/chapter_2_system_and_memory_overview.html b/chapter_2_system_and_memory_overview.html
+index cda032f9..02a571fa 100644
+--- a/chapter_2_system_and_memory_overview.html
++++ b/chapter_2_system_and_memory_overview.html
+@@ -110,7 +110,7 @@
+         <td class="tl">Reserved</td>
+       </tr>
+       <tr>
+-        <td>0x5006 0800 0x5006 0BFF</td>
++        <td>0x5006 0800 - 0x5006 0BFF</td>
+         <td class="tl">RNG</td>
+       </tr>
+       <tr>

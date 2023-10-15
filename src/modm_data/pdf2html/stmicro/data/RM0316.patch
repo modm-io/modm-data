@@ -1,0 +1,71 @@
+diff --git a/chapter_11_general_purpose_ios_gpio.html b/chapter_11_general_purpose_ios_gpio.html
+index 49cb987a..f94a0c43 100644
+--- a/chapter_11_general_purpose_ios_gpio.html
++++ b/chapter_11_general_purpose_ios_gpio.html
+@@ -2559,7 +2559,7 @@
+       <tr>
+         <td rowspan="2">0x0C</td>
+         <td>
+-          <b>GPIOB_PUPDR</b>
++          <b>GPIOx_PUPDR</b>
+         </td>
+         <td colspan="2">
+           <span class="tv">PUPDR15[1:0]</span>
+diff --git a/chapter_3_system_and_memory_overview.html b/chapter_3_system_and_memory_overview.html
+index 1119bc2b..0bfd6791 100644
+--- a/chapter_3_system_and_memory_overview.html
++++ b/chapter_3_system_and_memory_overview.html
+@@ -276,7 +276,7 @@
+         <td class="tl">USART1</td>
+         <td class="tl">
+           <i>
+-            <u>Section 3.7.12 on page 1130</u>
++            <u>Section 29.8.12 on page 1130</u>
+           </i>
+         </td>
+       </tr>
+@@ -418,7 +418,7 @@
+         <td class="tl">UART5</td>
+         <td rowspan="4" class="tl">
+           <i>
+-            <u>Section 3.7.12 on page 1130</u>
++            <u>Section 29.8.12 on page 1130</u>
+           </i>
+         </td>
+       </tr>
+@@ -881,7 +881,7 @@
+         <td class="tl">USART1</td>
+         <td class="tl">
+           <i>
+-            <u>Section 3.7.12 on page 1130</u>
++            <u>Section 29.8.12 on page 1130</u>
+           </i>
+         </td>
+       </tr>
+@@ -1033,7 +1033,7 @@
+         <td class="tl">UART5</td>
+         <td rowspan="4" class="tl">
+           <i>
+-            <u>Section 3.7.12 on page 1130</u>
++            <u>Section 29.8.12 on page 1130</u>
+           </i>
+         </td>
+       </tr>
+@@ -1435,7 +1435,7 @@
+         <td class="tl">USART1</td>
+         <td class="tl">
+           <i>
+-            <u>Section 3.7.12 on page 1130</u>
++            <u>Section 29.8.12 on page 1130</u>
+           </i>
+         </td>
+       </tr>
+@@ -1581,7 +1581,7 @@
+         <td class="tl">USART3</td>
+         <td rowspan="2" class="tl">
+           <i>
+-            <u>Section 3.7.12 on page 1130</u>
++            <u>Section 29.8.12 on page 1130</u>
+           </i>
+         </td>
+       </tr>

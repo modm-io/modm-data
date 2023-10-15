@@ -1,0 +1,15 @@
+diff --git a/chapter_0_introduction.html b/chapter_0_introduction.html
+index 2b0e2923..fa2d696b 100644
+--- a/chapter_0_introduction.html
++++ b/chapter_0_introduction.html
+@@ -186,8 +186,8 @@
+         <b>Table 1. Device summary</b>
+       </caption>
+       <tr>
+-        <td>Reference</td>
+-        <td>Part numbers</td>
++        <th class="thb">Reference</th>
++        <th class="thb">Part numbers</th>
+       </tr>
+       <tr>
+         <td>STM32U545xx</td>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../style.css"/>
+  </head>
+  <body>
+    <table width="50%" id="figure66">
+      <caption id="page170">
+        <b>Figure 66. SD default mode</b>
+      </caption>
+      <tr>
+        <td>(omitted)</td>
+      </tr>
+    </table>
+    <table id="table105">
+      <caption>
+        <b>Table 105. Dynamic characteristics: SD / MMC characteristics<sup>(1)(2)</sup></b>
+      </caption>
+      <tr>
+        <th class="thb">Symbol</th>
+        <th class="thb">Parameter</th>
+        <th class="thb">Conditions</th>
+        <th class="thb">Min</th>
+        <th class="thb">Typ</th>
+        <th class="thb">Max</th>
+        <th class="thb">Unit</th>
+      </tr>
+      <tr>
+        <td>f<sub>PP</sub></td>
+        <td class="tl">Clock frequency in data transfer mode</td>
+        <td>-</td>
+        <td>0</td>
+        <td>-</td>
+        <td>50</td>
+        <td>MHz</td>
+      </tr>
+      <tr>
+        <td>-</td>
+        <td class="tl">SDIO_CK/fPCLK2 frequency ratio</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>8/3</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>t<sub>W(CKL)</sub></td>
+        <td class="tl">Clock low time</td>
+        <td>f<sub>PP</sub> = 50 MHz</td>
+        <td>9.5</td>
+        <td>10.5</td>
+        <td>-</td>
+        <td rowspan="2">ns</td>
+      </tr>
+      <tr>
+        <td>t<sub>W(CKH)</sub></td>
+        <td class="tl">Clock high time</td>
+        <td>f<sub>PP</sub> = 50 MHz</td>
+        <td>8.5</td>
+        <td>9.5</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td colspan="7" class="tl">
+          <b>CMD, D inputs (referenced to CK) in MMC and SD HS mode</b>
+        </td>
+      </tr>
+      <tr>
+        <td>t<sub>ISU</sub></td>
+        <td class="tl">Input setup time HS</td>
+        <td>f<sub>PP</sub> = 50 MHz</td>
+        <td>1</td>
+        <td>-</td>
+        <td>-</td>
+        <td rowspan="2">ns</td>
+      </tr>
+      <tr>
+        <td>t<sub>IH</sub></td>
+        <td class="tl">Input hold time HS</td>
+        <td>f<sub>PP</sub> = 50 MHz</td>
+        <td>4.5</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td colspan="7" class="tl">
+          <b>CMD, D outputs (referenced to CK) in MMC and SD HS mode</b>
+        </td>
+      </tr>
+      <tr>
+        <td>t<sub>OV</sub></td>
+        <td class="tl">Output valid time HS</td>
+        <td>f<sub>PP</sub> = 50 MHz</td>
+        <td>-</td>
+        <td>12.5</td>
+        <td>13</td>
+        <td rowspan="2">ns</td>
+      </tr>
+      <tr>
+        <td>t<sub>OH</sub></td>
+        <td class="tl">Output hold time HS</td>
+        <td>f<sub>PP</sub> = 50 MHz</td>
+        <td>11</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td colspan="7" class="tl">
+          <b>CMD, D inputs (referenced to CK) in SD default mode</b>
+        </td>
+      </tr>
+      <tr>
+        <td>t<sub>ISUD</sub></td>
+        <td class="tl">Input setup time SD</td>
+        <td>f<sub>PP</sub> = 25 MHz</td>
+        <td>2.5</td>
+        <td>-</td>
+        <td>-</td>
+        <td rowspan="2">ns</td>
+      </tr>
+      <tr>
+        <td>t<sub>IHD</sub></td>
+        <td class="tl">Input hold time SD</td>
+        <td>f<sub>PP</sub> = 25 MHz</td>
+        <td>5.5</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td colspan="7" class="tl">
+          <b>CMD, D outputs (referenced to CK) in SD default mode</b>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">t<sub>OVD</sub></td>
+        <td class="tl">Output valid default time SD</td>
+        <td>f<sub>PP</sub> = 24 MHz</td>
+        <td>-</td>
+        <td>3.5</td>
+        <td>4</td>
+        <td rowspan="2">ns</td>
+      </tr>
+      <tr>
+        <td class="tl">t<sub>OHD</sub></td>
+        <td class="tl">Output hold default time SD</td>
+        <td>f<sub>PP</sub> = 24 MHz</td>
+        <td>2</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+    </table>
+    <ol>
+      <li value="1">Guaranteed based on test during characterization.</li>
+      <li value="2">V<sub>DD</sub> = 2.7 to 3.6 V.</li>
+    </ol>
+  </body>
+</html>

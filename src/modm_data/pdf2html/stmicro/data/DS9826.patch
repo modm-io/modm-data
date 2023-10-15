@@ -1,0 +1,12 @@
+diff --git a/chapter_8_ordering_information.html b/chapter_8_ordering_information.html
+index 15825268..4d1cefb3 100644
+--- a/chapter_8_ordering_information.html
++++ b/chapter_8_ordering_information.html
+@@ -33,6 +33,7 @@
+       <b>Package</b>
+     </p>
+     <p>H = UFBGA</p>
++    <p>I = UFBGA</p>
+     <p>T = LQFP</p>
+     <p>U = UFQFPN</p>
+     <p>Y = WLCSP</p>

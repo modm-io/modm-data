@@ -1,0 +1,133 @@
+name: Update Archives
+
+on:
+  schedule:
+    - cron:  "37 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  update-pdfs:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out Repository
+        uses: actions/checkout@v3
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "bot@modm.io"
+          git config --global user.name "modm update bot"
+
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Python Dependencies
+        run: |
+          pip3 install .
+
+
+      # This cache repository is private since copyright prevents republishing!
+      # Nicely ask @salkinium for access to this repository.
+      - name: Check out STMicro PDF Archive
+        uses: actions/checkout@v3
+        with:
+          repository: modm-ext/archive-stmicro-pdf
+          path: ext/stmicro/pdf
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_PDF }}
+          persist-credentials: true
+
+      - name: Update PDF Archive
+        run: |
+          python3 -m modm_data.dl.stmicro --directory ext/stmicro/pdf --download pdf --new new_pdfs.txt
+
+      - name: Git push PDF Archive
+        working-directory: ext/stmicro/pdf
+        run: |
+          git add .
+          git commit -m "Update PDFs" || true
+          git gc
+          git count-objects -vH
+          git push origin main
+
+
+      # This cache repository is private since copyright prevents republishing!
+      # Nicely ask @salkinium for access to this repository.
+      - name: Check out STMicro HTML Archive
+        uses: actions/checkout@v3
+        with:
+          repository: modm-ext/archive-stmicro-html
+          path: ext/stmicro/html
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_HTML }}
+          persist-credentials: true
+
+      - name: Update HTML Archive
+        run: |
+          cat new_pdfs.txt | xargs -I {} echo ext/stmicro/html/{} | xargs make -j3
+
+      - name: Git push HTML Archive
+        working-directory: ext/stmicro/html
+        run: |
+          git add .
+          git commit -m "Update HTMLs" || true
+          git gc
+          git count-objects -vH
+          git push origin main
+
+      - name: Upload HTML logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: update-html
+          path: log
+
+
+
+  update-cubemx:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out Repository
+        uses: actions/checkout@v3
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "bot@modm.io"
+          git config --global user.name "modm update bot"
+
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Python Dependencies
+        run: |
+          pip3 install .
+
+
+      # This cache repository is private since copyright prevents republishing!
+      # Nicely ask @salkinium for access to this repository.
+      - name: Check out STMicro CubeMX Archive
+        uses: actions/checkout@v3
+        with:
+          repository: modm-ext/archive-stmicro-cubemx
+          path: ext/stmicro/cubemx
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_CUBEMX }}
+          persist-credentials: true
+
+
+      - name: Update CubeMX Archive
+        run: |
+          make download-stmicro-cubemx
+
+      - name: Git push CubeMX Archive
+        working-directory: ext/stmicro/cubemx
+        run: |
+          git add .
+          git commit -m "Update CubeMX" || true
+          git gc
+          git count-objects -vH
+          git push origin main

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../style.css"/>
+  </head>
+  <body>
+    <table class="rt">
+      <tr>
+        <td>31</td>
+        <td>30</td>
+        <td>29</td>
+        <td>28</td>
+        <td>27</td>
+        <td>26</td>
+        <td>25</td>
+        <td>24</td>
+        <td>23</td>
+        <td>22</td>
+        <td>21</td>
+        <td>20</td>
+        <td>19</td>
+        <td>18</td>
+        <td>17</td>
+        <td>16</td>
+        <td>15</td>
+        <td>14</td>
+        <td>13</td>
+        <td>12</td>
+        <td>11</td>
+        <td>10</td>
+        <td>9</td>
+        <td>8</td>
+        <td>7</td>
+        <td>6</td>
+        <td>5</td>
+        <td>4</td>
+        <td>3</td>
+        <td>2</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td colspan="9">HSI48CAL[8:0]</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>HSI48RDY</td>
+        <td>HSI48ON</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>r</td>
+        <td>rw</td>
+      </tr>
+    </table>
+    <table class="bt">
+      <tr>
+        <td>Bits 31:16</td>
+        <td class="tl">Reserved, must be kept at reset value</td>
+      </tr>
+      <tr>
+        <td>Bits 15:7</td>
+        <td class="tl">
+          <p><b>HSI48CAL[8:0]:</b> HSI48 clock calibration</p>
+          <p>These bits are initialized at startup with the factory-programmed HSI48 calibration trim value.<br/>They are ready only.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>Bits 6:2</td>
+        <td class="tl">Reserved, must be kept at reset value</td>
+      </tr>
+      <tr>
+        <td>Bit 1</td>
+        <td class="tl">
+          <p><b>HSI48RDY:</b> HSI48 clock ready flag</p>
+          <p>Set by hardware to indicate that HSI48 oscillator is stable. This bit is set only when HSI48 is <br/>enabled by software by setting HSI48ON.<br/>0: HSI48 oscillator not ready<br/>1: HSI48 oscillator ready</p>
+        </td>
+      </tr>
+      <tr>
+        <td>Bit 0</td>
+        <td class="tl">
+          <p><b>HSI48ON:</b> HSI48 clock enable</p>
+          <p>Set and cleared by software.<br/>Cleared by hardware to stop the HSI48 when entering in Stop, Standby or Shutdown modes.<br/>0: HSI48 oscillator OFF<br/>1: HSI48 oscillator ON</p>
+        </td>
+      </tr>
+    </table>
+    <h4 id="section8.4.33">8.4.33 RCC clock HSE register (RCC_HSECR)</h4>
+    <p>Address: 0x09C</p>
+    <p>Reset value: 0x0000 0030 (reset by NRST pad, not reset by wakeup from Standby)</p>
+    <p>Access: Write access is protected and software must write a KEY (0xCAFE CAFE) as a <br/>word access in this register to unlock the register. Once unlocked t a single write access <br/>(word, half-word or byte) can be performed to the register. It is then locked again. No wait <br/>states.</p>
+    <table class="rt">
+      <tr>
+        <td>31</td>
+        <td>30</td>
+        <td>29</td>
+        <td>28</td>
+        <td>27</td>
+        <td>26</td>
+        <td>25</td>
+        <td>24</td>
+        <td>23</td>
+        <td>22</td>
+        <td>21</td>
+        <td>20</td>
+        <td>19</td>
+        <td>18</td>
+        <td>17</td>
+        <td>16</td>
+        <td>15</td>
+        <td>14</td>
+        <td>13</td>
+        <td>12</td>
+        <td>11</td>
+        <td>10</td>
+        <td>9</td>
+        <td>8</td>
+        <td>7</td>
+        <td>6</td>
+        <td>5</td>
+        <td>4</td>
+        <td>3</td>
+        <td>2</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td colspan="6">HSETUNE[5:0]</td>
+        <td>Res.</td>
+        <td colspan="3">HSEGMC[2:0]</td>
+        <td>HSES</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>UNLOCKED</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td>r</td>
+        <td></td>
+        <td>rw</td>
+        <td>rw</td>
+        <td>rw</td>
+        <td>rw</td>
+        <td></td>
+        <td></td>
+        <td>r</td>
+      </tr>
+    </table>
+    <table class="bt">
+      <tr>
+        <td>Bits 31:14</td>
+        <td class="tl">Reserved, must be kept at reset value</td>
+      </tr>
+      <tr>
+        <td>Bits 13:8</td>
+        <td class="tl">
+          <p><b>HSETUNE[5:0]:</b> HSE capacitor tuning</p>
+          <p>Can be changed by software. Not to be changed when HSE is on.<br/>0x00: minimum load capacitance<br/>0x3F maximum load capacitance</p>
+        </td>
+      </tr>
+      <tr>
+        <td>Bits 7</td>
+        <td class="tl">Reserved, must be kept at reset value</td>
+      </tr>
+    </table>
+  </body>
+</html>

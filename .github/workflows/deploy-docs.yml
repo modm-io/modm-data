@@ -1,0 +1,47 @@
+name: Build and deploy docs
+
+on:
+  push:
+    branches:
+      - main
+      - main-**
+
+jobs:
+  build-upload-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "bot@modm.io"
+          git config --global user.name "modm update bot"
+
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Sphinx
+        run: |
+          pip3 install ".[docs]"
+
+      - name: Clone modm-ext/data.modm.io repository
+        uses: actions/checkout@v3
+        with:
+          repository: modm-ext/data.modm.io
+          ssh-key: ${{secrets.SSH_KEY_DATA_MODM_IO}}
+          path: docs/data.modm.io
+
+      - name: Build Homepage
+        run: |
+          make build-docs
+
+      - name: Push New Docs to Github
+        run: |
+          cd docs/data.modm.io
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "Update"
+          git push origin main

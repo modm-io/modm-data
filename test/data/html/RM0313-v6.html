@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../style.css"/>
+  </head>
+  <body>
+    <p id="page893">
+      <b>TPUI TRACE pin assignment</b>
+    </p>
+    <p>By default, these pins are NOT assigned. They can be assigned by setting the <br/>TRACE_IOEN and TRACE_MODE bits in the <i><b>MCU Debug component configuration </b></i><br/><i><b>register</b></i>. This configuration has to be done by the debugger host.</p>
+    <p>In addition, the number of pins to assign depends on the trace configuration (asynchronous <br/>or synchronous).</p>
+    <ul>
+      <li><b>Asynchronous mode</b>: 1 extra pin is needed</li>
+      <li><b>Synchronous mode</b>: from 2 to 5 extra pins are needed depending on the size of the <br/>data trace port register (1, 2 or 4):<ul><li>TRACECK</li><li>TRACED(0) if port size is configured to 1, 2 or 4</li><li>TRACED(1) if port size is configured to 2 or 4</li><li>TRACED(2) if port size is configured to 4</li><li>TRACED(3) if port size is configured to 4</li></ul></li>
+    </ul>
+    <p>To assign the TRACE pin, the debugger host must program the bits TRACE_IOEN and <br/>TRACE_MODE[1:0] of the Debug MCU configuration Register (DBGMCU_CR). By default <br/>the TRACE pins are not assigned.</p>
+    <p>This register is mapped on the external PPB and is reset by the PORESET (and not by the <br/>SYSTEM reset). It can be written by the debugger under SYSTEM reset.</p>
+    <table id="table136">
+      <caption>
+        <b>Table 136. Flexible TRACE pin assignment</b>
+      </caption>
+      <tr>
+        <th colspan="2">DBGMCU_CR <br/>register</th>
+        <th rowspan="2" class="thb">Pins <br/>assigned <br/>for:</th>
+        <th colspan="6">TRACE I/O pin assigned</th>
+      </tr>
+      <tr>
+        <th class="thb">TRACE<br/>_<br/>IOEN</th>
+        <th class="thb">TRACE_<br/>MODE[1:<br/>0]</th>
+        <th class="thb">PB3 / JTDO/ <br/>TRACESWO</th>
+        <th class="thb">PE2 /<br/>TRACEC<br/>K</th>
+        <th class="thb">PE3 /<br/>TRACED[<br/>0]</th>
+        <th class="thb">PE4 /<br/>TRACED[<br/>1]</th>
+        <th class="thb">PE5 /<br/>TRACED[<br/>2]</th>
+        <th class="thb">PE6 /<br/>TRACED[<br/>3]</th>
+      </tr>
+      <tr>
+        <td>0</td>
+        <td>XX</td>
+        <td>No Trace <br/>(default state)</td>
+        <td>Released<sup> (1)</sup></td>
+        <td colspan="5">-</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>00</td>
+        <td>Asynchronou<br/>s Trace</td>
+        <td>TRACESWO</td>
+        <td>-</td>
+        <td>-</td>
+        <td colspan="3">Released<br/>(usable as GPIO)</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>01</td>
+        <td>Synchronous <br/>Trace 1 bit</td>
+        <td rowspan="3">Released<sup> <u>(1)</u></sup></td>
+        <td>TRACEC<br/>K</td>
+        <td>TRACED[<br/>0]</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>10</td>
+        <td>Synchronous <br/>Trace 2 bit</td>
+        <td>TRACEC<br/>K</td>
+        <td>TRACED[<br/>0]</td>
+        <td>TRACED[<br/>1]</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>11</td>
+        <td>Synchronous <br/>Trace 4 bit</td>
+        <td>TRACEC<br/>K</td>
+        <td>TRACED[<br/>0]</td>
+        <td>TRACED[<br/>1]</td>
+        <td>TRACED[<br/>2]</td>
+        <td>TRACED[<br/>3]</td>
+      </tr>
+    </table>
+    <ol>
+      <li value="1">When Serial Wire mode is used, it is released. But when JTAG is used, it is assigned to JTDO.</li>
+    </ol>
+    <div class="nt">
+      <p>
+        <i>Note: By default, the TRACECLKIN input clock of the TPIU is tied to GND. It is assigned to HCLK </i>
+        <br/>
+        <i>two clock cycles after the bit TRACE_IOEN has been set.</i>
+      </p>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+diff --git a/chapter_6_general_purpose_ios_gpio.html b/chapter_6_general_purpose_ios_gpio.html
+index 49cb987a..f94a0c43 100644
+--- a/chapter_6_general_purpose_ios_gpio.html
++++ b/chapter_6_general_purpose_ios_gpio.html
+@@ -2418,7 +2418,7 @@
+       <tr>
+         <td rowspan="2">0x0C</td>
+         <td>
+-          <b>GPIOB_PUPDR</b>
++          <b>GPIOx_PUPDR</b>
+         </td>
+         <td colspan="2">
+           <span class="tv">PUPDR15[1:0]</span>

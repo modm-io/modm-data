@@ -1,0 +1,13 @@
+diff --git a/chapter_23_cryptographic_processor_cryp.html b/chapter_23_cryptographic_processor_cryp.html
+index f8c962c0..bf433d24 100644
+--- a/chapter_23_cryptographic_processor_cryp.html
++++ b/chapter_23_cryptographic_processor_cryp.html
+@@ -4616,7 +4616,7 @@
+         </th>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x00<br/>0x00</td>
++        <td rowspan="2">0x00</td>
+         <td>CRYP_CR</td>
+         <td>
+           <span class="tv">Res.</span>

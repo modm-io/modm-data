@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../style.css"/>
+  </head>
+  <body>
+    <h2 id="section7">7 Register description</h2>
+    <p>The device contains a set of registers which are used to control its behavior and to retrieve <br/>humidity and temperature data. The register address, made up of 7 bits, is used to identify <br/>and to read/write the data, through the serial interfaces.</p>
+    <h3 id="section7.1">7.1 WHO_AM_I (0Fh)</h3>
+    <p>Device identification</p>
+    <table class="rt">
+      <tr>
+        <td>7</td>
+        <td>6</td>
+        <td>5</td>
+        <td>4</td>
+        <td>3</td>
+        <td>2</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>0</td>
+        <td>1</td>
+        <td>1</td>
+        <td>1</td>
+        <td>1</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+    </table>
+    <p>This read-only register contains the device identifier, set to BCh</p>
+    <h3 id="section7.2">7.2 AV_CONF (10h)</h3>
+    <p>Humidity and temperature resolution mode</p>
+    <table class="rt">
+      <tr>
+        <td>7</td>
+        <td>6</td>
+        <td>5</td>
+        <td>4</td>
+        <td>3</td>
+        <td>2</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td colspan="2">Reserved</td>
+        <td>AVGT2</td>
+        <td>AVGT1</td>
+        <td>AVGT0</td>
+        <td>AVGH2</td>
+        <td>AVGH1</td>
+        <td>AVGH0</td>
+      </tr>
+    </table>
+    <p>To configure humidity/temperature average.</p>
+    <table>
+      <tr>
+        <td>[7:6]</td>
+        <td class="tl">Reserved</td>
+      </tr>
+      <tr>
+        <td>[5:3]</td>
+        <td>AVGT2-0: To select the numbers of averaged temperature samples (2 - 256), see <i><u>Table 16</u></i>.</td>
+      </tr>
+      <tr>
+        <td>[2:0]</td>
+        <td class="tl">AVGH2-0: To select the numbers of averaged humidity samples (4 - 512), see <i><u>Table 16</u></i>.</td>
+      </tr>
+    </table>
+    <table id="table16">
+      <caption>
+        <b>Table 16. Humidity and temperature average configuration</b>
+      </caption>
+      <tr>
+        <th rowspan="2" class="thb">AVGx2:0</th>
+        <th colspan="2">Nr. internal average</th>
+        <th colspan="2">Noise (RMS)</th>
+        <th>I<sub>DD</sub> 1 Hz</th>
+      </tr>
+      <tr>
+        <th class="thb">Temperature (AVGT)</th>
+        <th class="thb">Humidity (AVGH)</th>
+        <th class="thb">Temp (&#176;C)</th>
+        <th class="thb">rH %</th>
+        <th class="thb">&#956;A</th>
+      </tr>
+      <tr>
+        <td>000</td>
+        <td>2</td>
+        <td>4</td>
+        <td>0.08</td>
+        <td>0.4</td>
+        <td>0.80</td>
+      </tr>
+      <tr>
+        <td>001</td>
+        <td>4</td>
+        <td>8</td>
+        <td>0.05</td>
+        <td>0.3</td>
+        <td>1.05</td>
+      </tr>
+      <tr>
+        <td>010</td>
+        <td>8</td>
+        <td>16</td>
+        <td>0.04</td>
+        <td>0.2</td>
+        <td>1.40</td>
+      </tr>
+      <tr>
+        <td>011<sup>(1)</sup></td>
+        <td>16</td>
+        <td>32</td>
+        <td>0.03</td>
+        <td>0.15</td>
+        <td>2.10</td>
+      </tr>
+      <tr>
+        <td>100</td>
+        <td>32</td>
+        <td>64</td>
+        <td>0.02</td>
+        <td>0.1</td>
+        <td>3.43</td>
+      </tr>
+      <tr>
+        <td>101</td>
+        <td>64</td>
+        <td>128</td>
+        <td>0.015</td>
+        <td>0.07</td>
+        <td>6.15</td>
+      </tr>
+      <tr>
+        <td>110</td>
+        <td>128</td>
+        <td>256</td>
+        <td>0.01</td>
+        <td>0.05</td>
+        <td>11.60</td>
+      </tr>
+      <tr>
+        <td>111</td>
+        <td>256</td>
+        <td>512</td>
+        <td>0.007</td>
+        <td>0.03</td>
+        <td>22.50</td>
+      </tr>
+    </table>
+    <ol>
+      <li value="1">Default configuration</li>
+    </ol>
+    <h3 id="section7.3">7.3 CTRL_REG1 (20h)</h3>
+    <p>Control register 1</p>
+    <table class="rt">
+      <tr>
+        <td>7</td>
+        <td>6</td>
+        <td>5</td>
+        <td>4</td>
+        <td>3</td>
+        <td>2</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>PD</td>
+        <td colspan="4">Reserved</td>
+        <td>BDU</td>
+        <td>ODR1</td>
+        <td>ODR0</td>
+      </tr>
+    </table>
+    <table>
+      <tr>
+        <td>[7]</td>
+        <td class="tl">
+          <p>PD: power-down control</p>
+          <p>(0: power-down mode; 1: active mode)</p>
+        </td>
+      </tr>
+      <tr>
+        <td>[6:3]</td>
+        <td class="tl">Reserved</td>
+      </tr>
+      <tr>
+        <td>[2]</td>
+        <td class="tl">
+          <p>BDU: block data update</p>
+          <p>(0: continuous update; 1: output registers not updated until MSB and LSB reading)</p>
+        </td>
+      </tr>
+      <tr>
+        <td>[1:0]</td>
+        <td class="tl">ODR1, ODR0: output data rate selection (see table 17)</td>
+      </tr>
+    </table>
+    <p>The<b> PD</b> bit is used to turn on the device. The device is in power-down mode when PD = &#8216;0&#8217; <br/>(default value after boot). The device is active when PD is set to &#8216;1&#8217;.</p>
+    <p>The <b>BDU</b> bit is used to inhibit the output register update between the reading of the upper <br/>and lower register parts. In default mode (BDU = &#8216;0&#8217;), the lower and upper register parts are <br/>updated continuously. If it is not certain whether the read will be faster than output data rate, <br/>it is recommended to set the BDU bit to &#8216;1&#8217;. In this way, after the reading of the lower (upper) <br/>register part, the content of that output register is not updated until the upper (lower) part is <br/>read also.</p>
+    <p>This feature prevents the reading of LSB and MSB related to different samples.</p>
+    <p>The ODR1 and ODR0 bits permit changes to the output data rates of humidity and <br/>temperature samples.The default value corresponds to a &#8220;one-shot&#8221; configuration for both <br/>humidity and temperature output. ODR1 and ODR0 can be configured as described in <br/><i><u>Table 17</u></i>.</p>
+    <table id="table17">
+      <caption>
+        <b>Table 17. Output data rate configuration</b>
+      </caption>
+      <tr>
+        <th class="thb">ODR1</th>
+        <th class="thb">ODR0</th>
+        <th class="thb">Humidity (Hz)</th>
+        <th class="thb">Temperature (Hz)</th>
+      </tr>
+      <tr>
+        <td>0</td>
+        <td>0</td>
+        <td colspan="2">One-shot</td>
+      </tr>
+      <tr>
+        <td>0</td>
+        <td>1</td>
+        <td>1 Hz</td>
+        <td>1 Hz</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>0</td>
+        <td>7 Hz</td>
+        <td>7 Hz</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>1</td>
+        <td>12.5 Hz</td>
+        <td>12.5 Hz</td>
+      </tr>
+    </table>
+    <h3 id="section7.4">7.4 CTRL_REG2 (21h)</h3>
+    <p>Control register 2</p>
+    <table class="rt">
+      <tr>
+        <td>7</td>
+        <td>6</td>
+        <td>5</td>
+        <td>4</td>
+        <td>3</td>
+        <td>2</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>BOOT</td>
+        <td colspan="5">Reserved</td>
+        <td>Heater</td>
+        <td>ONE_SHOT</td>
+      </tr>
+    </table>
+    <table>
+      <tr>
+        <td>[7]</td>
+        <td class="tl">
+          <p>BOOT: Reboot memory content</p>
+          <p>(0: normal mode; 1: reboot memory content)</p>
+        </td>
+      </tr>
+      <tr>
+        <td>[6:2]</td>
+        <td class="tl">Reserved</td>
+      </tr>
+      <tr>
+        <td>[1]</td>
+        <td class="tl">
+          <p>Heater</p>
+          <p>(0: heater disable; 1: heater enable)</p>
+        </td>
+      </tr>
+      <tr>
+        <td>[0]</td>
+        <td class="tl">
+          <p>One-shot enable</p>
+          <p>(0: waiting for start of conversion; 1: start for a new dataset)</p>
+        </td>
+      </tr>
+    </table>
+    <p>The <b>BOOT</b> bit is used to refresh the content of the internal registers stored in the Flash <br/>memory block. At device power-up, the content of the Flash memory block is transferred to <br/>the internal registers related to trimming functions to permit good behavior of the device <br/>itself. If, for any reason, the content of the trimming registers is modified, it is sufficient to <br/>use this bit to restore the correct values. When the BOOT bit is set to &#8216;1&#8217; the content of the <br/>internal Flash is copied inside the corresponding internal registers and is used to calibrate <br/>the device. These values are factory trimmed and are different for every device. They permit <br/>good behavior of the device and normally they should not be changed. At the end of the <br/>boot process, the BOOT bit is set again to &#8216;0&#8217;.</p>
+    <p>The <b>ONE_SHOT</b> bit is used to start a new conversion. In this situation a single acquisition of <br/>temperature and humidity is started when the ONE_SHOT bit is set to &#8216;1&#8217;. At the end of <br/>conversion the new data are available in the output registers, the STATUS_REG[0] and <br/>STATUS_REG[1] bits are set to &#8216;1&#8217; and the ONE_SHOT bit comes back to &#8216;0&#8217; by hardware.</p>
+    <p>The <b>Heater </b>bit is used to control an internal heating element, that can effectively be used to <br/>speed up the sensor recovery time in case of condensation. The heater can be operated <br/>only by an external controller, which means that it has to be switched on/off directly by FW. <br/>Humidity and temperature output should not be read during the heating cycle; valid data can <br/>be read out once the heater has been turned off, after the completion of the heating cycle. <br/>Typical power consumption related to V<sub>DD</sub> is described in <i><u>Table 18</u></i>.</p>
+    <table id="table18">
+      <caption>
+        <b>Table 18. Typical power consumption with heater ON</b>
+      </caption>
+      <tr>
+        <th class="thb">V<sub>DD</sub> [V]</th>
+        <th class="thb">I [mA]</th>
+      </tr>
+      <tr>
+        <td>3.3</td>
+        <td>33</td>
+      </tr>
+      <tr>
+        <td>2.5</td>
+        <td>22</td>
+      </tr>
+      <tr>
+        <td>1.8</td>
+        <td>12</td>
+      </tr>
+    </table>
+  </body>
+</html>

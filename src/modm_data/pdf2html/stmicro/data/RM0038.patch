@@ -1,0 +1,54 @@
+diff --git a/chapter_12_analog_to_digital_converter_adc.html b/chapter_12_analog_to_digital_converter_adc.html
+index 1ac44b12..c217216d 100644
+--- a/chapter_12_analog_to_digital_converter_adc.html
++++ b/chapter_12_analog_to_digital_converter_adc.html
+@@ -4326,11 +4326,8 @@
+       </tr>
+       <tr>
+         <td rowspan="3">0x00</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>ADC_CSR</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>ADC_CSR</b>
+         </td>
+         <td colspan="25" rowspan="3">Reserved</td>
+         <td>
+@@ -4356,6 +4353,7 @@
+         </td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+@@ -4365,16 +4363,13 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td/>
++        <td>Instance</td>
+         <td colspan="7">ADC1</td>
+       </tr>
+       <tr>
+         <td rowspan="2">0x04</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>ADC_CCR</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>ADC_CCR</b>
+         </td>
+         <td colspan="8" rowspan="2">Reserved</td>
+         <td>
+@@ -4387,6 +4382,7 @@
+         <td colspan="16" rowspan="2">Reserved</td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>

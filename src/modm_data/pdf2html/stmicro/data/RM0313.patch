@@ -1,0 +1,26 @@
+diff --git a/chapter_8_general_purpose_ios_gpio.html b/chapter_8_general_purpose_ios_gpio.html
+index 49cb987a..f94a0c43 100644
+--- a/chapter_8_general_purpose_ios_gpio.html
++++ b/chapter_8_general_purpose_ios_gpio.html
+@@ -2552,7 +2552,7 @@
+       <tr>
+         <td rowspan="2">0x0C</td>
+         <td>
+-          <b>GPIOB_PUPDR</b>
++          <b>GPIOx_PUPDR</b>
+         </td>
+         <td colspan="2">
+           <span class="tv">PUPDR15[1:0]</span>
+diff --git a/chapter_16_general_purpose_timers_tim2_to_tim5_tim19.html b/chapter_16_general_purpose_timers_tim2_to_tim5_tim19.html
+index 1383ae2a..a075e847 100644
+--- a/chapter_16_general_purpose_timers_tim2_to_tim5_tim19.html
++++ b/chapter_16_general_purpose_timers_tim2_to_tim5_tim19.html
+@@ -3043,7 +3043,7 @@
+     <p>TIMx registers are mapped as described in the table below:</p>
+     <table id="table47">
+       <caption>
+-        <b>Table 47. TIM2 to TIM15/19 register map and reset values</b>
++        <b>Table 47. TIM2 to TIM5/19 register map and reset values</b>
+       </caption>
+       <tr>
+         <th class="thb">Offset</th>

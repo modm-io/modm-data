@@ -1,0 +1,13 @@
+diff --git a/chapter_7_embedded_flash_memory_flash.html b/chapter_7_embedded_flash_memory_flash.html
+index 6628c0b8..5c2a6a68 100644
+--- a/chapter_7_embedded_flash_memory_flash.html
++++ b/chapter_7_embedded_flash_memory_flash.html
+@@ -15720,7 +15720,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x1A0 <br/>+ 0x004 <br/>* x (x = <br/>1 to 4)</td>
++        <td rowspan="2">0x1C0 <br/>+ 0x004 <br/>* x (x = <br/>1 to 4)</td>
+         <td>FLASH_<br/>PRIVBB2R_x</td>
+         <td colspan="32">PRIVBB2[31:0]</td>
+       </tr>

@@ -1,0 +1,13 @@
+diff --git a/chapter_2_memory_and_bus_architecture.html b/chapter_2_memory_and_bus_architecture.html
+index 6cdc3a58..b1f494b3 100644
+--- a/chapter_2_memory_and_bus_architecture.html
++++ b/chapter_2_memory_and_bus_architecture.html
+@@ -12741,7 +12741,7 @@
+         <td>SYSCFG</td>
+         <td class="tl">
+           <i>
+-            <u>Section 13.3: SYSCFG registers</u>
++            <u>Section 12.4.27: SYSCFG registers</u>
+           </i>
+         </td>
+       </tr>

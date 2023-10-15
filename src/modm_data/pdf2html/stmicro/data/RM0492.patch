@@ -1,0 +1,13 @@
+diff --git a/chapter_0_introduction.html b/chapter_0_introduction.html
+index e89723a5..8cd54c53 100644
+--- a/chapter_0_introduction.html
++++ b/chapter_0_introduction.html
+@@ -5,7 +5,7 @@
+   </head>
+   <body>
+     <h1 id="page1">RM0492<br/>Reference manual</h1>
+-    <p>STM32H5 Series Arm-based 32-bit MCUs</p>
++    <p>STM32H503xx Series Arm-based 32-bit MCUs</p>
+     <h3>Introduction</h3>
+     <p>This reference manual targets application developers. It provides complete information on <br/>how to use the STM32H503xx microcontrollers memory and peripherals.</p>
+     <p>For ordering information, mechanical and electrical device characteristics, refer to the <br/>corresponding datasheets.</p>

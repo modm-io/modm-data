@@ -1,0 +1,12 @@
+diff --git a/chapter_8_ordering_information.html b/chapter_8_ordering_information.html
+index 76415310..e10f8dd0 100644
+--- a/chapter_8_ordering_information.html
++++ b/chapter_8_ordering_information.html
+@@ -40,6 +40,7 @@
+     <p>T = LQFP</p>
+     <p>H = UFBGA</p>
+     <p>Y = WLCSP</p>
++    <p>E = WLCSP</p>
+     <p>
+       <b>Temperature range</b>
+     </p>

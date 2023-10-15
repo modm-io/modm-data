@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=41", "wheel", "setuptools-git-versioning<2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "modm-data"
+authors = [
+    {name = "Niklas Hauser", email = "niklas@salkinium.com"},
+]
+description = "Embedded Hardware Description Processor"
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["embedded", "hardware", "pdf", "parser"]
+license = {text = "MPL-2.0"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Operating System :: Unix",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Database",
+    "Topic :: Documentation",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Software Development :: Embedded Systems",
+]
+dependencies = [
+    "anytree==2.8.0",
+    "CppHeaderParser",
+    "jinja2",
+    "lxml",
+    "owlready2==0.43",
+    "pypdfium2>=4.18.0,<5",
+    "tqdm",
+]
+dynamic = ["version"]
+
+[project.urls]
+"GitHub" = "https://github.com/modm-io/modm-data"
+"Changelog" = "https://github.com/modm-io/modm-data/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+docs = ["pdoc"]
+test = ["pytest"]
+all = ["modm_data[docs,test]"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+modm_data = ["*.md", "*/*.md", "*/*/*.md", "*/*/*/*.md"]
+"modm_data.dl.stmicro.data" = ["*"]
+"modm_data.pdf2html.stmicro.data" = ["*"]
+
+# [tool.setuptools]
+# zip-safe = false
+
+[tool.setuptools-git-versioning]
+enabled = true
+version_file = "VERSION"

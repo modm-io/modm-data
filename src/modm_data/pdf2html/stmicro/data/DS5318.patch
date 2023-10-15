@@ -1,0 +1,12 @@
+diff --git a/chapter_7_ordering_information_scheme.html b/chapter_7_ordering_information_scheme.html
+index 4e48b6b5..14f53161 100644
+--- a/chapter_7_ordering_information_scheme.html
++++ b/chapter_7_ordering_information_scheme.html
+@@ -35,6 +35,7 @@
+     </p>
+     <p>T = LQFP</p>
+     <p>U = VFQFPN or UFQFPN</p>
++    <p>H = TFBGA</p>
+     <p>
+       <b>Temperature range</b>
+     </p>

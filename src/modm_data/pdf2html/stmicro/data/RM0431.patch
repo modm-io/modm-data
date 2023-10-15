@@ -1,0 +1,69 @@
+diff --git a/chapter_26_inter_integrated_circuit_i2c_interface.html b/chapter_26_inter_integrated_circuit_i2c_interface.html
+index b46445f3..3d75da57 100644
+--- a/chapter_26_inter_integrated_circuit_i2c_interface.html
++++ b/chapter_26_inter_integrated_circuit_i2c_interface.html
+@@ -2143,6 +2143,22 @@
+         <td>18</td>
+         <td>17</td>
+         <td>16</td>
++        <td>15</td>
++        <td>14</td>
++        <td>13</td>
++        <td>12</td>
++        <td>11</td>
++        <td>10</td>
++        <td>9</td>
++        <td>8</td>
++        <td>7</td>
++        <td>6</td>
++        <td>5</td>
++        <td>4</td>
++        <td>3</td>
++        <td>2</td>
++        <td>1</td>
++        <td>0</td>
+       </tr>
+       <tr>
+         <td>Res.</td>
+@@ -2150,7 +2166,17 @@
+         <td>Res.</td>
+         <td>Res.</td>
+         <td>Res.</td>
+-        <td colspan="11">PECAUTOERENBYTES[7:0]BYTENDLOAD</td>
++        <td>PEC<br/>BYTE</td>
++        <td>AUTOE<br/>ND</td>
++        <td>RE<br/>LOAD</td>
++        <td colspan="8">NBYTES[7:0]</td>
++        <td>NACK</td>
++        <td>STOP</td>
++        <td>START</td>
++        <td>HEAD1<br/>0R</td>
++        <td>ADD10</td>
++        <td>RD_<br/>WRN</td>
++        <td colspan="10">SADD[9:0]</td>
+       </tr>
+       <tr>
+         <td></td>
+@@ -2169,6 +2195,22 @@
+         <td>rw</td>
+         <td>rw</td>
+         <td>rw</td>
++        <td>rs</td>
++        <td>rs</td>
++        <td>rs</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
++        <td>rw</td>
+       </tr>
+     </table>
+     <table class="bt">

@@ -1,0 +1,145 @@
+name: Convert HTML
+
+on:
+  workflow_dispatch:
+
+jobs:
+  convert-stmicro:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - name: Errata Sheet
+            part: 1
+            total: 1
+            job: es
+          - name: Datasheet
+            part: 1
+            total: 4
+            job: ds-1
+          - name: Datasheet
+            part: 2
+            total: 4
+            job: ds-2
+          - name: Datasheet
+            part: 3
+            total: 4
+            job: ds-3
+          - name: Datasheet
+            part: 4
+            total: 4
+            job: ds-4
+          - name: Reference Manual
+            part: 1
+            total: 10
+            job: rm-1
+          - name: Reference Manual
+            part: 2
+            total: 10
+            job: rm-2
+          - name: Reference Manual
+            part: 3
+            total: 10
+            job: rm-3
+          - name: Reference Manual
+            part: 4
+            total: 10
+            job: rm-4
+          - name: Reference Manual
+            part: 5
+            total: 10
+            job: rm-5
+          - name: Reference Manual
+            part: 6
+            total: 10
+            job: rm-6
+          - name: Reference Manual
+            part: 7
+            total: 10
+            job: rm-7
+          - name: Reference Manual
+            part: 8
+            total: 10
+            job: rm-8
+          - name: Reference Manual
+            part: 9
+            total: 10
+            job: rm-9
+          - name: Reference Manual
+            part: 10
+            total: 10
+            job: rm-10
+
+    name: "Convert STMicro ${{ matrix.name }}s Part ${{ matrix.part }}/${{ matrix.total }}"
+    steps:
+
+      - name: Check out Repository
+        uses: actions/checkout@v2
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "bot@modm.io"
+          git config --global user.name "modm update bot"
+
+
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install Python Dependencies
+        run: |
+          pip3 install -U --upgrade-strategy=eager pypdfium2==3.3.0 anytree numpy lxml
+
+
+      # This cache repository is private since copyright prevents republishing!
+      # Contact @salkinium for access to this repository.
+      - name: Check out STMicro HTML Archive
+        uses: actions/checkout@v2
+        with:
+          repository: modm-ext/archive-stmicro-html
+          path: ext/stmicro/html
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_HTML }}
+          persist-credentials: true
+
+      - name: Check out STMicro PDF Archive
+        uses: actions/checkout@v2
+        with:
+          repository: modm-ext/archive-stmicro-pdf
+          path: ext/stmicro/pdf
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_PDF }}
+          persist-credentials: true
+
+
+      - name: Convert ${{ matrix.name }}s to HTML
+        if: always()
+        run: |
+          make clean-html-${{ matrix.job }}
+          make convert-html-${{ matrix.job }} -j3
+
+      - name: Archive ${{ matrix.name }} Logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: log-stmicro-${{ matrix.job }}
+          path: log/stmicro/
+          if-no-files-found: ignore
+
+
+      - name: Git push HTML Archive
+        working-directory: ext/stmicro/html
+        run: |
+          for i in {1..10}; do
+            git pull
+            git add .
+            git commit -m "Update ${{ matrix.name }} Part ${{ matrix.part }}" || true
+            git gc
+            git count-objects -vH
+            if git push origin main; then
+              exit 0
+            fi
+            git reset HEAD~
+          done
+          exit 1
+

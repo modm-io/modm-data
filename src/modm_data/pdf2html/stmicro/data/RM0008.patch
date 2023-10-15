@@ -1,0 +1,715 @@
+diff --git a/chapter_10_interrupts_and_events.html b/chapter_10_interrupts_and_events.html
+index 5d836954..2da54859 100644
+--- a/chapter_10_interrupts_and_events.html
++++ b/chapter_10_interrupts_and_events.html
+@@ -2596,76 +2596,178 @@
+         </th>
+       </tr>
+       <tr>
+-        <td>0x00</td>
+-        <td>
+-          <p>EXTI_IMR</p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="12">Reserved</td>
+-        <td colspan="20">
+-          <p>MR[19:0]</p>
+-          <p>0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</p>
+-        </td>
++        <td rowspan="2">0x00</td>
++        <td>EXTI_IMR</td>
++        <td colspan="12" rowspan="2">Reserved</td>
++        <td colspan="20">MR[19:0]</td>
+       </tr>
+       <tr>
+-        <td>0x04</td>
+-        <td>
+-          <p>EXTI_EMR</p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="12">Reserved</td>
+-        <td colspan="20">
+-          <p>MR[19:0]</p>
+-          <p>0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</p>
+-        </td>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
+       </tr>
+       <tr>
+-        <td>0x08</td>
+-        <td>
+-          <p>EXTI_RTSR</p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="12">Reserved</td>
+-        <td colspan="20">
+-          <p>TR[19:0]</p>
+-          <p>0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</p>
+-        </td>
++        <td rowspan="2">0x04</td>
++        <td>EXTI_EMR</td>
++        <td colspan="12" rowspan="2">Reserved</td>
++        <td colspan="20">MR[19:0]</td>
+       </tr>
+       <tr>
+-        <td>0x0C</td>
+-        <td>
+-          <p>EXTI_FTSR</p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="12">Reserved</td>
+-        <td colspan="20">
+-          <p>TR[19:0]</p>
+-          <p>0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</p>
+-        </td>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
+       </tr>
+       <tr>
+-        <td>0x10</td>
+-        <td>
+-          <p>EXTI_SWIER</p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="12">Reserved</td>
+-        <td colspan="20">
+-          <p>SWIER[19:0]</p>
+-          <p>0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</p>
+-        </td>
++        <td rowspan="2">0x08</td>
++        <td>EXTI_RTSR</td>
++        <td colspan="12" rowspan="2">Reserved</td>
++        <td colspan="20">TR[19:0]</td>
+       </tr>
+       <tr>
+-        <td>0x14</td>
+-        <td>
+-          <p>EXTI_PR</p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="12">Reserved</td>
+-        <td colspan="20">
+-          <p>PR[19:0]</p>
+-          <p>0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</p>
+-        </td>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++      </tr>
++      <tr>
++        <td rowspan="2">0x0C</td>
++        <td>EXTI_FTSR</td>
++        <td colspan="12" rowspan="2">Reserved</td>
++        <td colspan="20">TR[19:0]</td>
++      </tr>
++      <tr>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++      </tr>
++      <tr>
++        <td rowspan="2">0x10</td>
++        <td>EXTI_SWIER</td>
++        <td colspan="12" rowspan="2">Reserved</td>
++        <td colspan="20">SWIER[19:0]</td>
++      </tr>
++      <tr>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++      </tr>
++      <tr>
++        <td rowspan="2">0x14</td>
++        <td>EXTI_PR</td>
++        <td colspan="12" rowspan="2">Reserved</td>
++        <td colspan="20">PR[19:0]</td>
++      </tr>
++      <tr>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
+       </tr>
+     </table>
+     <p>Refer to <i><u>Table 3 on page 50</u></i> for the register boundary addresses.</p>
+diff --git a/chapter_5_power_control_pwr.html b/chapter_5_power_control_pwr.html
+index c412c41e..3a0a5490 100644
+--- a/chapter_5_power_control_pwr.html
++++ b/chapter_5_power_control_pwr.html
+@@ -754,10 +754,7 @@
+         </th>
+       </tr>
+       <tr>
+-        <td rowspan="4">
+-          <p>0x000</p>
+-          <p>0x004</p>
+-        </td>
++        <td rowspan="2">0x000</td>
+         <td>PWR_CR</td>
+         <td colspan="23" rowspan="2">Reserved</td>
+         <td>
+@@ -793,6 +790,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
++        <td rowspan="2">0x004</td>
+         <td>PWR_CSR</td>
+         <td colspan="23" rowspan="2">Reserved</td>
+         <td>
+diff --git a/chapter_6_backup_registers_bkp.html b/chapter_6_backup_registers_bkp.html
+index c42d2624..ec71933d 100644
+--- a/chapter_6_backup_registers_bkp.html
++++ b/chapter_6_backup_registers_bkp.html
+@@ -995,13 +995,12 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td>0x60</td>
++        <td rowspan="2">0x60</td>
+         <td>BKP_DR19</td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">D[15:0]</td>
+       </tr>
+       <tr>
+-        <td/>
+         <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1246,13 +1245,12 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td>0x88</td>
++        <td rowspan="2">0x88</td>
+         <td>BKP_DR29</td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">D[15:0]</td>
+       </tr>
+       <tr>
+-        <td/>
+         <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1497,13 +1495,12 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td>0xB0</td>
++        <td rowspan="2">0xB0</td>
+         <td>BKP_DR39</td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">D[15:0]</td>
+       </tr>
+       <tr>
+-        <td/>
+         <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1548,13 +1545,12 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td>0xB8</td>
++        <td rowspan="2">0xB8</td>
+         <td>BKP_DR41</td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">D[15:0]</td>
+       </tr>
+       <tr>
+-        <td/>
+         <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+diff --git a/chapter_16_general_purpose_timers_tim9_to_tim14.html b/chapter_16_general_purpose_timers_tim9_to_tim14.html
+index 6dc2a109..b273eb48 100644
+--- a/chapter_16_general_purpose_timers_tim9_to_tim14.html
++++ b/chapter_16_general_purpose_timers_tim9_to_tim14.html
+@@ -1612,68 +1612,54 @@
+         </th>
+       </tr>
+       <tr>
+-        <td>0x00</td>
+-        <td>
+-          <p>
+-            <b>TIMx_CR1</b>
+-          </p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="22">Reserved</td>
+-        <td colspan="2">
+-          <p>CKD <br/>[1:0]</p>
+-          <p>00</p>
+-        </td>
+-        <td>
+-          <p>0</p>
+-          <p>ARPE</p>
+-        </td>
+-        <td colspan="3">Reserved</td>
+-        <td>
+-          <p>0</p>
+-          <p>OPM</p>
+-        </td>
+-        <td>
+-          <p>0</p>
+-          <p>URS</p>
+-        </td>
+-        <td>
+-          <p>0</p>
+-          <p>UDIS</p>
+-        </td>
++        <td rowspan="2">0x00</td>
+         <td>
+-          <p>0</p>
+-          <p>CEN</p>
++          <b>TIMx_CR1</b>
+         </td>
++        <td colspan="22" rowspan="2">Reserved</td>
++        <td colspan="2">CKD <br/>[1:0]</td>
++        <td>ARPE</td>
++        <td colspan="3" rowspan="2">Reserved</td>
++        <td>OPM</td>
++        <td>URS</td>
++        <td>UDIS</td>
++        <td>CEN</td>
++      </tr>
++      <tr>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
+       </tr>
+       <tr>
+-        <td>0x08</td>
++        <td rowspan="2">0x08</td>
+         <td>
+-          <p>
+-            <b>TIMx_SMCR</b>
+-          </p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="25">Reserved</td>
+-        <td colspan="3">
+-          <p>TS[2:0]</p>
+-          <p>000</p>
++          <b>TIMx_SMCR</b>
+         </td>
+-        <td>
++        <td colspan="25" rowspan="2">Reserved</td>
++        <td colspan="3">TS[2:0]</td>
++        <td rowspan="2">
+           <span class="tv">Reserved</span>
+         </td>
+-        <td colspan="3">
+-          <p>SMS[2:0]</p>
+-          <p>000</p>
+-        </td>
++        <td colspan="3">SMS[2:0]</td>
++      </tr>
++      <tr>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
+       </tr>
+       <tr>
+         <td rowspan="2">0x0C</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>TIMx_DIER</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>TIMx_DIER</b>
+         </td>
+         <td colspan="25" rowspan="2">Reserved</td>
+         <td>
+@@ -1691,6 +1677,7 @@
+         </td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1736,11 +1723,8 @@
+       </tr>
+       <tr>
+         <td rowspan="2">0x14</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>TIMx_EGR</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>TIMx_EGR</b>
+         </td>
+         <td colspan="25" rowspan="2">Reserved</td>
+         <td>
+@@ -1758,72 +1742,77 @@
+         </td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x18</td>
++        <td rowspan="4">0x18</td>
+         <td>
+-          <p><b>TIMx_CCMR1</b><br/>Output compare <br/>mode</p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="17">Reserved</td>
+-        <td colspan="3">
+-          <p>OC2M<br/>[2:0]</p>
+-          <p>0 0 0</p>
+-        </td>
+-        <td>0<sup>OC2PE</sup></td>
+-        <td>0<sup>OC2FE</sup></td>
+-        <td colspan="2">
+-          <p>CC2S <br/>[1:0]</p>
+-          <p>0 0</p>
++          <b>TIMx_CCMR1</b><br/>Output compare <br/>mode
+         </td>
+-        <td>
++        <td colspan="17" rowspan="2">Reserved</td>
++        <td colspan="3">OC2M<br/>[2:0]</td>
++        <td>OC2PE</td>
++        <td>OC2FE</td>
++        <td colspan="2">CC2S <br/>[1:0]</td>
++        <td rowspan="2">
+           <span class="tv">Reserved</span>
+         </td>
+-        <td colspan="3">
+-          <p>OC1M<br/>[2:0]</p>
+-          <p>0 0 0</p>
+-        </td>
+-        <td>0<br/>OC1PE</td>
+-        <td>0<br/>OC1FE</td>
+-        <td colspan="2">
+-          <p>CC1<br/>S <br/>[1:0]</p>
+-          <p>0 0</p>
+-        </td>
++        <td colspan="3">OC1M<br/>[2:0]</td>
++        <td>OC1PE</td>
++        <td>OC1FE</td>
++        <td colspan="2">CC1<br/>S <br/>[1:0]</td>
++      </tr>
++      <tr>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
+       </tr>
+       <tr>
+         <td>
+-          <p><b>TIMx_CCMR1</b><br/>Input capture <br/>mode</p>
+-          <p>Reset value</p>
+-        </td>
+-        <td colspan="16">Reserved</td>
+-        <td colspan="4">
+-          <p>IC2F[3:0]</p>
+-          <p>0 0 0 0</p>
+-        </td>
+-        <td colspan="2">
+-          <p>IC2<br/>PSC<br/>[1:0]</p>
+-          <p>0 0</p>
+-        </td>
+-        <td colspan="2">
+-          <p>CC2S <br/>[1:0]</p>
+-          <p>0 0</p>
+-        </td>
+-        <td colspan="4">
+-          <p>IC1F[3:0]</p>
+-          <p>0 0 0 0</p>
+-        </td>
+-        <td colspan="2">
+-          <p>IC1<br/>PSC<br/>[1:0]</p>
+-          <p>0 0</p>
+-        </td>
+-        <td colspan="2">
+-          <p>CC1<br/>S <br/>[1:0]</p>
+-          <p>0 0</p>
++          <b>TIMx_CCMR1</b><br/>Input capture <br/>mode
+         </td>
++        <td colspan="16" rowspan="2">Reserved</td>
++        <td colspan="4">IC2F[3:0]</td>
++        <td colspan="2">IC2<br/>PSC<br/>[1:0]</td>
++        <td colspan="2">CC2S <br/>[1:0]</td>
++        <td colspan="4">IC1F[3:0]</td>
++        <td colspan="2">IC1<br/>PSC<br/>[1:0]</td>
++        <td colspan="2">CC1<br/>S <br/>[1:0]</td>
++      </tr>
++      <tr>
++        <td>Reset value</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
++        <td>0</td>
+       </tr>
+       <tr>
+         <td>0x1C</td>
+@@ -1831,11 +1820,8 @@
+       </tr>
+       <tr>
+         <td rowspan="2">0x20</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>TIMx_CCER</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>TIMx_CCER</b>
+         </td>
+         <td colspan="24" rowspan="2">Reserved</td>
+         <td>
+@@ -1864,6 +1850,7 @@
+         </td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1873,16 +1860,14 @@
+       </tr>
+       <tr>
+         <td rowspan="2">0x24</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>TIMx_CNT</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>TIMx_CNT</b>
+         </td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">CNT[15:0]</td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1902,16 +1887,14 @@
+       </tr>
+       <tr>
+         <td rowspan="2">0x28</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>TIMx_PSC</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>TIMx_PSC</b>
+         </td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">PSC[15:0]</td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1931,16 +1914,14 @@
+       </tr>
+       <tr>
+         <td rowspan="2">0x2C</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>TIMx_ARR</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>TIMx_ARR</b>
+         </td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">ARR[15:0]</td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1964,16 +1945,14 @@
+       </tr>
+       <tr>
+         <td rowspan="2">0x34</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>TIMx_CCR1</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>TIMx_CCR1</b>
+         </td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">CCR1[15:0]</td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>
+@@ -1993,16 +1972,14 @@
+       </tr>
+       <tr>
+         <td rowspan="2">0x38</td>
+-        <td rowspan="2">
+-          <p>
+-            <b>TIMx_CCR2</b>
+-          </p>
+-          <p>Reset value</p>
++        <td>
++          <b>TIMx_CCR2</b>
+         </td>
+         <td colspan="16" rowspan="2">Reserved</td>
+         <td colspan="16">CCR2[15:0]</td>
+       </tr>
+       <tr>
++        <td>Reset value</td>
+         <td>0</td>
+         <td>0</td>
+         <td>0</td>

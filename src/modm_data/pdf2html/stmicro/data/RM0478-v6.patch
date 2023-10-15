@@ -1,0 +1,53 @@
+diff --git a/chapter_31_debug_support_dbg.html b/chapter_31_debug_support_dbg.html
+index 20349ebe..00774738 100644
+--- a/chapter_31_debug_support_dbg.html
++++ b/chapter_31_debug_support_dbg.html
+@@ -9332,7 +9332,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0S4</td>
++        <td rowspan="2">0x0A4</td>
+         <td>CTI_OUTENR1</td>
+         <td>
+           <span class="tv">Res.</span>
+@@ -9456,7 +9456,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0S8</td>
++        <td rowspan="2">0x0A8</td>
+         <td>CTI_OUTENR2</td>
+         <td>
+           <span class="tv">Res.</span>
+@@ -9580,7 +9580,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0SC</td>
++        <td rowspan="2">0x0AC</td>
+         <td>CTI_OUTENR3</td>
+         <td>
+           <span class="tv">Res.</span>
+diff --git a/chapter_30_hardware_semaphore_hsem.html b/chapter_30_hardware_semaphore_hsem.html
+index 692a97f4..739f212a 100644
+--- a/chapter_30_hardware_semaphore_hsem.html
++++ b/chapter_30_hardware_semaphore_hsem.html
+@@ -2120,7 +2120,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x</td>
++        <td rowspan="2">0x120</td>
+         <td>
+           <b>HSEM_CR</b>
+         </td>
+@@ -2199,7 +2199,7 @@
+         <td/>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x</td>
++        <td rowspan="2">0x124</td>
+         <td>
+           <b>HSEM_KEYR</b>
+         </td>
