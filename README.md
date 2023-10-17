@@ -1,4 +1,4 @@
-# modm-data: Embedded Hardware Description
+# Semantic Hardware Description from Technical Documentation
 
 This project is a collection of data processing pipelines that convert and
 combine multiple sources of hardware description data into the most accurate
@@ -95,14 +95,14 @@ pip install -e ".[all]"
 To browse the API documentation locally:
 
 ```sh
-pdoc modm_data
+pdoc --mermaid modm_data
 ```
 
 
 ## Citation
 
 This project is a further development of a [peer-reviewed paper published in
-the in the Journal of Systems Research (JSys)](todo).
+the in the Journal of Systems Research (JSys)](https://www.jsys.org/read).
 Please cite this paper when referring to this project:
 
 ```bib

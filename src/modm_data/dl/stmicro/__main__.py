@@ -54,7 +54,7 @@ def download_pdfs(base_dir, with_download, new_pdfs=None):
                     print(e)
                     invalid_docs.append(doc)
 
-    store_local_info(base_dir, [doc._data for doc in (new_local_docs + list(local_docs))])
+    store_local_info(base_dir, [doc.data for doc in (new_local_docs + list(local_docs))])
 
     # Cache the new doc names for other tools
     if new_pdfs:

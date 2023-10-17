@@ -37,6 +37,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.urls]
+"Homepage" = "https://data.modm.io"
 "GitHub" = "https://github.com/modm-io/modm-data"
 "Changelog" = "https://github.com/modm-io/modm-data/blob/main/CHANGELOG.md"
 
