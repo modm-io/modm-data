@@ -1,0 +1,90 @@
+site_name: 'modm-data: Semantic Hardware Description'
+site_description: 'Semantic Hardware Description'
+site_author: 'Niklas Hauser'
+site_url: 'https://data.modm.io'
+
+# Repository
+repo_name: modm-io/modm-data
+repo_url: 'https://github.com/modm-io/modm-data'
+
+copyright: 'Copyright &copy 2022-<script>document.write(new Date().getFullYear())</script> Niklas Hauser & modm-data authors'
+
+# Turn around for GitHub Hosting in /docs
+docs_dir: 'src'
+site_dir: 'data.modm.io/docs'
+extra_css: []
+
+theme:
+  name: 'material'
+  include_search_page: false
+  search_index_only: true
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  # logo: '../images/logo.svg'
+  font:
+    text: 'Ubuntu'
+    code: 'Roboto Mono'
+  language: en
+  feature:
+    tabs: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github-alt
+      link: https://github.com/modm-io
+
+markdown_extensions:
+  - markdown.extensions.admonition
+  - markdown.extensions.codehilite:
+      guess_lang: false
+  - markdown.extensions.def_list
+  - markdown.extensions.footnotes
+  - markdown.extensions.meta
+  - markdown.extensions.toc:
+      permalink: true
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+nav:
+  - Introduction: index.md
+  - Input Sources:
+      - Overview: source/overview.md
+  - Conversion Pipelines:
+      - Overview: pipeline/overview.md
+      - PDF to HTML: pipeline/pdf2html.md
+      - HTML to SVD: pipeline/html2svd.md
+      #- HTML to OWL: pipeline/html2owl.md
+      - Header to SVD: pipeline/header2svd.md
+  - API Reference: api/modm_data.html

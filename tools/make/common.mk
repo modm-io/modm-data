@@ -13,18 +13,10 @@ nothing:
 log/%:
 	@mkdir -p $@
 
-
-.PHONY: install-pip
-install-pip:
-	@pip3 install -e .
-
-.PHONY: install-pip-docs
-install-pip-docs:
-	@pip3 install -e ".[docs]"
-
 .PHONY: build-docs
 build-docs:
 	@rm -rf docs/data.modm.io/docs/
-	@pdoc modm_data --mermaid -o docs/data.modm.io/docs/
-	@echo "data.modm.io" > docs/data.modm.io/docs/CNAME
-	@touch docs/data.modm.io/docs/.nojekyll
+	@mkdir -p docs/data.modm.io/docs/
+	@python3 tools/scripts/synchronize_docs.py
+	@pdoc --mermaid -o docs/src/api -t docs/pdoc modm_data
+	@(cd docs && mkdocs build)

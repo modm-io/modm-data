@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 """
-.. include:: README.md
+# PDF to HTML Pipeline
 """
 
 from . import stmicro

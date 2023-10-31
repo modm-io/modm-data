@@ -1,5 +1,7 @@
 # HTML to OWL Pipeline
 
+## Selective Conversion
+
 The resulting knowledge graphs are found in `ext/stmicro/owl`.
 Sadly owlready2 does not sort the XML serialization, so the graphs change with
 every call, making diffs impractical.
@@ -11,6 +13,8 @@ python3 -m modm_data.html2owl.stmicro --document ext/stmicro/html/DS11581-v6
 # Convert ALL HTML folders using multiprocessing with #CPUs jobs
 python3 -m modm_data.html2owl.stmicro --all
 ```
+
+## Automatic Conversion
 
 To perform the steps automatically, you may also use `make`:
 

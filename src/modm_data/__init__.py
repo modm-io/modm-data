@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 """
-.. include:: README.md
+# API Reference
 """
 
 from importlib.metadata import version, PackageNotFoundError

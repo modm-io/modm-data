@@ -42,7 +42,7 @@ dynamic = ["version"]
 "Changelog" = "https://github.com/modm-io/modm-data/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-docs = ["pdoc"]
+docs = ["pdoc", "mkdocs", "mkdocs-material"]
 test = ["pytest"]
 all = ["modm_data[docs,test]"]
 

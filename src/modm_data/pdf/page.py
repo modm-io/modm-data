@@ -145,7 +145,7 @@ class Page(pp.PdfPage):
         return self._text.get_text_bounded(area.left, area.bottom, area.right, area.top)
 
     @property
-    def structures(self) -> list[Structure]:
+    def structures(self) -> Iterator[Structure]:
         """The PDF/UA tags."""
         count = pp.raw.FPDF_StructTree_CountChildren(self._structtree)
         for ii in range(count):

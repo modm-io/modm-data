@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Sphinx
+      - name: Install modm-data with docs dependencies
         run: |
           pip3 install ".[docs]"
 

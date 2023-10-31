@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 """
-.. include:: README.md
+# CMSIS Header to SVD Pipeline
 """
 
 from . import stmicro

@@ -1,5 +1,7 @@
 # CMSIS Header to SVD Pipeline
 
+## Selective Conversion
+
 The resulting SVD files are found in `ext/stmicro/svd`.
 Only takes a few minutes.
 
@@ -9,6 +11,8 @@ python3 -m modm_data.header2svd.stmicro --device stm32f030c6t6 --device stm32f03
 # Convert all CMSIS headers into SVD files
 python3 -m modm_data.header2svd.stmicro --all
 ```
+
+## Automatic Conversion
 
 To perform the steps automatically, you may also use `make`:
 

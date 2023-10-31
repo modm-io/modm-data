@@ -39,7 +39,7 @@ XSLT_SORT = r"""
 
 class Store:
     def __init__(self, vendor, device):
-        self.base_url = "https://data.modm.io"
+        self.base_url = "https://data.modm.io/kg"
         self.vendor = vendor
         self.device = device
         self._path = ext_path(f"{vendor}/owl")

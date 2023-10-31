@@ -12,8 +12,6 @@ https://accessible-pdf.info/en/basics/general/overview-of-the-pdf-tags/).
 An example of an accessible pdf that can be inspected via these classes:
 [Rock On, D.C. Music Festival](
 https://commonlook.com/wp-content/uploads/2020/04/accessible-pdf-example.pdf).
-
-
 """
 
 import ctypes

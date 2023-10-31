@@ -1,4 +1,6 @@
-# Semantic Hardware Description from Technical Documentation
+<!--webignore-->
+# Semantic Hardware Description
+<!--/webignore-->
 
 This project is a collection of data processing pipelines that convert and
 combine multiple sources of hardware description data into the most accurate
@@ -41,31 +43,17 @@ pip install modm-data
 You also need `g++` and `patch` installed and callable in your path.
 
 
-## Input Sources
-
-You can download all input sources via `make input-sources`. Please note that it
-may take a while to download ~10GB of data, mostly PDF technical documentation.
-
-This project uses only publicly available data sources which we have aggregated
-in several GitHub repositories. However, since the copyright of some sources
-prohibits republication, these sources are downloaded from the vendor websites
-directly:
-
-- STMicro CubeMX database.
-- STMicro PDF technical documentation.
-
-
 ## Pipelines
 
-The data pipelines are implemented as Python modules inside `modm_data` folder and
-have the following structure:
+<!--pipelines-->
+The data pipelines are implemented as Python submodules inside `modm_data`
+folder and have the following structure:
 
 ```mermaid
 flowchart LR
     A(PDF) -->|pdf2html| B
     B -->|html2svd| D
     B(HTML) -->|html| C
-    %% C --> K
     C(Python) -->|owl| E
     D(CMSIS-SVD) -->|cmsis-svd| C
     E[OWL]
@@ -77,13 +65,13 @@ flowchart LR
     J -->|dl| G
     J -->|dl| H
     J[Vendor] -->|dl| D
-    %% K[Evaluation]
 ```
+<!--/pipelines-->
 
 Each pipeline has its own command-line interface, please refer to the API
 documentation for their advanced usage.
 
-
+<!--webignore-->
 ## Development
 
 For development you can install the package locally:
@@ -98,23 +86,43 @@ To browse the API documentation locally:
 pdoc --mermaid modm_data
 ```
 
+<!--inputsources-->
+You can download all input sources via `make input-sources`. Please note that it
+may take a while to download ~10GB of data, mostly PDF technical documentation.
+
+This project uses only publicly available data sources which we have aggregated
+in several GitHub repositories. However, since the copyright of some sources
+prohibits republication, these sources are downloaded from the vendor websites
+directly:
+
+- STMicro CubeMX database.
+- STMicro PDF technical documentation.
+
+<!--/inputsources--><!--/webignore-->
 
 ## Citation
 
 This project is a further development of a [peer-reviewed paper published in
-the in the Journal of Systems Research (JSys)](https://www.jsys.org/read).
+the in the Journal of Systems Research (JSys)](http://dx.doi.org/10.5070/SR33162446).
 Please cite this paper when referring to this project:
 
 ```bib
-@article{hauser2023automatically,
-  title={{Automatically Extracting Hardware Descriptions from PDF Technical Documentation}},
-  author={Hauser, Niklas and Pennekamp, Jan},
-  journal={Journal of Systems Research (JSys)},
-  volume={3},
-  issue={2},
-  year={2023},
-  doi={10.5070/tbd}
+@article{HP23,
+  author = {Hauser, Niklas and Pennekamp, Jan},
+  title = {{Automatically Extracting Hardware Descriptions from PDF Technical Documentation}},
+  journal = {Journal of Systems Research},
+  year = {2023},
+  volume = {3},
+  number = {1},
+  publisher = {eScholarship Publishing},
+  month = {10},
+  doi = {10.5070/SR33162446},
+  code = {https://github.com/salkinium/pdf-data-extraction-jsys-artifact},
+  code2 = {https://github.com/modm-io/modm-data},
+  meta = {},
 }
 ```
 
 The paper itself is based on a [master thesis](https://salkinium.com/master.pdf).
+
+<!--links--><!--/links-->

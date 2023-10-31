@@ -1,5 +1,7 @@
 # HTML to SVD Pipeline
 
+## Selective Conversion
+
 The resulting SVD files are found in `ext/stmicro/svd`.
 Only takes a few minutes.
 
@@ -9,6 +11,8 @@ python3 -m modm_data.html2svd.stmicro --document ext/stmicro/html/RM0432-v9
 # Convert ALL HTML folders using multiprocessing
 python3 -m modm_data.html2svd.stmicro --all
 ```
+
+## Automatic Conversion
 
 To perform the steps automatically, you may also use `make`:
 
