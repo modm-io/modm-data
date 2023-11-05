@@ -177,9 +177,8 @@ class Page(pp.PdfPage):
         """All images."""
         return [Image(o) for o in self.get_objects([pp.raw.FPDF_PAGEOBJ_IMAGE])]
 
-    def graphic_clusters(self, predicate: Callable[[Path|Image], bool] = None,
-                         absolute_tolerance: float = None) -> \
-                                            list[tuple[Rectangle, list[Path]]]:
+    def graphic_clusters(self, predicate: Callable[[Path | Image], bool] = None,
+                         absolute_tolerance: float = None) -> list[tuple[Rectangle, list[Path]]]:
         if absolute_tolerance is None:
             absolute_tolerance = min(self.width, self.height) * 0.01
 

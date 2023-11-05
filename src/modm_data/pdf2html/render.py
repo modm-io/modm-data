@@ -11,7 +11,7 @@ from ..pdf.render import _vline, _hline, _line, _rect
 
 def render_page_pdf(doc, page, new_doc = None, index = 0):
     """
-    Test doc string
+
 
     :param doc: PDF document
     :param page: PDF page

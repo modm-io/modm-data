@@ -102,8 +102,8 @@ directly:
 
 ## Citation
 
-This project is a further development of a [peer-reviewed paper published in
-the in the Journal of Systems Research (JSys)](http://dx.doi.org/10.5070/SR33162446).
+This project is a further development of a [peer-reviewed paper published in the
+in the Journal of Systems Research (JSys)](http://dx.doi.org/10.5070/SR33162446).
 Please cite this paper when referring to this project:
 
 ```bib

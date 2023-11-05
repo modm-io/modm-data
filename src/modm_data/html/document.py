@@ -41,6 +41,8 @@ class Document:
             LOGGER.error(f"Cannot find chapter with pattern '{pattern}'!")
         if len(chapters) > 1:
             LOGGER.error(f"Found multiple chapters with pattern '{pattern}'!")
+            for chapter in chapters:
+                LOGGER.error(f"  - {chapter.name}")
         assert len(chapters) == 1
         return chapters[0]
 

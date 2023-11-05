@@ -3,6 +3,7 @@
 
 from functools import cached_property
 from ..utils import Rectangle
+from ..pdf import Character
 
 
 class CharCluster:
@@ -12,7 +13,7 @@ class CharCluster:
     character stream of the PDF page.
     """
 
-    def __init__(self, line, chars: list):
+    def __init__(self, line: "CharLine", chars: list[Character]):
         self._line = line
         self.chars = chars
 
@@ -49,16 +50,19 @@ class CharLine:
 
     @cached_property
     def bbox(self) -> Rectangle:
+        """Bounding box of the character line"""
         return Rectangle(min(c.bbox.left for c in self.chars),
                          min(c.bbox.bottom for c in self.chars),
                          max(c.bbox.right for c in self.chars),
                          max(c.bbox.top for c in self.chars))
 
     @cached_property
-    def fonts(self) -> set:
+    def fonts(self) -> set[str]:
+        """All font names in this character line"""
         return set(c.font for c in self.chars if c.font)
 
-    def contains_font(self, *fragments) -> bool:
+    def contains_font(self, *fragments: str) -> bool:
+        """:return: True if any fragment is part of the font names"""
         for fragment in fragments:
             if any(fragment in font for font in self.fonts):
                 return True
@@ -66,22 +70,23 @@ class CharLine:
 
     @cached_property
     def content(self) -> str:
+        """Text contained in the character line"""
         return "".join(c.char for c in self.chars)
 
-    def clusters(self, atol: float = None) -> list[CharCluster]:
-        # Find clusters of characters in a line incl. whitespace chars
+    def clusters(self, absolute_tolerance: float = None) -> list[CharCluster]:
+        """Find clusters of characters in a line separated by `absolute_tolerance`."""
         def _cluster(clusters, chars):
             if chars:
                 clusters.append(CharCluster(self, chars))
 
         # We want to group the chars if the space between them is > 1em
-        if atol is None:
-            atol = self._page._spacing["x_em"] * 1
+        if absolute_tolerance is None:
+            absolute_tolerance = self._page._spacing["x_em"] * 1
         clusters = []
         current_chars = [self.chars[0]]
         last_char = current_chars[0]
         for next_char in self.chars[1:]:
-            if next_char.bbox.left - last_char.bbox.right < atol:
+            if next_char.bbox.left - last_char.bbox.right < absolute_tolerance:
                 # Keep this char in the current cluster
                 current_chars.append(next_char)
                 if next_char.unicode not in {0x20, 0xa, 0xd}:

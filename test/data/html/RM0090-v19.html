@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../style.css"/>
+  </head>
+  <body>
+    <table id="table15">
+      <caption id="page90">
+        <b>Table 15. Description of the option bytes (STM32F405xx/07xx and </b>
+        <br/>
+        <b>STM32F415xx/17xx) (continued)</b>
+      </caption>
+      <tr>
+        <th colspan="2" class="thb">Option bytes (word, address 0x1FFF C008)</th>
+      </tr>
+      <tr>
+        <td class="tl">Bits 15:12</td>
+        <td class="tl">0xF: Not used</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="tl">
+          <p><b>nWRP</b>: <i>Flash memory write protection option bytes</i></p>
+          <p>Sectors 0 to 11 can be write protected.</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bits 11:0</td>
+        <td class="tl">
+          <p>
+            <b>nWRPi</b>
+          </p>
+          <p>0: Write protection active on selected sector<br/>1: Write protection not active on selected sector</p>
+        </td>
+      </tr>
+    </table>
+    <table id="table16">
+      <caption>
+        <b>Table 16. Description of the option bytes </b>
+        <br/>
+        <b>(STM32F42xxx and STM32F43xxx)</b>
+      </caption>
+      <tr>
+        <th colspan="2" class="thb">Option bytes (word, address 0x1FFF C000)</th>
+      </tr>
+      <tr>
+        <td colspan="2" class="tl">
+          <p>
+            <b>RDP: </b>
+            <i>Read protection option byte.</i>
+          </p>
+          <p>The read protection is used to protect the software code stored in Flash memory.</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 15:8</td>
+        <td class="tl">
+          <p>0xAA: Level 0, no protection</p>
+          <p>0xCC: Level 2, chip protection (debug and boot from RAM features <br/>disabled)</p>
+          <p>Others: Level 1, read protection of memories (debug features limited)</p>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" class="tl">
+          <p><b>USER: </b>User option byte</p>
+          <p>This byte is used to configure the following features:</p>
+          <p>Select the watchdog event: Hardware or software</p>
+          <p>Reset event when entering the Stop mode</p>
+          <p>Reset event when entering the Standby mode</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 7</td>
+        <td class="tl">
+          <p>
+            <b>nRST_STDBY</b>
+          </p>
+          <p>0: Reset generated when entering the Standby mode</p>
+          <p>1: No reset generated</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 6</td>
+        <td class="tl">
+          <p>
+            <b>nRST_STOP</b>
+          </p>
+          <p>0: Reset generated when entering the Stop mode</p>
+          <p>1: No reset generated</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 5</td>
+        <td class="tl">
+          <p>
+            <b>WDG_SW</b>
+          </p>
+          <p>0: Hardware independent watchdog</p>
+          <p>1: Software independent watchdog</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 4</td>
+        <td class="tl">
+          <p><b>BFB2</b>: Dual bank boot</p>
+          <p>0: Boot from Flash memory bank 1 or system memory depending on boot pin <br/>state (Default).<br/>1: Boot always from system memory (Dual bank boot mode).</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 15</td>
+        <td class="tl">
+          <p><b>SPRMOD</b>: Selection of protection mode of nWPRi bits</p>
+          <p>0: nWPRi bits used for sector i write protection (Default)</p>
+          <p>1: nWPRi bits used for sector i PCROP protection (Sector)</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 14</td>
+        <td class="tl">
+          <p><b>DB1M</b>: Dual bank 1 Mbyte Flash memory devices</p>
+          <p>0: 1 Mbyte single Flash memory (contiguous addresses in bank 1)</p>
+          <p>1: 1 Mbyte dual bank Flash memory. The Flash memory is organized as two banks <br/>of 512 Kbytes each (see <i><u>Table 7: 1 Mbyte Flash memory single bank vs dual bank </u></i><u><br/><i>organization (STM32F42xxx and STM32F43xxx)</i></u> and <i><u>Table 9: 1 Mbyte dual bank </u></i><u><br/><i>Flash memory organization (STM32F42xxx and STM32F43xxx)</i></u>). To perform an <br/>erase operation, the right sector must be programmed (see <i><u>Table 7</u></i> for information <br/>on the sector numbering scheme).</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="tl">Bits 13:12</td>
+        <td class="tl">0x3: not used</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="tl"><b>nWRP</b>: Flash memory write protection option bytes for bank 1. Sectors 0 to 11 can be write <br/>protected.</td>
+      </tr>
+      <tr>
+        <td class="tl">Bits 11:0</td>
+        <td class="tl">
+          <p>
+            <b>nWRPi:</b>
+          </p>
+          <p>If SPRMOD is reset (default value):</p>
+          <p>0: Write protection active on sector i.</p>
+          <p>1: Write protection not active on sector i.</p>
+          <p>If SPRMOD is set (active):</p>
+          <p>0: PCROP protection not active on sector i.</p>
+          <p>1: PCROP protection active on sector i.</p>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">Option bytes (word, address 0x1FFE C000)</td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 15:0</td>
+        <td class="tl">0xFFFF: not used</td>
+      </tr>
+      <tr>
+        <td class="tl">Bit 15:12</td>
+        <td class="tl">0xF: not used</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="tl"><b>nWRP</b>: Flash memory write protection option bytes for bank 2. Sectors 12 to 23 can be write <br/>protected.</td>
+      </tr>
+      <tr>
+        <td class="tl">Bits 11: 0</td>
+        <td class="tl">
+          <p>nWRPi:</p>
+          <p>If SPRMOD is reset (default value):</p>
+          <p>0: Write protection active on sector i.</p>
+          <p>1: Write protection not active on sector i.</p>
+          <p>If SPRMOD is set (active):</p>
+          <p>0: PCROP protection not active on sector i.</p>
+          <p>1: PCROP protection active on sector i.</p>
+        </td>
+      </tr>
+    </table>
+    <h4 id="section3.7.2">3.7.2 Programming user option bytes</h4>
+    <p>To run any operation on this sector, the option lock bit (OPTLOCK) in the Flash option <br/>control register (FLASH_OPTCR) must be cleared. To be allowed to clear this bit, you have <br/>to perform the following sequence:</p>
+    <ol>
+      <li value="1">Write OPTKEY1 = 0x0819 2A3B in the Flash option key register (FLASH_OPTKEYR)</li>
+      <li value="2">Write OPTKEY2 = 0x4C5D 6E7F in the Flash option key register (FLASH_OPTKEYR)</li>
+    </ol>
+    <p>The user option bytes can be protected against unwanted erase/program operations by <br/>setting the OPTLOCK bit by software.</p>
+    <p>
+      <b>Modifying user option bytes on STM32F405xx/07xx and STM32F415xx/17xx</b>
+    </p>
+    <p>To modify the user option value, follow the sequence below:</p>
+    <ol>
+      <li value="1">Check that no Flash memory operation is ongoing by checking the BSY bit in the <br/>FLASH_SR register</li>
+      <li value="2">Write the desired option value in the FLASH_OPTCR register.</li>
+      <li value="3">Set the option start bit (OPTSTRT) in the FLASH_OPTCR register</li>
+      <li value="4">Wait for the BSY bit to be cleared.</li>
+    </ol>
+    <div class="nt">
+      <p>
+        <i>Note: The value of an option is automatically modified by first erasing the user configuration sector </i>
+        <br/>
+        <i>and then programming all the option bytes with the values contained in the FLASH_OPTCR </i>
+        <br/>
+        <i>register.</i>
+      </p>
+    </div>
+    <p>
+      <b>Modifying user option bytes on STM32F42xxx and STM32F43xxx</b>
+    </p>
+    <p>The user option bytes for bank 1 and bank 2 cannot be modified independently. They must <br/>be updated concurrently.</p>
+    <p>To modify the user option byte value, follow the sequence below:</p>
+    <ol>
+      <li value="1">Check that no Flash memory operation is ongoing by checking the BSY bit in the <br/>FLASH_SR register</li>
+      <li value="2">Write the bank 2 option byte value in the FLASH_OPTCR1 register</li>
+      <li value="3">Write the bank 1 option byte value in the FLASH_OPTCR register.</li>
+      <li value="4">Set the option start bit (OPTSTRT) in the FLASH_OPTCR register</li>
+      <li value="5">Wait for the BSY bit to be cleared</li>
+    </ol>
+    <div class="nt">
+      <p id="page93">
+        <i>Note: The value of an option byte is automatically modified by first erasing the user configuration </i>
+        <br/>
+        <i>sector (bank 1 and 2) and then programming all the option bytes with the values contained </i>
+        <br/>
+        <i>in the FLASH_OPTCR and FLASH_OPTCR1 registers.</i>
+      </p>
+    </div>
+    <h4 id="section3.7.3">3.7.3 Read protection (RDP)</h4>
+    <p>The user area in the Flash memory can be protected against read operations by an <br/>entrusted code. Three read protection levels are defined:</p>
+    <ul>
+      <li>
+        <p>Level 0: no read protection</p>
+        <p>When the read protection level is set to Level 0 by writing 0xAA into the read protection <br/>option byte (RDP), all read/write operations (if no write protection is set) from/to the <br/>Flash memory or the backup SRAM are possible in all boot configurations (Flash user <br/>boot, debug or boot from RAM).</p>
+      </li>
+      <li>
+        <p>Level 1: read protection enabled</p>
+        <p>It is the default read protection level after option byte erase. The read protection Level <br/>1 is activated by writing any value (except for 0xAA and 0xCC used to set Level 0 and <br/>Level 2, respectively) into the RDP option byte. When the read protection Level 1 is set:</p>
+        <ul>
+          <li>No access (read, erase, program) to Flash memory or backup SRAM can be <br/>performed while the debug feature is connected or while booting from RAM or <br/>system memory bootloader. A bus error is generated in case of read request.</li>
+          <li>When booting from Flash memory, accesses (read, erase, program) to Flash <br/>memory and backup SRAM from user code are allowed.</li>
+        </ul>
+        <p>When Level 1 is active, programming the protection option byte (RDP) to Level 0 <br/>causes the Flash memory and the backup SRAM to be mass-erased. As a result the <br/>user code area is cleared before the read protection is removed. The mass erase only <br/>erases the user code area. The other option bytes including write protections remain <br/>unchanged from before the mass-erase operation. The OTP area is not affected by <br/>mass erase and remains unchanged. Mass erase is performed only when Level 1 is <br/>active and Level 0 requested. When the protection level is increased (0-&gt;1, 1-&gt;2, 0-&gt;2) <br/>there is no mass erase.</p>
+      </li>
+      <li>
+        <p>Level 2: debug/chip read protection disabled</p>
+        <p>The read protection Level 2 is activated by writing 0xCC to the RDP option byte. When <br/>the read protection Level 2 is set:</p>
+        <ul>
+          <li>All protections provided by Level 1 are active.</li>
+          <li>Booting from RAM or system memory bootloader is no more allowed.</li>
+          <li>JTAG, SWV (single-wire viewer), ETM, and boundary scan are disabled.</li>
+          <li>User option bytes can no longer be changed.</li>
+          <li>When booting from Flash memory, accesses (read, erase and program) to Flash <br/>memory and backup SRAM from user code are allowed.</li>
+        </ul>
+        <p>Memory read protection Level 2 is an irreversible operation. When Level 2 is activated, <br/>the level of protection cannot be decreased to Level 0 or Level 1.</p>
+      </li>
+    </ul>
+    <div class="nt">
+      <p>
+        <i>Note: The JTAG port is permanently disabled when Level 2 is active (acting as a JTAG fuse). As a </i>
+        <br/>
+        <i>consequence, boundary scan cannot be performed. STMicroelectronics is not able to </i>
+        <br/>
+        <i>perform analysis on defective parts on which the Level 2 protection has been set.</i>
+      </p>
+    </div>
+  </body>
+</html>

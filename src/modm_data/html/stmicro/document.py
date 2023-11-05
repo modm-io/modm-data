@@ -5,7 +5,8 @@ import json
 from collections import defaultdict
 from ...html import Document
 from ...utils import cache_path, ext_path
-from .datasheet import DatasheetMicro, DatasheetSensor
+from .datasheet_stm32 import DatasheetStm32
+from .datasheet_sensor import DatasheetSensor
 from .reference import ReferenceManual
 from ...owl import DeviceIdentifier
 from ...owl.stmicro import did_from_string
@@ -27,7 +28,7 @@ def load_documents() -> list:
             # FIXME: Better detection that DS13252 is a STM32WB55 module, not a chip!
             if any("STM32" in h.html for h in chap[0].headings()) and \
                 "DS13252" not in doc.name and "DS14096" not in doc.name:
-                documents[doc.name][doc.version] = DatasheetMicro(path)
+                documents[doc.name][doc.version] = DatasheetStm32(path)
             else:
                 documents[doc.name][doc.version] = DatasheetSensor(path)
         elif "RM" in doc.name:
@@ -35,7 +36,7 @@ def load_documents() -> list:
     return documents
 
 
-def load_document_devices(use_cached=True) -> tuple[dict[DeviceIdentifier, DatasheetMicro],
+def load_document_devices(use_cached=True) -> tuple[dict[DeviceIdentifier, DatasheetStm32],
                                                     dict[DeviceIdentifier, ReferenceManual]]:
     global DOCUMENT_CACHE
     if DOCUMENT_CACHE is not None:
@@ -48,7 +49,7 @@ def load_document_devices(use_cached=True) -> tuple[dict[DeviceIdentifier, Datas
 
         docs = {}
         for path in set(json_data["ds"].values()):
-            docs[path] = DatasheetMicro(path)
+            docs[path] = DatasheetStm32(path)
         for path in set(json_data["rm"].values()):
             docs[path] = ReferenceManual(path)
         datasheets = {did_from_string(did): docs[path]
@@ -63,7 +64,7 @@ def load_document_devices(use_cached=True) -> tuple[dict[DeviceIdentifier, Datas
             doc = list(versions.values())[-1]
             # print(doc.path_pdf.relative_to(Path().cwd()), doc.path.relative_to(Path().cwd()))
             # print(doc.devices)
-            if isinstance(doc, DatasheetMicro):
+            if isinstance(doc, DatasheetStm32):
                 if not doc.devices:
                     raise ValueError(f"{doc} has no associated devices!")
                 for dev in doc.devices:
@@ -120,7 +121,7 @@ def _document_for_device(did: DeviceIdentifier, documents):
     return None
 
 
-def datasheet_for_device(did: DeviceIdentifier) -> DatasheetMicro:
+def datasheet_for_device(did: DeviceIdentifier) -> DatasheetStm32:
     datasheets, _ = load_document_devices()
     return _document_for_device(did, datasheets)
 

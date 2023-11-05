@@ -5,112 +5,10 @@ import logging
 import statistics
 from functools import cached_property
 from collections import defaultdict
-from ...utils import HLine, VLine, Rectangle
+from ..utils import HLine, VLine, Rectangle
+from .cell import TableCell
 
 LOGGER = logging.getLogger(__name__)
-
-
-class TableCell:
-    class Borders:
-        def __init__(self, l, b, r, t):
-            self.l = l
-            self.b = b
-            self.r = r
-            self.t = t
-
-    def __init__(self, table, position, bbox, borders, is_simple=False):
-        self._table = table
-        self._bboxes = [bbox]
-        self.b = borders
-        self.positions = [position]
-        self.is_header = False
-        self._is_simple = is_simple
-        self._bbox = None
-        self._lines = None
-
-    def _merge(self, other):
-        self.positions.extend(other.positions)
-        self.positions.sort()
-        self._bboxes.append(other.bbox)
-        self._bbox = None
-        self._lines = None
-
-    def _move(self, x, y):
-        self.positions = [(py + y, px + x) for (py, px) in self.positions]
-        self.positions.sort()
-
-    def _expand(self, dx, dy):
-        ymax, xmax = self.positions[-1]
-        for yi in range(ymax, ymax + dy + 1):
-            for xi in range(xmax, xmax + dx + 1):
-                self.positions.append((yi, xi))
-        self.positions.sort()
-
-    @property
-    def x(self) -> int:
-        return self.positions[0][1]
-
-    @property
-    def y(self) -> int:
-        return self.positions[0][0]
-
-    @property
-    def xspan(self) -> int:
-        return self.positions[-1][1] - self.positions[0][1] + 1
-
-    @property
-    def yspan(self) -> int:
-        return self.positions[-1][0] - self.positions[0][0] + 1
-
-    @property
-    def rotation(self) -> int:
-        if not self.lines: return 0
-        return self.lines[0].rotation
-
-    @property
-    def bbox(self) -> Rectangle:
-        if self._bbox is None:
-            self._bbox = Rectangle(min(bbox.left   for bbox in self._bboxes),
-                                   min(bbox.bottom for bbox in self._bboxes),
-                                   max(bbox.right  for bbox in self._bboxes),
-                                   max(bbox.top    for bbox in self._bboxes))
-        return self._bbox
-
-    @property
-    def lines(self):
-        if self._lines is None:
-            self._lines = self._table._page._charlines_filtered(self.bbox)
-        return self._lines
-
-    @property
-    def content(self):
-        return "".join(c.char for line in self.lines for c in line.chars)
-
-    @property
-    def left_aligned(self):
-        x_em = self._table._page._spacing["x_em"]
-        for line in self.lines:
-            if (line.bbox.left - self.bbox.left + x_em) < (self.bbox.right - line.bbox.right):
-                return True
-        return False
-
-    @property
-    def ast(self):
-        ast = self._table._page._ast_filtered(self.bbox, with_graphics=False,
-                                              ignore_xpos=not self.left_aligned,
-                                              with_bits=False, with_notes=False)
-        ast.name = "cell"
-        return ast
-
-    def __repr__(self) -> str:
-        positions = ",".join(f"({p[1]},{p[0]})" for p in self.positions)
-        borders = ""
-        if self.b.l: borders += "["
-        if self.b.b: borders += "_"
-        if self.b.t: borders += "^"
-        if self.b.r: borders += "]"
-        start = "CellH" if self.is_header else "Cell"
-        return start + f"[{positions}] {borders}"
 
 
 class Table:
@@ -143,7 +41,7 @@ class Table:
 
             # Find the positions of the top numbers
             clusters = []
-            if lines := self._page._charlines_filtered(cbbox):
+            if lines := self._page.charlines_in_area(cbbox):
                 if len(cluster := lines[0].clusters(self._page._spacing["x_em"] / 2)):
                     clusters.append((cluster, cbbox))
                 else:
@@ -155,7 +53,7 @@ class Table:
                 for yi, (ypos0, ypos1) in enumerate(zip(sorted(ygrid), sorted(ygrid)[1:])):
                     nbbox = Rectangle(self.bbox.left, ygrid[ypos0][0].p0.y,
                                       self.bbox.right, ygrid[ypos1][0].p0.y)
-                    if lines := self._page._charlines_filtered(nbbox):
+                    if lines := self._page.charlines_in_area(nbbox):
                         if all(c.char.isnumeric() or c.unicode in {0x20, 0xa, 0xd} for c in lines[0].chars):
                             if not len(cluster := lines[0].clusters(self._page._spacing["x_em"] / 2)) % 16:
                                 clusters.append((cluster, nbbox))
@@ -444,6 +342,7 @@ class Table:
                     assert new_positions
                     assert len(new_positions) == len(set(new_positions))
                     cell.positions = sorted(new_positions)
+                    cell._invalidate()
 
                 def _move_cells(cells, own_xpos):
                     if debug:
