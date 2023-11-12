@@ -59,16 +59,16 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: modm-ext/archive-stmicro-html
-          path: ext/stmicro/html
+          path: ext/stmicro/html-archive
           ssh-key: ${{ secrets.SSH_KEY_STMICRO_HTML }}
           persist-credentials: true
 
       - name: Update HTML Archive
         run: |
-          cat new_pdfs.txt | xargs -I {} echo ext/stmicro/html/{} | xargs make -j3
+          cat new_pdfs.txt | xargs -I {} echo ext/stmicro/html-archive/{} | xargs make -j3
 
       - name: Git push HTML Archive
-        working-directory: ext/stmicro/html
+        working-directory: ext/stmicro/html-archive
         run: |
           git add .
           git commit -m "Update HTMLs" || true

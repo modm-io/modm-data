@@ -14,22 +14,26 @@ ext/stmicro/cubehal/:
 ext/stmicro/header/:
 	@git clone --depth=1 git@github.com:modm-io/cmsis-header-stm32.git $@
 
-ext/stmicro/owl/:
+ext/stmicro/svd/:
+	@git clone --depth=1 git@github.com:modm-io/cmsis-svd-stm32.git $@
+
+ext/stmicro/owl-archive/:
 	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-owl.git $@
 
-ext/stmicro/svd/:
+ext/stmicro/svd-archive/:
 	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-svd.git $@
 
 .PHONY: clone-sources-stmicro
 clone-sources-stmicro: clone-sources-arm ext/stmicro/cubehal/ ext/stmicro/header/ \
-					   ext/stmicro/owl/ ext/stmicro/svd/
+					   ext/stmicro/svd/ ext/stmicro/owl-archive/ ext/stmicro/svd-archive/
 
 .PHONY: update-sources-stmicro
 update-sources-stmicro: update-sources-arm
 	@(cd ext/stmicro/cubehal && git pull) &
 	@(cd ext/stmicro/header && git pull) &
-	@(cd ext/stmicro/owl && git pull) &
 	@(cd ext/stmicro/svd && git pull) &
+	@(cd ext/stmicro/owl-archive && git pull) &
+	@(cd ext/stmicro/svd-archive && git pull) &
 	@wait
 
 
@@ -48,7 +52,7 @@ ext/stmicro/cubemx/:
 		   "     Please download the database via 'make download-stmicro-cubemx'."
 	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-cubemx.git $@
 
-ext/stmicro/html/:
+ext/stmicro/html-archive/:
 	@echo "Note: Sadly the STMicro HTML archive is private due to copyright.\n" \
 		   "     Please convert the HTMLs via 'make convert-stmicro-html'."
 	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-html.git $@
@@ -60,22 +64,22 @@ ext/stmicro/pdf/:
 
 .PHONY: clone-sources-stmicro-private
 clone-sources-stmicro-private: clone-sources-stmicro ext/stmicro/cubemx/ \
-							   ext/stmicro/pdf/ ext/stmicro/html/
+							   ext/stmicro/pdf/ ext/stmicro/html-archive/
 
 .PHONY: update-sources-stmicro-private
 update-sources-stmicro-private: update-sources-stmicro
 	@(cd ext/stmicro/cubemx && git pull) &
-	@(cd ext/stmicro/html && git pull) &
+	@(cd ext/stmicro/html-archive && git pull) &
 	@(cd ext/stmicro/pdf && git pull) &
 	@wait
 
 
 # ========================== Converting PDF to HTML ===========================
-ext/stmicro/html/%: ext/stmicro/pdf/%.pdf log/stmicro/html/
-	@echo "Converting" $< "->" $@ "+" $(@:ext/stmicro/html/%=log/stmicro/html/%.txt)
+ext/stmicro/html-archive/%: ext/stmicro/pdf/%.pdf log/stmicro/html/
+	@echo "Converting" $< "->" $@ "+" $(@:ext/stmicro/html-archive/%=log/stmicro/html/%.txt)
 	@-python3 -m modm_data.pdf2html.stmicro --document $< --output $@ --html --parallel
 
-stmicro_pdf2html = $(sort $(1:ext/stmicro/pdf/%.pdf=ext/stmicro/html/%))
+stmicro_pdf2html = $(sort $(1:ext/stmicro/pdf/%.pdf=ext/stmicro/html-archive/%))
 .PHONY: convert-stmicro-html-rm
 convert-stmicro-html-rm: $(stmicro_pdf2html $(wildcard ext/stmicro/pdf/RM*.pdf))
 
@@ -84,11 +88,11 @@ convert-stmicro-html-ds: $(stmicro_pdf2html $(wildcard ext/stmicro/pdf/DS*.pdf))
 
 .PHONY: clean-stmicro-html-%
 clean-stmicro-html-%:
-	@rm -rf $(wildcard $(@:clean-stmicro-html-%=ext/stmicro/html/%*-v*))
+	@rm -rf $(wildcard $(@:clean-stmicro-html-%=ext/stmicro/html-archive/%*-v*))
 
 .PHONY: clean-stmicro-html
 clean-stmicro-html:
-	@rm -rf $(wildcard ext/stmicro/html/*-v*)
+	@rm -rf $(wildcard ext/stmicro/html-archive/*-v*)
 
 .PHONY: convert-stmicro-html
 convert-stmicro-html: convert-stmicro-html-ds convert-stmicro-html-rm
@@ -105,38 +109,38 @@ convert-stmicro-cube-owl: convert-stmicro-cube-owl-f4
 
 .PHONY: clean-stmicro-cube-owl
 clean-stmicro-cube-owl:
-	@rm -f $(wildcard ext/stmicro/owl/cube_*.owl)
+	@rm -f $(wildcard ext/stmicro/owl-archive/cube_*.owl)
 
 
 # ========================== Converting HTML to OWL ===========================
-ext/stmicro/owl/html_%.owl: ext/stmicro/html/% log/stmicro/owl/
-	@echo "Converting" $< "->" $@ "+" $(@:ext/stmicro/owl/%.owl=log/stmicro/owl/html_%.txt)
+ext/stmicro/owl-archive/html_%.owl: ext/stmicro/html-archive/% log/stmicro/owl/
+	@echo "Converting" $< "->" $@ "+" $(@:ext/stmicro/owl-archive/%.owl=log/stmicro/owl/html_%.txt)
 	@-python3 -m modm_data.html2owl.stmicro --document $< > \
-			$(@:ext/stmicro/owl/%.owl=log/stmicro/owl/html_%.txt) 2>&1
+			$(@:ext/stmicro/owl-archive/%.owl=log/stmicro/owl/html_%.txt) 2>&1
 
 .PHONY: convert-stmicro-html-owl
-convert-stmicro-html-owl: ext/stmicro/owl/ log/stmicro/owl/
+convert-stmicro-html-owl: ext/stmicro/owl-archive/ log/stmicro/owl/
 	@echo "Converting all HTML Files to OWL Graphs."
 	@-python3 -m modm_data.html2owl.stmicro --all
 
 .PHONY: clean-stmicro-html-owl
 clean-stmicro-html-owl:
-	@rm -f $(wildcard ext/stmicro/owl/html_*.owl)
+	@rm -f $(wildcard ext/stmicro/owl-archive/html_*.owl)
 
 
 # ========================== Converting HTML to SVD ===========================
 .PHONY: convert-stmicro-html-svd-%
-convert-stmicro-html-svd-%: log/stmicro/svd/ ext/stmicro/svd/ ext/arm/cmsis
+convert-stmicro-html-svd-%: log/stmicro/svd/ ext/stmicro/svd-archive/ ext/arm/cmsis
 	@python3 -m modm_data.html2svd.stmicro --document $(@:convert-stmicro-html-svd-%=%)
 
 .PHONY: convert-stmicro-html-svd
-convert-stmicro-html-svd: ext/stmicro/html/
+convert-stmicro-html-svd: ext/stmicro/html-archive/
 	@echo "Converting all HTML Files to SVD."
 	@-python3 -m modm_data.html2svd.stmicro --all
 
 .PHONY: clean-stmicro-html-svd
 clean-stmicro-html-svd:
-	@rm -f $(wildcard ext/stmicro/svd/html_*.svd)
+	@rm -f $(wildcard ext/stmicro/svd-archive/html_*.svd)
 
 
 # ========================= Converting Header to SVD ==========================
@@ -157,4 +161,4 @@ convert-stmicro-header-svd: ext/stmicro/header/ ext/arm/cmsis/
 
 .PHONY: clean-stmicro-header-svd
 clean-stmicro-header-svd:
-	@rm -f $(wildcard ext/stmicro/svd/header_*.svd)
+	@rm -f $(wildcard ext/stmicro/svd-archive/header_*.svd)
