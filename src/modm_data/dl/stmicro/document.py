@@ -87,7 +87,7 @@ _json_short_urls = {
     # Technical docs for STMicro sensors
     "sensors": [
         "mems-and-sensors/accelerometers.cxst-rs-grid.html/SC444",
-        "mems-and-sensors/automotive-sensors.cxst-rs-grid.html/SC1946",
+        # "mems-and-sensors/automotive-sensors.cxst-rs-grid.html/SC1946",
         "mems-and-sensors/e-compasses.cxst-rs-grid.html/SC1449",
         "mems-and-sensors/gyroscopes.cxst-rs-grid.html/SC1288",
         "mems-and-sensors/humidity-sensors.cxst-rs-grid.html/SC1718",
