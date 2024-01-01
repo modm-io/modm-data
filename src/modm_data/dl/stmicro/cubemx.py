@@ -11,6 +11,7 @@ import os
 import random
 import time
 import logging
+import subprocess
 
 from pathlib import Path
 
@@ -18,6 +19,19 @@ from ...utils import pkg_apply_patch
 from ..store import _hdr
 
 LOGGER = logging.getLogger(__name__)
+
+_hdr = {
+    'Accept': '*',
+    'Accept-Encoding': '*',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+    'Accept-Language': 'en-GB,en;q=0.9',
+    'Connection': 'keep-alive',
+}
+
+
+def _dl(url):
+    cmd = f"curl '{url}' -L -s --max-time 120 -o - " + " ".join(f"-H '{k}: {v}'" for k,v in _hdr.items())
+    return subprocess.run(cmd, shell=True, stdout=subprocess.PIPE).stdout
 
 
 def download_cubemx(extraction_path: Path, with_download: bool = True, with_patch: bool = True) -> bool:
@@ -30,19 +44,18 @@ def download_cubemx(extraction_path: Path, with_download: bool = True, with_patc
 
     if with_download:
         LOGGER.info("Downloading Update Info...")
-        try:
-            urllib.request.urlopen(urllib.request.Request(update_url, headers=_hdr))
-        except:
-            update_url = update_url2
-            cube_url = cube_url2
-        LOGGER.debug(update_url)
-        time.sleep(random.randrange(0,2))
+        # try:
+        #     urllib.request.urlopen(urllib.request.Request(update_url, headers=_hdr))
+        # except:
+        #     update_url = update_url2
+        #     cube_url = cube_url2
+        # LOGGER.debug(update_url)
+        # time.sleep(random.randrange(0,2))
 
-        with urllib.request.urlopen(urllib.request.Request(update_url, headers=_hdr)) as content:
-            z = zipfile.ZipFile(io.BytesIO(content.read()))
-            with io.TextIOWrapper(z.open("STMUpdaterDefinitions.xml"), encoding="utf-8") as defs:
-                version = re.search(r'Release="MX\.(.*?)"', defs.read())
-                version = version.group(1).replace(".", "")
+        z = zipfile.ZipFile(io.BytesIO(_dl(update_url)))
+        with io.TextIOWrapper(z.open("STMUpdaterDefinitions.xml"), encoding="utf-8") as defs:
+            version = re.search(r'Release="MX\.(.*?)"', defs.read())
+            version = version.group(1).replace(".", "")
 
         shutil.rmtree(extraction_path / "mcu", ignore_errors=True)
         shutil.rmtree(extraction_path / "plugins", ignore_errors=True)
@@ -51,12 +64,12 @@ def download_cubemx(extraction_path: Path, with_download: bool = True, with_patc
         LOGGER.info("Downloading Database...")
         LOGGER.debug(cube_url.format(version))
         time.sleep(random.randrange(1,6))
-        with urllib.request.urlopen(urllib.request.Request(cube_url.format(version), headers=_hdr)) as content:
-            z = zipfile.ZipFile(io.BytesIO(content.read()))
-            LOGGER.info("Extracting Database...")
-            for file in z.namelist():
-                if any(file.startswith(prefix) for prefix in ("MX/db/mcu", "MX/db/plugins")):
-                    z.extract(file, extraction_path)
+
+        z = zipfile.ZipFile(io.BytesIO(_dl(cube_url.format(version))))
+        LOGGER.info("Extracting Database...")
+        for file in z.namelist():
+            if any(file.startswith(prefix) for prefix in ("MX/db/mcu", "MX/db/plugins")):
+                z.extract(file, extraction_path)
 
         LOGGER.info("Moving Database...")
         shutil.move(extraction_path / "MX/db/mcu", extraction_path / "mcu")

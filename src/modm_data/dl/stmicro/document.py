@@ -90,7 +90,7 @@ _json_short_urls = {
         # "mems-and-sensors/automotive-sensors.cxst-rs-grid.html/SC1946",
         "mems-and-sensors/e-compasses.cxst-rs-grid.html/SC1449",
         "mems-and-sensors/gyroscopes.cxst-rs-grid.html/SC1288",
-        "mems-and-sensors/humidity-sensors.cxst-rs-grid.html/SC1718",
+        # "mems-and-sensors/humidity-sensors.cxst-rs-grid.html/SC1718",
         "mems-and-sensors/inemo-inertial-modules.cxst-rs-grid.html/SC1448",
         "mems-and-sensors/mems-microphones.cxst-rs-grid.html/SC1922",
         "mems-and-sensors/pressure-sensors.cxst-rs-grid.html/SC1316",
