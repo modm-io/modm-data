@@ -72,38 +72,42 @@ class Document:
 _json_short_urls = {
     # Technical docs for STM32 microcontrollers
     "stm32": [
-        "microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus.cxst-rs-grid.html/CL1734",
-        "microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus/stm32-high-performance-mcus.cxst-rs-grid.html/SC2154",
-        "microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus/stm32-mainstream-mcus.cxst-rs-grid.html/SC2155",
-        "microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus/stm32-ultra-low-power-mcus.cxst-rs-grid.html/SC2157",
-        "microcontrollers-microprocessors/stm32-32-bit-arm-cortex-mcus/stm32-wireless-mcus.cxst-rs-grid.html/SC2156",
+        "CL1734",
+        "SC2154",
+        "SC2155",
+        "SC2157",
+        "SC2156",
     ],
     # Technical docs for STM32 development boards
     "boards": [
-        "evaluation-tools/product-evaluation-tools/mcu-mpu-eval-tools/stm32-mcu-mpu-eval-tools/stm32-nucleo-boards.cxst-rs-grid.html/LN1847",
-        "evaluation-tools/product-evaluation-tools/mcu-mpu-eval-tools/stm32-mcu-mpu-eval-tools/stm32-discovery-kits.cxst-rs-grid.html/LN1848",
-        "evaluation-tools/product-evaluation-tools/mcu-mpu-eval-tools/stm32-mcu-mpu-eval-tools/stm32-eval-boards.cxst-rs-grid.html/LN1199",
+        "LN1847",
+        "LN1848",
+        "LN1199",
     ],
     # Technical docs for STMicro sensors
     "sensors": [
-        "mems-and-sensors/accelerometers.cxst-rs-grid.html/SC444",
-        # "mems-and-sensors/automotive-sensors.cxst-rs-grid.html/SC1946",
-        "mems-and-sensors/e-compasses.cxst-rs-grid.html/SC1449",
-        "mems-and-sensors/gyroscopes.cxst-rs-grid.html/SC1288",
-        # "mems-and-sensors/humidity-sensors.cxst-rs-grid.html/SC1718",
-        "mems-and-sensors/inemo-inertial-modules.cxst-rs-grid.html/SC1448",
-        "mems-and-sensors/mems-microphones.cxst-rs-grid.html/SC1922",
-        "mems-and-sensors/pressure-sensors.cxst-rs-grid.html/SC1316",
-        "mems-and-sensors/temperature-sensors.cxst-rs-grid.html/SC294",
+        "SC444",
+        #SC1946",
+        "SC1449",
+        "SC1288",
+        #SC1718",
+        "SC1448",
+        "SC1922",
+        "SC1316",
+        "SC294",
     ],
     # Technical docs for STMicro data converters
     "converters": [
-        "data-converters/a-d-d-a-converters.cxst-rs-grid.html/SC47",
-        "data-converters/isolated-adcs.cxst-rs-grid.html/SC2514",
-        "data-converters/metering-ics.cxst-rs-grid.html/SC397",
+        "SC47",
+        "SC2514",
+        "SC397",
+    ],
+    # Technical docs for STMicro hardware debug tools
+    "debug": [
+        "SC2330"
     ]
 }
-_json_url_prefix = "https://www.st.com/content/st_com/en/products/"
+_json_url_prefix = "https://www.st.com/bin/st/selectors/cxst/en.cxst-rs-grid.html/"
 _json_url_suffix = ".technical_literature.json"
 
 _json_urls = {key: [_json_url_prefix + url + _json_url_suffix for url in urls]
