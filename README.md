@@ -57,14 +57,16 @@ flowchart LR
     C(Python) -->|owl| E
     D(CMSIS-SVD) -->|cmsis-svd| C
     E[OWL]
-    F(CMSIS\nHeader) -->|header2svd| D
+    F(CMSIS Header) -->|header2svd| D
+    I(Open Pin Data) -->|cubemx| C
     G(CubeMX) -->|cubemx| C
     H(CubeHAL) -->|cubehal| C
     J -->|dl| A
     J -->|dl| F
     J -->|dl| G
     J -->|dl| H
-    J[Vendor] -->|dl| D
+    J -->|dl| I
+    J[STMicro] -->|dl| D
 ```
 <!--/pipelines-->
 
@@ -87,23 +89,23 @@ pdoc --mermaid modm_data
 ```
 
 <!--inputsources-->
+This project uses only publicly available data sources, choosing permissive
+licenses whenever possible:
+
+- [STM32 CMSIS header files](https://github.com/modm-io/cmsis-header-stm32): BSD-3-Clause.
+- [STM32 Open Pin Data](https://github.com/STMicroelectronics/STM32_open_pin_data): BSD-3-Clause.
+- [STM32 CMSIS-SVD files](https://github.com/modm-io/cmsis-svd-stm32): Apache-2.0.
+- STMicro CubeMX database: ST SLA.
+- STMicro PDF technical documentation: ST SLA.
+
 You can download all input sources via `make input-sources`. Please note that it
 may take a while to download ~10GB of data, mostly PDF technical documentation.
-
-This project uses only publicly available data sources which we have aggregated
-in several GitHub repositories. However, since the copyright of some sources
-prohibits republication, these sources are downloaded from the vendor websites
-directly:
-
-- STMicro CubeMX database.
-- STMicro PDF technical documentation.
-
 <!--/inputsources--><!--/webignore-->
 
 ## Citation
 
-This project is a further development of a [peer-reviewed paper published in
-the in the Journal of Systems Research (JSys)](http://dx.doi.org/10.5070/SR33162446).
+This project is a further development of a [peer-reviewed paper published in the
+Journal of Systems Research (JSys)](http://dx.doi.org/10.5070/SR33162446).
 Please cite this paper when referring to this project:
 
 ```bib

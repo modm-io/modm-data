@@ -37,7 +37,7 @@ jobs:
 
       - name: Build Homepage
         run: |
-          make build-docs
+          make build-homepage
 
       - name: Push New Docs to Github
         run: |

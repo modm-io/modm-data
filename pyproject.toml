@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=41", "wheel", "setuptools-git-versioning<2"]
+requires = ["setuptools>=65", "wheel", "setuptools-git-versioning<2"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -26,25 +26,29 @@ classifiers = [
     "Topic :: Software Development :: Embedded Systems",
 ]
 dependencies = [
-    "anytree==2.8.0",
-    "CppHeaderParser",
-    "jinja2",
-    "lxml",
-    "owlready2==0.43",
-    "pypdfium2>=4.18.0,<5",
-    "tqdm",
+    "anytree==2.12.1",
+    "CppHeaderParser>=2.7.4,<3",
+    "jinja2>=3.1.3,<4",
+    "lxml>=5.2.0,<6",
+    "owlready2==0.45",
+    "pypdfium2>=4.28.0,<5",
+    "tqdm>=4.66.2,<5",
 ]
 dynamic = ["version"]
 
 [project.urls]
 "Homepage" = "https://data.modm.io"
+"API Docs" = "https://data.modm.io/api"
 "GitHub" = "https://github.com/modm-io/modm-data"
 "Changelog" = "https://github.com/modm-io/modm-data/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-docs = ["pdoc", "mkdocs", "mkdocs-material"]
-test = ["pytest"]
-all = ["modm_data[docs,test]"]
+docs = [
+    "pdoc>=14,<15",
+    "mkdocs>=1.5,<2",
+    "mkdocs-material>=9.5,<10"
+]
+all = ["modm_data[docs]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -58,5 +62,4 @@ modm_data = ["*.md", "*/*.md", "*/*/*.md", "*/*/*/*.md"]
 # zip-safe = false
 
 [tool.setuptools-git-versioning]
-enabled = true
 version_file = "VERSION"
