@@ -32,7 +32,8 @@ class Page(pp.PdfPage):
     It also fixes missing bounding boxes for rotates characters on page load,
     as well as allow searching for characters in an area instead of just text.
     """
-    def __init__(self, document: "modm_data.pdf.Document", index: int):
+
+    def __init__(self, document: "modm_data.pdf.Document", index: int):  # noqa: F821
         """
         :param document: a PDF document.
         :param index: 0-index page number.
@@ -162,8 +163,7 @@ class Page(pp.PdfPage):
         :param case_sensitive: Ignore case if false.
         :return: yields the characters found.
         """
-        searcher = self._text.search(string, match_case=case_sensitive,
-                                      match_whole_word=True, consecutive=True)
+        searcher = self._text.search(string, match_case=case_sensitive, match_whole_word=True, consecutive=True)
         while idx := searcher.get_next():
             chars = [self.char(ii) for ii in range(idx[0], idx[0] + idx[1])]
             yield chars
@@ -178,8 +178,9 @@ class Page(pp.PdfPage):
         """All images."""
         return [Image(o) for o in self.get_objects([pp.raw.FPDF_PAGEOBJ_IMAGE])]
 
-    def graphic_clusters(self, predicate: Callable[[Path | Image], bool] = None,
-                         absolute_tolerance: float = None) -> list[tuple[Rectangle, list[Path]]]:
+    def graphic_clusters(
+        self, predicate: Callable[[Path | Image], bool] = None, absolute_tolerance: float = None
+    ) -> list[tuple[Rectangle, list[Path]]]:
         if absolute_tolerance is None:
             absolute_tolerance = min(self.width, self.height) * 0.01
 
@@ -193,7 +194,7 @@ class Page(pp.PdfPage):
                 filtered_paths.append(image)
 
         regions = []
-        for path in sorted(filtered_paths, key=lambda l: l.bbox.y):
+        for path in sorted(filtered_paths, key=lambda path: path.bbox.y):
             for reg in regions:
                 if reg.overlaps(path.bbox.bottom, path.bbox.top, absolute_tolerance):
                     # They overlap, so merge them
@@ -206,7 +207,7 @@ class Page(pp.PdfPage):
 
         # Now collect horizontal region inside each vertical region
         for yreg in regions:
-            for path in sorted(filtered_paths, key=lambda l: l.bbox.x):
+            for path in sorted(filtered_paths, key=lambda path: path.bbox.x):
                 # check if horizontal line is contained in vregion
                 if yreg.contains(path.bbox.y, absolute_tolerance):
                     for xreg in yreg.subregions:
@@ -234,7 +235,6 @@ class Page(pp.PdfPage):
                 clusters.append((bbox, xreg.objs))
 
         return sorted(clusters, key=lambda c: (-c[0].y, c[0].x))
-
 
     def _link_characters(self):
         if self._linked:
@@ -267,15 +267,15 @@ class Page(pp.PdfPage):
             height = round(char.tbbox.height, 1)
             width = round(char.tbbox.width, 1)
             return f"{char.font} {char.unicode} {height} {width}"
+
         fix_chars = []
         for char in self.chars:
             if not char._bbox.width or not char._bbox.height:
                 if char._rotation:
                     fix_chars.append(char)
-                elif char.unicode not in {0xa, 0xd}:
+                elif char.unicode not in {0xA, 0xD}:
                     fix_chars.append(char)
-            elif (char.unicode not in {0xa, 0xd} and not char._rotation and
-                  _key(char) not in self.pdf._bbox_cache):
+            elif char.unicode not in {0xA, 0xD} and not char._rotation and _key(char) not in self.pdf._bbox_cache:
                 bbox = char._bbox.translated(-char.origin).rotated(self.rotation + char._rotation)
                 self.pdf._bbox_cache[_key(char)] = (char, bbox)
                 # print("->", _key(char), char.descr(), char.height, char.rotation, char._rotation, self.rotation)
@@ -286,5 +286,5 @@ class Page(pp.PdfPage):
                 _, bbox = bbox
                 bbox = bbox.rotated(-self.rotation - char._rotation).translated(char.origin)
                 char._bbox = bbox
-            elif char.unicode not in {0x20, 0xa, 0xd}:
+            elif char.unicode not in {0x20, 0xA, 0xD}:
                 _LOGGER.debug(f"Unable to fix bbox for {char.descr()}!")

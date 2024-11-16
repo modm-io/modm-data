@@ -4,9 +4,8 @@
 import re
 import logging
 from anytree.search import findall, find_by_attr, findall_by_attr
-from anytree import RenderTree
 from collections import defaultdict
-from ...svd import *
+from ...svd import Device, PeripheralType, Peripheral, Register, BitField
 
 
 LOGGER = logging.getLogger(__file__)
@@ -28,7 +27,8 @@ def _normalize_subtypes(memtree, peripheral, *subtypes):
     tchannels = []
     for dma, channels in dmamap.items():
         tdma = find_by_attr(memtree, peripheral, maxlevel=2)
-        if not channels: continue
+        if not channels:
+            continue
         tchannel = find_by_attr(memtree, channels[0].type, maxlevel=2)
         tchannels.append(tchannel)
         for channel in channels:
@@ -64,9 +64,11 @@ def _normalize_duplicates(memtree, infilter, outfilter):
 
 def _normalize_adc_common(memtree):
     adc = set(findall_by_attr(memtree, "ADC_TypeDef", name="type", maxlevel=2))
-    if len(adc) != 1: return memtree
+    if len(adc) != 1:
+        return memtree
     common = set(findall_by_attr(memtree, "ADC_Common_TypeDef", name="type", maxlevel=2))
-    if len(common) != 1: return memtree
+    if len(common) != 1:
+        return memtree
     adc, common = adc.pop(), common.pop()
 
     tadc = find_by_attr(memtree, "ADC_TypeDef", maxlevel=2)
@@ -87,7 +89,6 @@ def _normalize_adc_common(memtree):
 
 
 def _normalize_i2sext(memtree):
-    ext = findall(memtree, lambda n: "ext" not in n.name, maxlevel=2)
     for common in findall(memtree, lambda n: "ext" in n.name, maxlevel=2):
         LOGGER.info(f"Removing aliased peripheral '{common}'!")
         common.parent = None
@@ -101,15 +102,21 @@ def _normalize_dmamux(memtree):
         dmamux.type = "DMAMUX_TypeDef"
     if dmamuxs:
         PeripheralType("DMAMUX_TypeDef", parent=memtree)
-        memtree = _normalize_subtypes(memtree, "DMAMUX_TypeDef",
-                        "DMAMUX_Channel_TypeDef", "DMAMUX_ChannelStatus_TypeDef",
-                        "DMAMUX_RequestGen_TypeDef", "DMAMUX_RequestGenStatus_TypeDef")
+        memtree = _normalize_subtypes(
+            memtree,
+            "DMAMUX_TypeDef",
+            "DMAMUX_Channel_TypeDef",
+            "DMAMUX_ChannelStatus_TypeDef",
+            "DMAMUX_RequestGen_TypeDef",
+            "DMAMUX_RequestGenStatus_TypeDef",
+        )
     return memtree
 
 
 def _normalize_dfsdm(memtree):
     channels = findall(memtree, lambda n: re.match(r"DFSDM\d_Channel0$", n.name), maxlevel=2)
-    if not channels: return memtree
+    if not channels:
+        return memtree
 
     PeripheralType("DFSDM_TypeDef", parent=memtree)
     for channel in channels:
@@ -166,10 +173,8 @@ def normalize_memory_map(memtree):
     memtree = _normalize_dmamux(memtree)
     memtree = _normalize_adc_common(memtree)
 
-    memtree = _normalize_duplicates(memtree,
-                lambda n: "_COMMON" in n.name, lambda n: "_COMMON" not in n.name)
-    memtree = _normalize_duplicates(memtree,
-                lambda n: "OPAMP" == n.name, lambda n: re.match(r"OPAMP\d$", n.name))
+    memtree = _normalize_duplicates(memtree, lambda n: "_COMMON" in n.name, lambda n: "_COMMON" not in n.name)
+    memtree = _normalize_duplicates(memtree, lambda n: "OPAMP" == n.name, lambda n: re.match(r"OPAMP\d$", n.name))
 
     memtree = _normalize_instances(memtree)
     memtree = _normalize_order(memtree)

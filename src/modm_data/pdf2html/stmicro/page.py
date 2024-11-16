@@ -2,17 +2,14 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import re
-import math
 import logging
-import textwrap
-import statistics
-from functools import cached_property, cache, reduce
+from functools import cached_property, reduce
 from collections import defaultdict
 from ..table import Table
 from ..figure import Figure
 from ..line import CharLine
-from ...utils import HLine, VLine, Rectangle, Region
-from ...pdf import Path, Image, Page as PdfPage
+from ...utils import HLine, VLine, Rectangle
+from ...pdf import Image
 from ..page import Page as BasePage
 from anytree import Node
 
@@ -29,10 +26,10 @@ def is_compatible(document) -> bool:
 def _areas_black_white(page) -> dict:
     def _scale(r):
         if page.rotation:
-            return Rectangle(r.bottom * page.width, (1 - r.right) * page.height,
-                             r.top * page.width, (1 - r.left) * page.height)
-        return Rectangle(r.left * page.width, r.bottom * page.height,
-                         r.right * page.width, r.top * page.height)
+            return Rectangle(
+                r.bottom * page.width, (1 - r.right) * page.height, r.top * page.width, (1 - r.left) * page.height
+            )
+        return Rectangle(r.left * page.width, r.bottom * page.height, r.right * page.width, r.top * page.height)
 
     bottom_left = Rectangle(0.1, 0.1, 0.3, 0.12)
     bottom_middle = Rectangle(0.3, 0.1, 0.7, 0.12)
@@ -61,8 +58,11 @@ def _areas_black_white(page) -> dict:
     # Recognize the two column design of the Datasheets with a big table underneath
     if page.index < 3 and "DS" in page.pdf.name:
         # Find a wide path that would denote the beginning of a table
-        top_rect = [p.bbox.top / page.height for p in page.paths
-                    if _scale(content).contains(p.bbox) and p.bbox.width > page.width * 0.75]
+        top_rect = [
+            p.bbox.top / page.height
+            for p in page.paths
+            if _scale(content).contains(p.bbox) and p.bbox.width > page.width * 0.75
+        ]
         if top_rect:
             # offset for table label just above it
             ybottom = max(*top_rect) + 0.0175
@@ -75,9 +75,9 @@ def _areas_black_white(page) -> dict:
         text_middle = page.text_in_area(_scale(mr))
         text_bullets = page.text_in_area(_scale(br))
         text_hyphens = page.text_in_area(_scale(hr))
-        if (not text_middle and
-            (any(c in text_bullets for c in {"•", chr(61623)}) or
-             any(c in text_hyphens for c in {"-"}))):
+        if not text_middle and (
+            any(c in text_bullets for c in {"•", chr(61623)}) or any(c in text_hyphens for c in {"-"})
+        ):
             areas["middle_bullets"] = br
             areas["middle_hyphens"] = hr
             all_content = all_content[:-1]
@@ -98,8 +98,7 @@ def _areas_black_white(page) -> dict:
 
 def _areas_blue_gray(page) -> dict:
     def _scale(r):
-        return Rectangle(r.left * page.width, r.bottom * page.height,
-                         r.right * page.width, r.top * page.height)
+        return Rectangle(r.left * page.width, r.bottom * page.height, r.right * page.width, r.top * page.height)
 
     # This template doesn't use rotated pages, instead uses
     # hardcoded rotated page dimensions
@@ -111,18 +110,13 @@ def _areas_blue_gray(page) -> dict:
         content = Rectangle(0.025, 0.05, 0.975, 0.89 if page.index else 0.81)
         bottom_left = Rectangle(0, 0, 0.4, 0.05)
         top_right = Rectangle(0.3, 0.9025, 0.95, 0.9175)
-    areas = {
-        "id": bottom_left,
-        "top": top_right,
-        "all_content": content,
-        "content": []
-    }
+    areas = {"id": bottom_left, "top": top_right, "all_content": content, "content": []}
     if page.index == 0:
         areas["content"] = [
             # Document device string
             Rectangle(0.4, 0.91, 0.95, 0.95),
             # Document description string
-            Rectangle(0.05, 0.81, 0.95, 0.86)
+            Rectangle(0.05, 0.81, 0.95, 0.86),
         ]
     if page.index < 10:
         # Contains only a table with product summary
@@ -169,16 +163,18 @@ def _spacing_black_white(page) -> dict:
     }
     if page.rotation:
         content = 0.14
-        spacing.update({
-            "x_em": 0.01 * page.height,
-            "y_em": 0.01 * page.width,
-            "x_left": content * page.width,
-            "x_right": (1 - content) * page.width,
-            "x_content": 0.2075 * page.width,
-            "y_tline": 0.005 * page.width,
-            "lh": 1.2,
-            "sc": 0.4,
-        })
+        spacing.update(
+            {
+                "x_em": 0.01 * page.height,
+                "y_em": 0.01 * page.width,
+                "x_left": content * page.width,
+                "x_right": (1 - content) * page.width,
+                "x_content": 0.2075 * page.width,
+                "y_tline": 0.005 * page.width,
+                "lh": 1.2,
+                "sc": 0.4,
+            }
+        )
     return spacing | _spacing_special(page)
 
 
@@ -202,74 +198,91 @@ def _spacing_blue_gray(page) -> dict:
         "th": 0.33,
     }
     if page.rotation:
-        spacing.update({
-            "x_em": 0.01 * page.height,
-            "y_em": 0.01 * page.width,
-            "x_left": 0.05 * page.width,
-            "x_right": (1 - 0.16) * page.width,
-            "x_content": 0.2075 * page.width,
-            "y_tline": 0.005 * page.width,
-            "lh": 1.6,
-            "sc": 0.2,
-        })
+        spacing.update(
+            {
+                "x_em": 0.01 * page.height,
+                "y_em": 0.01 * page.width,
+                "x_left": 0.05 * page.width,
+                "x_right": (1 - 0.16) * page.width,
+                "x_content": 0.2075 * page.width,
+                "y_tline": 0.005 * page.width,
+                "lh": 1.6,
+                "sc": 0.2,
+            }
+        )
     return spacing | _spacing_special(page)
 
 
 def _spacing_special(page) -> dict:
     # Patches to detect the header cells correctly
-    if ((page.pdf.name == "DS12930-v1" and page.index in range(90, 106)) or
-        (page.pdf.name == "DS12931-v1" and page.index in range(89, 105))):
+    if (page.pdf.name == "DS12930-v1" and page.index in range(90, 106)) or (
+        page.pdf.name == "DS12931-v1" and page.index in range(89, 105)
+    ):
         return {"th": 0.1}
-    if ((page.pdf.name == "RM0453-v2" and page.index in [1354]) or
-        (page.pdf.name == "RM0456-v2" and page.index in [2881]) or
-        (page.pdf.name == "RM0456-v3" and page.index in [2880]) or
-        (page.pdf.name == "RM0461-v4" and page.index in [1246])):
+    if (
+        (page.pdf.name == "RM0453-v2" and page.index in [1354])
+        or (page.pdf.name == "RM0456-v2" and page.index in [2881])
+        or (page.pdf.name == "RM0456-v3" and page.index in [2880])
+        or (page.pdf.name == "RM0461-v4" and page.index in [1246])
+    ):
         return {"th": 0.5}
-    if ((page.pdf.name == "RM0456-v2" and page.index in [3005])):
+    if page.pdf.name == "RM0456-v2" and page.index in [3005]:
         return {"th": 0.52}
     return {}
 
 
 def _linesize_black_white(line: CharLine) -> str:
     rsize = line.height
-    if rsize >= 17.5: return "h1"
-    elif rsize >= 15.5: return "h2"
-    elif rsize >= 13.5: return "h3"
-    elif rsize >= 11.4: return "h4"
-    elif rsize >= 8.5: return "n"
-    else: return "fn"
+    if rsize >= 17.5:
+        return "h1"
+    elif rsize >= 15.5:
+        return "h2"
+    elif rsize >= 13.5:
+        return "h3"
+    elif rsize >= 11.4:
+        return "h4"
+    elif rsize >= 8.5:
+        return "n"
+    else:
+        return "fn"
 
 
 def _linesize_blue_gray(line: CharLine) -> str:
     rsize = round(line.height)
-    if rsize >= 16: return "h1"
-    elif rsize >= 14: return "h2"
-    elif rsize >= 12: return "h3"
-    elif rsize >= 10: return "h4"
-    elif rsize >= 7: return "n"
-    else: return "fn"
+    if rsize >= 16:
+        return "h1"
+    elif rsize >= 14:
+        return "h2"
+    elif rsize >= 12:
+        return "h3"
+    elif rsize >= 10:
+        return "h4"
+    elif rsize >= 7:
+        return "n"
+    else:
+        return "fn"
 
 
 def _colors_black_white(color: int) -> str:
-    if 0xff <= color <= 0xff:
+    if 0xFF <= color <= 0xFF:
         return "black"
-    if 0xffffffff <= color <= 0xffffffff:
+    if 0xFFFFFFFF <= color <= 0xFFFFFFFF:
         return "white"
     return "unknown"
 
 
 def _colors_blue_gray(color: int) -> str:
-    if 0xff <= color <= 0xff:
+    if 0xFF <= color <= 0xFF:
         return "black"
-    if 0xffffffff <= color <= 0xffffffff:
+    if 0xFFFFFFFF <= color <= 0xFFFFFFFF:
         return "white"
-    if 0xb9c4caff <= color <= 0xb9c4caff:
+    if 0xB9C4CAFF <= color <= 0xB9C4CAFF:
         return "gray"
-    if 0x1f81afff <= color <= 0x1f81afff:
+    if 0x1F81AFFF <= color <= 0x1F81AFFF:
         return "lightblue"
-    if 0x2052ff <= color <= 0x2052ff:
+    if 0x2052FF <= color <= 0x2052FF:
         return "darkblue"
-    if 0x39a9dcff <= color <= 0x39a9dcff:
+    if 0x39A9DCFF <= color <= 0x39A9DCFF:
         return "blue"
     return "unknown"
 
@@ -299,10 +312,13 @@ class Page(BasePage):
 
     def _unicode_filter(self, code: int) -> int:
         # Ignore Carriage Return characters and ® (superscript issues)
-        if code in {0xd, ord("®")}: return None
+        if code in {0xD, ord("®")}:
+            return None
         # Correct some weird unicode stuffing choices
-        if code in {2}: return ord("-")
-        if code in {61623, 61664}: return ord("•")
+        if code in {2}:
+            return ord("-")
+        if code in {61623, 61664}:
+            return ord("•")
         return code
 
     @cached_property
@@ -328,9 +344,15 @@ class Page(BasePage):
         if "DS" in self.pdf.name:
             # FIXME: Terrible hack to get the ordering information table fixed
             # Should be done in the AST as a rewrite similar to bit table rewrite with VirtualTable
-            order_page = next((item.page_index for item in self.pdf.toc if item.level == 0 and
-                               re.search("ordering +information|part +numbering", item.title, re.IGNORECASE)), -1)
-            with_graphics = (order_page != self.index)
+            order_page = next(
+                (
+                    item.page_index
+                    for item in self.pdf.toc
+                    if item.level == 0 and re.search("ordering +information|part +numbering", item.title, re.IGNORECASE)
+                ),
+                -1,
+            )
+            with_graphics = order_page != self.index
         for area in self._areas["content"]:
             ast.append(self.ast_in_area(area, with_graphics=with_graphics))
         # Add a page node to the first leaf to keep track of where a page starts
@@ -341,8 +363,8 @@ class Page(BasePage):
     def graphics_in_area(self, area: Rectangle) -> list[Table | Figure]:
         # Find all graphic clusters in this area
         em = self._spacing["y_em"]
-        large_area = area.offset_x(em/2)
-        graphic_clusters = self.graphic_clusters(lambda p: large_area.contains(p.bbox), em/2)
+        large_area = area.offset_x(em / 2)
+        graphic_clusters = self.graphic_clusters(lambda p: large_area.contains(p.bbox), em / 2)
         # for bbox, paths in raw_graphic_clusters:
         #     # Some docs have large DRAFT chars in the background
         #     if any(path.fill == 0xe6e6e6ff and path.stroke == 0xff for path in paths):
@@ -367,9 +389,10 @@ class Page(BasePage):
                 bottom, top, height = chars[0].bbox.bottom, chars[0].bbox.top, chars[0].height
 
                 # Find the graphic associated with this caption
-                graphic = next(((b, p) for b, p in graphic_clusters
-                                if b.bottom <= bottom and
-                                   left <= b.left and b.right <= right), None)
+                graphic = next(
+                    ((b, p) for b, p in graphic_clusters if b.bottom <= bottom and left <= b.left and b.right <= right),
+                    None,
+                )
                 if graphic is None:
                     _LOGGER.error(f"Graphic cluster not found for caption {''.join(c.char for c in chars)}")
                     continue
@@ -395,7 +418,7 @@ class Page(BasePage):
                     graphics = []
                     for b, p in graphic_clusters:
                         if gbbox.overlaps(b):
-                            graphics.append((b,p))
+                            graphics.append((b, p))
                     for g in graphics:
                         graphic_clusters.remove(g)
                     gbbox = [cluster[0] for cluster in graphics]
@@ -414,8 +437,10 @@ class Page(BasePage):
                 elif "Table" in phrase:
                     graphic_clusters.remove(graphic)
                     gbbox, paths = graphic
-                    if (self._template == "black_white" and
-                        sum(1 for path in paths if path.count == 2) >= len(paths) / 2):
+                    if (
+                        self._template == "black_white"
+                        and sum(1 for path in paths if path.count == 2) >= len(paths) / 2
+                    ):
                         otype += "_lines"
                 categories.append((otype, cbbox, gbbox, paths))
 
@@ -427,8 +452,7 @@ class Page(BasePage):
             if any(isinstance(p, Image) for p in paths):
                 category = "figure"
             elif self._template == "blue_gray":
-                if all(self._colors(path.stroke) == "gray" or
-                       self._colors(path.fill) == "darkblue" for path in paths):
+                if all(self._colors(path.stroke) == "gray" or self._colors(path.fill) == "darkblue" for path in paths):
                     category = "table"
                 else:
                     category = "figure"
@@ -437,10 +461,11 @@ class Page(BasePage):
                 # shapes with others are implicitly rendered with stroked lines
                 stroked_table_lines = sum(1 for path in paths if path.count == 2) >= len(paths) / 2
                 is_table = stroked_table_lines or all(
-                    [any(p.isclose(pp) for pp in path.bbox.points)
-                     for p in path.points].count(True) >= len(path.points) * 2 / 3
-                    for path in paths)
-                if (len(paths) > 1 and is_table):
+                    [any(p.isclose(pp) for pp in path.bbox.points) for p in path.points].count(True)
+                    >= len(path.points) * 2 / 3
+                    for path in paths
+                )
+                if len(paths) > 1 and is_table:
                     category = "table"
                     if stroked_table_lines:
                         category += "_lines"
@@ -450,7 +475,7 @@ class Page(BasePage):
             if "table" in category:
                 # Check if there are only numbers on top of the table
                 cbbox = Rectangle(gbbox.left, gbbox.top, gbbox.right, gbbox.top + self._spacing["y_em"])
-                nchars = [c for c in self.chars_in_area(cbbox) if c.unicode not in {0x20, 0xa, 0xd}]
+                nchars = [c for c in self.chars_in_area(cbbox) if c.unicode not in {0x20, 0xA, 0xD}]
 
                 if nchars and sum(1 if c.char.isnumeric() else 0 for c in nchars) >= len(nchars) / 3:
                     # This is a register table with invisible top borders!
@@ -512,19 +537,23 @@ class Page(BasePage):
                             ylines.append(HLine(bbox.bottom, bbox.left, bbox.right, 0.1))
                             ylines.append(HLine(bbox.top, bbox.left, bbox.right, 0.1))
                 if yhlines:
-                    yhlines.sort(key=lambda l: l.p0.y)
+                    yhlines.sort(key=lambda line: line.p0.y)
                     ylines.append(yhlines[0])
                 if not xlines or not ylines:
                     continue
-                table = Table(self, graphics_bbox, xlines, ylines, caption_bbox,
-                              is_register="register" in otype)
+                table = Table(self, graphics_bbox, xlines, ylines, caption_bbox, is_register="register" in otype)
                 objects.append(table)
 
         return objects
 
-    def ast_in_area(self, area: Rectangle, with_graphics: bool = True,
-                    ignore_xpos: bool = False, with_bits: bool = True,
-                    with_notes: bool = True) -> Node:
+    def ast_in_area(
+        self,
+        area: Rectangle,
+        with_graphics: bool = True,
+        ignore_xpos: bool = False,
+        with_bits: bool = True,
+        with_notes: bool = True,
+    ) -> Node:
         x_em = self._spacing["x_em"]
         spacing_content = self._spacing["x_content"]
         lh_factor = self._spacing["lh"]
@@ -550,11 +579,17 @@ class Page(BasePage):
 
             # Tables should remain in their current hierarchy regardless of indentation
             if isinstance(obj, (Table, Figure)):
-                current = next((c for c in current.iter_path_reverse()
-                                if c.name.startswith("head")), root)
+                current = next((c for c in current.iter_path_reverse() if c.name.startswith("head")), root)
                 name = "figure" if isinstance(obj, Figure) else "table"
-                Node(name, parent=current, obj=obj, xpos=xpos, number=-1,
-                     _width=obj.bbox.width / area.width, _type=obj._type)
+                Node(
+                    name,
+                    parent=current,
+                    obj=obj,
+                    xpos=xpos,
+                    number=-1,
+                    _width=obj.bbox.width / area.width,
+                    _type=obj._type,
+                )
                 ypos = obj.bbox.bottom
 
             # Lines of text need to be carefully checked for indentation
@@ -566,14 +601,14 @@ class Page(BasePage):
                 linesize = self._line_size(obj)
 
                 # Check when the note has finished (=> paragraphs without italic)
-                if (parent_name(current) == "note" and
-                    ((current.parent.type == "note" and not obj.contains_font(current.parent._font)) or
-                     (current.parent.type in {"caution", "warning"} and newlines >= 2))):
+                if parent_name(current) == "note" and (
+                    (current.parent.type == "note" and not obj.contains_font(current.parent._font))
+                    or (current.parent.type in {"caution", "warning"} and newlines >= 2)
+                ):
                     current = current.parent.parent
 
                 # Check when the list ends into something indented far too right
-                elif (parent_name(current).startswith("list")
-                      and (xpos - current.xpos) >= 2 * x_em):
+                elif parent_name(current).startswith("list") and (xpos - current.xpos) >= 2 * x_em:
                     current = current.parent.parent
 
                 # print(obj.fonts, ypos, xpos, current.xpos, f"{obj.height:.2f}", content)
@@ -581,12 +616,13 @@ class Page(BasePage):
                 # Check if line is a heading, which may be multi-line, so we must
                 # be careful not to nest them, but group them properly
                 # Headings are always inserted into the root note!
-                if linesize.startswith("h1") or (linesize.startswith("h") and
-                        xpos < (spacing_content + 2 * x_em) and "Bold" in obj.chars[0].font):
+                if linesize.startswith("h1") or (
+                    linesize.startswith("h") and xpos < (spacing_content + 2 * x_em) and "Bold" in obj.chars[0].font
+                ):
                     if (match := re.match(r"^ *(\d+(\.\d+)?(\.\d+)?) *", content)) is not None:
                         start = min(len(match.group(0)), len(obj.chars) - 1)
                         marker = match.group(1)
-                        size = marker.count('.') + 2
+                        size = marker.count(".") + 2
                     else:
                         start = 0
                         marker = None
@@ -596,12 +632,13 @@ class Page(BasePage):
                     if parent_name(current) != name or newlines > 2:
                         content_start = start
                         xpos = round(obj.chars[content_start].bbox.left)
-                        current = Node(name, parent=root, obj=obj, xpos=xpos,
-                                       size=size, marker=marker)
+                        current = Node(name, parent=root, obj=obj, xpos=xpos, size=size, marker=marker)
                         current = Node("para", parent=current, obj=obj, xpos=current.xpos)
 
                 # Check if the line is a note and deal with the indentation correctly
-                elif with_notes and (match := re.match(r" *([Nn]ote|[Cc]aution|[Ww]arning):? \d?", content)) is not None:
+                elif (
+                    with_notes and (match := re.match(r" *([Nn]ote|[Cc]aution|[Ww]arning):? \d?", content)) is not None
+                ):
                     content_start = min(len(match.group(0)), len(obj.chars) - 1)
                     # print(obj.fonts)
                     # Correct xposition only if the Note: string is very far left
@@ -609,20 +646,33 @@ class Page(BasePage):
                         xpos = round(obj.chars[content_start].bbox.left)
                     # Prevent nesting of notes, they should only be listed
                     if parent_name(current) == "note":
-                        current =  current.parent.parent
+                        current = current.parent.parent
                     current = unindent(xpos, current, 2)
-                    current = Node("note", parent=current, obj=obj, xpos=xpos,
-                                   type=match.group(1).lower(), _font=obj.chars[content_start].font)
+                    current = Node(
+                        "note",
+                        parent=current,
+                        obj=obj,
+                        xpos=xpos,
+                        type=match.group(1).lower(),
+                        _font=obj.chars[content_start].font,
+                    )
                     current = Node("para", parent=current, obj=obj, xpos=current.xpos)
 
                 # Check if line is Table or Figure caption
-                elif with_graphics and ((match := re.match(r" *([Tt]able|[Ff]igure) ?(\d+)\.? ?", content)) is not None
-                      and "Bold" in obj.chars[0].font):
+                elif with_graphics and (
+                    (match := re.match(r" *([Tt]able|[Ff]igure) ?(\d+)\.? ?", content)) is not None
+                    and "Bold" in obj.chars[0].font
+                ):
                     content_start = min(len(match.group(0)), len(obj.chars) - 1)
-                    current = next((c for c in current.iter_path_reverse()
-                                if c.name.startswith("head")), root)
-                    current = Node("caption", parent=current, obj=obj, xpos=xpos,
-                                   _type=match.group(1).lower(), number=int(match.group(2)))
+                    current = next((c for c in current.iter_path_reverse() if c.name.startswith("head")), root)
+                    current = Node(
+                        "caption",
+                        parent=current,
+                        obj=obj,
+                        xpos=xpos,
+                        _type=match.group(1).lower(),
+                        number=int(match.group(2)),
+                    )
                     current = Node("para", parent=current, obj=obj, xpos=current.xpos)
 
                 # Check if line is list and group them according to indentation
@@ -632,8 +682,10 @@ class Page(BasePage):
                     xpos = round(obj.chars[content_start].bbox.left)
                     name = "listb"
                     value = lcontent[0]
-                    if value in {"–", "-"}: name = "lists"
-                    elif value.isalpha(): name = "lista"
+                    if value in {"–", "-"}:
+                        name = "lists"
+                    elif value.isalpha():
+                        name = "lista"
                     elif value.isnumeric():
                         name = "listn"
                         value = int(match.group(2))
@@ -648,8 +700,12 @@ class Page(BasePage):
                     else:
                         # Default back to the regex
                         if "Reserved" not in content:
-                            _LOGGER.warning(f"Fallback to Regex length for Bit pattern '{content}'!\nFonts: {obj.fonts}")
-                        content_start = re.match(r" *([Bb]ytes? *.+? *)?(B[uio]t)( *\d+:?|s *(\d+ *([:-] *\d+ *)? *,? *)+) *", content)
+                            _LOGGER.warning(
+                                f"Fallback to Regex length for Bit pattern '{content}'!\nFonts: {obj.fonts}"
+                            )
+                        content_start = re.match(
+                            r" *([Bb]ytes? *.+? *)?(B[uio]t)( *\d+:?|s *(\d+ *([:-] *\d+ *)? *,? *)+) *", content
+                        )
                         if content_start is None:
                             _LOGGER.error(f"Unable to match Bit regex at all! '{content}'!")
                             content_start = 0
@@ -659,12 +715,19 @@ class Page(BasePage):
                             _LOGGER.error(f"Missing content start (=0)! '{content}'!")
                         content_start = min(content_start, len(obj.chars) - 1)
 
-                    current = next((c for c in current.iter_path_reverse()
-                                    if c.name.startswith("head")), root)
+                    current = next((c for c in current.iter_path_reverse() if c.name.startswith("head")), root)
                     middle = obj.chars[content_start].bbox.left
                     xpos = round(middle)
-                    current = Node("bit", parent=current, obj=obj, xpos=xpos, _page=self,
-                                   _middle=middle, _left=area.left, _right=area.right)
+                    current = Node(
+                        "bit",
+                        parent=current,
+                        obj=obj,
+                        xpos=xpos,
+                        _page=self,
+                        _middle=middle,
+                        _left=area.left,
+                        _right=area.right,
+                    )
                     current = Node("para", parent=current, obj=obj, xpos=current.xpos)
 
                 # Check if this is a new paragraph
@@ -675,15 +738,13 @@ class Page(BasePage):
                             xpos = current.parent.xpos
                     # Prevent multiline
                     current = unindent(xpos, current, newlines)
-                    current = Node("para", parent=current, obj=obj,
-                                   xpos=xpos if current.is_root else current.xpos)
+                    current = Node("para", parent=current, obj=obj, xpos=xpos if current.is_root else current.xpos)
 
-                elif (parent_name(current) not in {"caption", "bit", "area"}):
+                elif parent_name(current) not in {"caption", "bit", "area"}:
                     current = unindent(xpos, current, newlines)
 
                 # Add the actual line
-                Node("line", parent=current, obj=obj, xpos=xpos,
-                     start=content_start, str=content[content_start:50])
+                Node("line", parent=current, obj=obj, xpos=xpos, start=content_start, str=content[content_start:50])
 
                 ypos = obj.origin
 

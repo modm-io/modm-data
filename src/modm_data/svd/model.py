@@ -122,12 +122,13 @@ def _compare_trees(left, right):
         return False
     if not left.children:
         return True
-    return all(_compare_trees(l, r) for l,r in zip(left.children, right.children))
+    return all(_compare_trees(left, right) for left, right in zip(left.children, right.children))
 
 
 def compare_device_trees(left, right):
     assert isinstance(left, Device) and isinstance(right, Device)
-    if len(left.children) != len(right.children): return False
-    if not left.children: return True
-    return all(_compare_trees(l, r) for l,r in zip(left.children, right.children))
-
+    if len(left.children) != len(right.children):
+        return False
+    if not left.children:
+        return True
+    return all(_compare_trees(left, right) for left, right in zip(left.children, right.children))

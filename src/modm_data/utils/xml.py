@@ -10,7 +10,7 @@ from lxml import etree
 from pathlib import Path
 
 LOGGER = logging.getLogger(__file__)
-PARSER = etree.XMLParser(ns_clean=True, recover=True, encoding='utf-8')
+PARSER = etree.XMLParser(ns_clean=True, recover=True, encoding="utf-8")
 
 
 class XmlReader:
@@ -24,7 +24,7 @@ class XmlReader:
     def _openDeviceXML(self, filename):
         LOGGER.debug("Opening XML file '%s'", os.path.basename(filename))
         xml_file = Path(filename).read_text("utf-8", errors="replace")
-        xml_file = re.sub(' xmlns="[^"]+"', '', xml_file, count=1).encode("utf-8")
+        xml_file = re.sub(' xmlns="[^"]+"', "", xml_file, count=1).encode("utf-8")
         xmltree = etree.fromstring(xml_file, parser=PARSER)
         return xmltree
 
@@ -38,8 +38,8 @@ class XmlReader:
         response = None
         try:
             response = self.tree.xpath(query)
-        except:
-            LOGGER.error(f"Query failed for '{query}'", )
+        except Exception:
+            LOGGER.error(f"Query failed for '{query}'")
 
         return response
 

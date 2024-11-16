@@ -4,9 +4,7 @@
 import json
 import logging
 from pathlib import Path
-from functools import cached_property
 from ..store import download_file, download_data
-from ...utils import ext_path
 
 LOGGER = logging.getLogger(__name__)
 
@@ -87,10 +85,10 @@ _json_short_urls = {
     # Technical docs for STMicro sensors
     "sensors": [
         "SC444",
-        #SC1946",
+        # SC1946",
         "SC1449",
         "SC1288",
-        #SC1718",
+        # SC1718",
         "SC1448",
         "SC1922",
         "SC1316",
@@ -103,15 +101,14 @@ _json_short_urls = {
         "SC397",
     ],
     # Technical docs for STMicro hardware debug tools
-    "debug": [
-        "SC2330"
-    ]
+    "debug": ["SC2330"],
 }
 _json_url_prefix = "https://www.st.com/bin/st/selectors/cxst/en.cxst-rs-grid.html/"
 _json_url_suffix = ".technical_literature.json"
 
-_json_urls = {key: [_json_url_prefix + url + _json_url_suffix for url in urls]
-              for key, urls in _json_short_urls.items()}
+_json_urls = {
+    key: [_json_url_prefix + url + _json_url_suffix for url in urls] for key, urls in _json_short_urls.items()
+}
 _remote_info = "remote.json"
 _local_info = "local.json"
 
@@ -119,10 +116,10 @@ _local_info = "local.json"
 def load_remote_info(base_dir: Path, use_cached: bool = False) -> list[dict]:
     info = base_dir / _remote_info
     if use_cached and info.exists():
-        LOGGER.debug(f"Loading remote info from cache")
+        LOGGER.debug("Loading remote info from cache")
         docs = json.loads(info.read_text())
     else:
-        LOGGER.info(f"Downloading remote info")
+        LOGGER.info("Downloading remote info")
         docs = []
         for urls in _json_urls.values():
             for url in urls:
@@ -133,14 +130,13 @@ def load_remote_info(base_dir: Path, use_cached: bool = False) -> list[dict]:
 def store_remote_info(base_dir: Path, docs: list[dict]):
     info = base_dir / _remote_info
     info.parent.mkdir(parents=True, exist_ok=True)
-    info.write_text(json.dumps(sorted(docs,
-        key=lambda d: (d["title"], d["version"])), indent=4, sort_keys=True))
+    info.write_text(json.dumps(sorted(docs, key=lambda d: (d["title"], d["version"])), indent=4, sort_keys=True))
 
 
 def load_local_info(base_dir: Path) -> list[dict]:
     info = base_dir / _local_info
     if info.exists():
-        LOGGER.debug(f"Loading local info from cache")
+        LOGGER.debug("Loading local info from cache")
         return json.loads(info.read_text())
     return []
 
@@ -148,8 +144,7 @@ def load_local_info(base_dir: Path) -> list[dict]:
 def store_local_info(base_dir: Path, docs: list[dict]):
     info = base_dir / _local_info
     info.parent.mkdir(parents=True, exist_ok=True)
-    info.write_text(json.dumps(sorted(docs,
-        key=lambda d: (d["title"], d["version"])), indent=4, sort_keys=True))
+    info.write_text(json.dumps(sorted(docs, key=lambda d: (d["title"], d["version"])), indent=4, sort_keys=True))
 
 
 def sync_info(base_dir: Path, use_cached: bool = False) -> set[Document]:

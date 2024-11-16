@@ -22,6 +22,7 @@ class Image(pp.PdfImage):
 
     .. note:: Images are currently ignored.
     """
+
     # Overwrite the PdfPageObject.__new__ function
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
@@ -57,8 +58,7 @@ class Image(pp.PdfImage):
         """The bounding box of the image."""
         bbox = Rectangle(*self.get_pos())
         if self.page.rotation:
-            bbox = Rectangle(bbox.p0.y, self.page.height - bbox.p1.x,
-                             bbox.p1.y, self.page.height - bbox.p0.x)
+            bbox = Rectangle(bbox.p0.y, self.page.height - bbox.p1.x, bbox.p1.y, self.page.height - bbox.p0.x)
         return bbox
 
     @cached_property
@@ -79,8 +79,12 @@ class Image(pp.PdfImage):
         (For compatibility with `Path.lines`.)
         """
         p = self.points
-        return [Line(p[0], p[1], p[1].type, 0), Line(p[1], p[2], p[2].type, 0),
-                Line(p[2], p[3], p[3].type, 0), Line(p[3], p[0], p[0].type, 0)]
+        return [
+            Line(p[0], p[1], p[1].type, 0),
+            Line(p[1], p[2], p[2].type, 0),
+            Line(p[2], p[3], p[3].type, 0),
+            Line(p[3], p[0], p[0].type, 0),
+        ]
 
     def __repr__(self) -> str:
         return f"I{self.bbox}"

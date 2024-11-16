@@ -28,9 +28,8 @@ class Structure:
     This class is a convenience wrapper around [the pdfium structtree methods](
     https://pdfium.googlesource.com/pdfium/+/main/public/fpdf_structtree.h).
     """
-    def __init__(self, page: "modm_data.pdf.page.Page",
-                 element: pp.raw.FPDF_STRUCTELEMENT,
-                 parent: "Structure" = None):
+
+    def __init__(self, page: "modm_data.pdf.page.Page", element: pp.raw.FPDF_STRUCTELEMENT, parent: "Structure" = None):  # noqa: F821
         self._page = page
         self._element = element
         self.parent: Structure = weakref.ref(parent) if parent else None
@@ -88,7 +87,7 @@ class Structure:
         return ids
 
     @cached_property
-    def attributes(self) -> dict[str, str|bool|float]:
+    def attributes(self) -> dict[str, str | bool | float]:
         """
         All attributes of this structure element as a dictionary.
 
@@ -102,7 +101,7 @@ class Structure:
             for aindex in range(pp.raw.FPDF_StructElement_Attr_GetCount(attr)):
                 # Get the name
                 clength = ctypes.c_ulong(0)
-                cname = ctypes.create_string_buffer(1) # workaround to get length
+                cname = ctypes.create_string_buffer(1)  # workaround to get length
                 assert pp.raw.FPDF_StructElement_Attr_GetName(attr, aindex, cname, 0, clength)
                 cname = ctypes.create_string_buffer(clength.value)
                 assert pp.raw.FPDF_StructElement_Attr_GetName(attr, aindex, cname, clength, clength)
@@ -126,9 +125,9 @@ class Structure:
 
                     case pp.raw.FPDF_OBJECT_STRING | pp.raw.FPDF_OBJECT_NAME:
                         assert pp.raw.FPDF_StructElement_Attr_GetStringValue(attr, cname, 0, 0, clength)
-                        cattrname = ctypes.create_string_buffer(clength.value*2)
+                        cattrname = ctypes.create_string_buffer(clength.value * 2)
                         assert pp.raw.FPDF_StructElement_Attr_GetStringValue(attr, cname, cattrname, clength, clength)
-                        kv[name] = cattrname.raw.decode("utf-16-le", errors="ignore")[:clength.value-1]
+                        kv[name] = cattrname.raw.decode("utf-16-le", errors="ignore")[: clength.value - 1]
 
                     # FIXME: FPDF_OBJECT_ARRAY is not a blob, but no other APIs are exposed?
                     # case pp.raw.FPDF_OBJECT_ARRAY:
@@ -138,7 +137,7 @@ class Structure:
                     #     kv[name] = cblob.raw
 
                     case pp.raw.FPDF_OBJECT_ARRAY:
-                        kv[name] = f"[?]"
+                        kv[name] = "[?]"
 
                     case _:
                         kv[name] = f"[unknown={atype}?]"
@@ -169,11 +168,16 @@ class Structure:
 
     def __repr__(self) -> str:
         values = []
-        if self.type: values.append(f"type={self.type}")
-        if self.title: values.append(f"title={self.title}")
-        if self.actual_text: values.append(f"act_text={self.actual_text}")
-        if self.alt_text: values.append(f"alt_text={self.alt_text}")
-        if self.id: values.append(f"id={self.id}")
+        if self.type:
+            values.append(f"type={self.type}")
+        if self.title:
+            values.append(f"title={self.title}")
+        if self.actual_text:
+            values.append(f"act_text={self.actual_text}")
+        if self.alt_text:
+            values.append(f"alt_text={self.alt_text}")
+        if self.id:
+            values.append(f"id={self.id}")
         values += [f"mid={i}" for i in self.marked_ids]
         values += [f"{k}={v}" for k, v in self.attributes.items()]
         return f"S({','.join(map(str, values))})"

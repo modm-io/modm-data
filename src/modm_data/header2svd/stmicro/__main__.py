@@ -36,16 +36,19 @@ def main():
 
         calls = []
         for devices in header_devices:
-            call = f"python3 -m modm_data.header2svd.stmicro " \
-                   f"--device {' --device '.join(devices)} " \
-                   f"> log/stmicro/svd/header_{list(sorted(devices))[0]}.txt 2>&1"
+            call = (
+                f"python3 -m modm_data.header2svd.stmicro "
+                f"--device {' --device '.join(devices)} "
+                f"> log/stmicro/svd/header_{list(sorted(devices))[0]}.txt 2>&1"
+            )
             calls.append(call)
             # print(call)
 
         with ThreadPool() as pool:
             retvals = list(tqdm.tqdm(pool.imap(lambda c: subprocess.run(c, shell=True), calls), total=len(calls)))
         for retval, call in zip(retvals, calls):
-            if retval.returncode != 0: print(call)
+            if retval.returncode != 0:
+                print(call)
         return all(r.returncode == 0 for r in retvals)
 
     mmaps = defaultdict(list)
@@ -55,7 +58,7 @@ def main():
         device = did_from_string(device)
         header = Header(device)
         print(device.string, header.filename)
-        mmaptree = header.memory_map_tree # create cache entry
+        mmaptree = header.memory_map_tree  # create cache entry
         mmaps[header._memory_map_key].append(device)
         headers[header._memory_map_key] = header
 

@@ -7,3 +7,8 @@
 
 from . import stmicro
 from .header import Header
+
+__all__ = [
+    "stmicro",
+    "Header",
+]

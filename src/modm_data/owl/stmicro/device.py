@@ -1,4 +1,3 @@
-
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
@@ -32,10 +31,10 @@ def owl_devices():
                         _OWL_MAPPING[name] = ds
 
             _OWL_MAPPING_FILE.parent.mkdir(parents=True, exist_ok=True)
-            with _OWL_MAPPING_FILE.open('w', encoding='utf-8') as fh:
+            with _OWL_MAPPING_FILE.open("w", encoding="utf-8") as fh:
                 json.dump(_OWL_MAPPING, fh, indent=4)
         else:
-            with _OWL_MAPPING_FILE.open('r', encoding='utf-8') as fh:
+            with _OWL_MAPPING_FILE.open("r", encoding="utf-8") as fh:
                 _OWL_MAPPING = json.load(fh)
     return _OWL_MAPPING
 

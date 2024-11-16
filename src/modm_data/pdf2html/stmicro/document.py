@@ -2,13 +2,15 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import logging
+from anytree import RenderTree
 from .page import Page as StmPage
 from ...pdf import Document as PdfDocument
 from ..ast import normalize_lines, normalize_captions, normalize_lists
 from ..ast import normalize_paragraphs, normalize_headings, normalize_registers
-from ..ast import normalize_tables, normalize_chapters
+from ..ast import normalize_tables
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def _debug(func, indata, debug=0):
     _LOGGER.debug(func.__name__)
@@ -32,7 +34,6 @@ def _normalize_document(document):
     document = _debug(normalize_tables, document)
     # document = _debug(normalize_chapters, document)
     return document
-
 
 
 class Document(PdfDocument):

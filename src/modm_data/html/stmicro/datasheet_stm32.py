@@ -2,19 +2,17 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import re
-import itertools
-from pathlib import Path
 from functools import cached_property
 from collections import defaultdict
 
 from .helper import split_device_filter, split_package
-from ...html.text import ReDict
+from ...html.text import ReDict, listify as html_listify, replace as html_replace
 from ...owl import DeviceIdentifier
 from ...owl.stmicro import did_from_string
-import modm_data.html as html
+from ..document import Document
 
 
-class DatasheetStm32(html.Document):
+class DatasheetStm32(Document):
     def __init__(self, path: str):
         super().__init__(path)
         self._id = {}
@@ -34,8 +32,9 @@ class DatasheetStm32(html.Document):
         ndevices = []
         if tables := chapter.tables("Device summary"):
             for row in tables[0].cell_rows("number"):
-                ndevices.extend(c.text(br=" ", sup=" ").replace(",", " ").strip()
-                               for cells in row.values() for c in cells)
+                ndevices.extend(
+                    c.text(br=" ", sup=" ").replace(",", " ").strip() for cells in row.values() for c in cells
+                )
             ndevices = [d for dev in ndevices for d in dev.split(" ") if "STM32" in d]
         else:
             # Check all uncaptioned tables for "Product summary" domain
@@ -43,7 +42,7 @@ class DatasheetStm32(html.Document):
                 if table.domains_x("Product +summary"):
                     for row in table.cell_rows():
                         for cells in row.values():
-                            ndevices.extend(html.listify(cells[-1].text(br=" ", sup=" ")))
+                            ndevices.extend(html_listify(cells[-1].text(br=" ", sup=" ")))
                     break
             else:
                 # print(chapter._path.relative_to(Path().cwd()))
@@ -108,7 +107,7 @@ class DatasheetStm32(html.Document):
             for row in tables[0].cell_rows("code"):
                 for cells in row.values():
                     for cell in cells:
-                        devices.extend(html.listify(cell.text()))
+                        devices.extend(html_listify(cell.text()))
 
         # convert to proper device identifiers
         dids = set()
@@ -133,7 +132,8 @@ class DatasheetStm32(html.Document):
     @property
     def _table_pinout(self):
         tables = self._chapter_pins.tables(
-                "pin( +and +ball|/ball| +assignment +and)? +(definition|description)", br=" ")
+            "pin( +and +ball|/ball| +assignment +and)? +(definition|description)", br=" "
+        )
         if not tables:
             raise ValueError(f"Unable to find pin definition table in chapter! {self._chapter_pins._relpath}")
         return tables[0]
@@ -149,10 +149,11 @@ class DatasheetStm32(html.Document):
     def packages(self):
         domains = self._table_pinout.domains_x(r"num(<br>)?ber|pins?:|pin/ball +name|:WLCSP.*?", br="<br>")
         if not domains:
-            raise ValueError(f"Unable to find package domains in table! {self._chapter_pins._relpath} {tables[0].caption()}")
+            raise ValueError(f"Unable to find package domains in table! {self._chapter_pins._relpath}")
         packages = []
         for domain in domains:
-            if domain == "Pin (UFQFPN48):Number": continue
+            if domain == "Pin (UFQFPN48):Number":
+                continue
             ndpackage = domain.split(":")[-1].replace("UFBGA/TFBGA64", "UFBGA64/TFBGA64")
             ndpackage = ndpackage.replace("LPQF", "LQFP").replace("TSSPOP", "TSSOP")
             ndpackage = ndpackage.replace("UFBG100", "UFBGA100").replace("UBGA", "UFBGA")
@@ -175,7 +176,7 @@ class DatasheetStm32(html.Document):
             if "DS13311" in self.name or "DS13312" in self.name:
                 ndpackage = ndpackage.replace("+SMPS", "")
             if (match := re.search(r":(STM32.*?):", domain)) is not None:
-                devs = html.listify(match.group(1))
+                devs = html_listify(match.group(1))
                 ndpackage += "+" + "|".join(d.replace("x", ".") for d in devs)
             ndpackage, *filters = ndpackage.split("+")
             filters = ("+" + "+".join(filters)) if filters else ""
@@ -199,12 +200,21 @@ class DatasheetStm32(html.Document):
     def packages_pins(self):
         # Add pinouts and signals
         pin_replace = {r"sup| |D?NC|/$|\(.*?\)|.*?connected.*": "", "–": "-", r"VREF_\+": "VREF+"}
-        add_replace = {r"[- ]|\(.*?\)|.*?selection.*|.*?reset.*": "",
-                       r"OPAMP": ",OPAMP", r"COMP": ",COMP", r"OPAMP,1": "OPAMP1"}
-        afs_replace = {r"[- ]|\(.*?\)": "", "LCD_SEG": ",LCD_SEG"}
+        add_replace = {
+            r"[- ]|\(.*?\)|.*?selection.*|.*?reset.*": "",
+            r"OPAMP": ",OPAMP",
+            r"COMP": ",COMP",
+            r"OPAMP,1": "OPAMP1",
+        }
+        afs_replace = {r"[- ]|\(.*?\)": "", "LCD_SEG": ",LCD_SEG"}  # noqa: F841
         pos_replace = {r'[“”\-"]|NC|\(.*?\)': ""}
-        sig_replace = {r"[- ]|\(.*?\)": "", r"(MOSI|SCK|NSS)I2S": r"\1,I2S", "_µM": "_M",
-                       r"(CH\d)TIM": r"\1,TIM", r"_([RT]XD\d?|DV|EN|CLK)ETH_": r"_\1,ETH_"}
+        sig_replace = {
+            r"[- ]|\(.*?\)": "",
+            r"(MOSI|SCK|NSS)I2S": r"\1,I2S",
+            "_µM": "_M",
+            r"(CH\d)TIM": r"\1,TIM",
+            r"_([RT]XD\d?|DV|EN|CLK)ETH_": r"_\1,ETH_",
+        }
 
         data_packages = defaultdict(list)
         data_pins = defaultdict(dict)
@@ -213,8 +223,9 @@ class DatasheetStm32(html.Document):
         # Import the pin definitions incl. additional function
         for row in self._table_pinout.cell_rows(br="<br>"):
             pin_name = row.match_value("pin +name|:name")[0].text(**pin_replace).strip()
-            if not pin_name: continue
-            ios = row.match_value("I ?/ ?O")[0].text(**{"-":""})
+            if not pin_name:
+                continue
+            ios = row.match_value("I ?/ ?O")[0].text(**{"-": ""})
             ptype = row.match_value("type")[0].text()
             # Hack to make fix the PD0/PD1 pins
             if pin_name.startswith("OSC") and (remap := row.match_value("remap")):
@@ -222,28 +233,30 @@ class DatasheetStm32(html.Document):
                     pin_name = f"{pin}-{pin_name}"
 
             data_pin = data_pins[pin_name]
-            if ios: data_pin["structure"] = ios
-            if ptype: data_pin["type"] = ptype
+            if ios:
+                data_pin["structure"] = ios
+            if ptype:
+                data_pin["type"] = ptype
             if ptype == "I/O" and "STM32F1" not in self.device_family:
-                signals = html.listify(row.match_value("additional")[0].text(**add_replace))
+                signals = html_listify(row.match_value("additional")[0].text(**add_replace))
                 data_pin["additional"] = set(signals)
 
             for domain, package_name in packages:
-                if ppos := html.listify(row[domain][0].text(**pos_replace)):
-                    data_packages[package_name].append( (pin_name, ppos) )
+                if ppos := html_listify(row[domain][0].text(**pos_replace)):
+                    data_packages[package_name].append((pin_name, ppos))
 
         # Import the alternate functions
         for table in self._tables_alternate_functions:
             cells = table.domains("port|pin +name").cells(r"AF(IO)?\d+")
             for pin, afs in cells.items():
-                name = html.replace(pin.split(":")[-1], **pin_replace)
+                name = html_replace(pin.split(":")[-1], **pin_replace)
                 data_pin = data_pins[name]
                 if "alternate" not in data_pin:
                     data_pin["alternate"] = defaultdict(list)
                 for af, csignals in afs.items():
                     af = int(re.search(r"AF(IO)?(\d{1,2})", af).group(2))
                     for csignal in csignals:
-                        signals = html.listify(csignal.text(**sig_replace))
+                        signals = html_listify(csignal.text(**sig_replace))
                         data_pin["alternate"][af].extend(signals)
 
         return data_packages, data_pins

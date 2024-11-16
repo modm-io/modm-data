@@ -53,7 +53,7 @@ def owl_from_cubemx(onto, data):
 
     # Add internal memories
     for memory in data["memories"]:
-        omem = onto.Memory("Memory_" + memory['name'].upper())
+        omem = onto.Memory("Memory_" + memory["name"].upper())
         odid.hasMemory.append(omem)
         omem.hasName = memory["name"].upper()
         omem.hasMemoryStartAddress = int(memory["start"], 16)
@@ -61,7 +61,7 @@ def owl_from_cubemx(onto, data):
         omem.hasMemoryAccess = memory["access"]
 
     # Add the peripherals and their type
-    for (pbase, name, version, ptype, features, stype) in data["modules"]:
+    for pbase, name, version, ptype, features, stype in data["modules"]:
         oper = onto.Peripheral("Peripheral_" + name.upper())
         odid.hasPeripheral.append(oper)
         oper.hasName = name.upper()
@@ -89,7 +89,7 @@ def owl_from_cubemx(onto, data):
         onto.pinPosition[opack, onto.hasPin, opin].append(pin["position"])
 
     # Add alternate and additional functions to pins
-    for (port, number, signals) in data["gpios"]:
+    for port, number, signals in data["gpios"]:
         opin = io_pins[(port, int(number))]
         for signal in signals:
             peripheral = (signal["driver"] or "").upper() + (signal["instance"] or "")
@@ -100,7 +100,8 @@ def owl_from_cubemx(onto, data):
             osig.hasPeripheral.append(onto.Peripheral("Peripheral_" + peripheral))
             osig.hasName = name
             opin.hasSignal.append(osig)
-            if af: onto.alternateFunction[opin, onto.hasSignal, osig].append(int(af))
+            if af:
+                onto.alternateFunction[opin, onto.hasSignal, osig].append(int(af))
 
 
 def owl_from_header(onto, header):

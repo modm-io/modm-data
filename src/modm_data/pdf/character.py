@@ -29,8 +29,10 @@ class Character:
     This class contains all information about a single character in the PDF
     page.
     """
+
     class RenderMode(Enum):
         """Tells the PDF viewer how to render this character glyph."""
+
         UNKNOWN = -1
         FILL = 0
         STROKE = 1
@@ -41,7 +43,7 @@ class Character:
         FILL_STROKE_CLIP = 6
         CLIP = 7
 
-    def __init__(self, page: "modm_data.pdf.page.Page", index: int):
+    def __init__(self, page: "modm_data.pdf.page.Page", index: int):  # noqa: F821
         """
         :param page: The page containing the character.
         :param index: The index of the character.
@@ -54,15 +56,14 @@ class Character:
 
         self.unicode: int = pp.raw.FPDFText_GetUnicode(self._text, self._index)
         """The unicode value of the character."""
-        self.objlink: "modm_data.pdf.link.ObjLink" = None
+        self.objlink: "modm_data.pdf.link.ObjLink" = None  # noqa: F821
         """The object link of this character or `None`"""
-        self.weblink: "modm_data.pdf.link.WebLink" = None
+        self.weblink: "modm_data.pdf.link.WebLink" = None  # noqa: F821
         """The web link of this character or `None`"""
 
         bbox = Rectangle(*self._text.get_charbox(self._index, loose=True))
         if self._page.rotation:
-            bbox = Rectangle(bbox.p0.y, self._page.height - bbox.p1.x,
-                             bbox.p1.y, self._page.height - bbox.p0.x)
+            bbox = Rectangle(bbox.p0.y, self._page.height - bbox.p1.x, bbox.p1.y, self._page.height - bbox.p0.x)
         self._bbox = bbox
 
     def _font_flags(self) -> tuple[str, int]:
@@ -107,8 +108,7 @@ class Character:
         """The tight bounding box of the character."""
         tbbox = Rectangle(*self._text.get_charbox(self._index))
         if self._page.rotation:
-            tbbox = Rectangle(tbbox.p0.y, self._page.height - tbbox.p1.x,
-                              tbbox.p1.y, self._page.height - tbbox.p0.x)
+            tbbox = Rectangle(tbbox.p0.y, self._page.height - tbbox.p1.x, tbbox.p1.y, self._page.height - tbbox.p0.x)
         return tbbox
 
     @property
@@ -142,7 +142,7 @@ class Character:
     def rotation(self) -> int:
         """The rotation of the character in degrees modulo 360."""
         # Special case for vertical text in rotated pages
-        if self._page.rotation == 90 and self._rotation == 0 and self.unicode not in {0x20, 0xa, 0xd}:
+        if self._page.rotation == 90 and self._rotation == 0 and self.unicode not in {0x20, 0xA, 0xD}:
             return 90
         if self._page.rotation and self._rotation:
             return (self._page.rotation + self._rotation) % 360
@@ -187,15 +187,17 @@ class Character:
         char = chr(self.unicode)
         if not char.isprintable():
             char = hex(self.unicode)
-        return f"Chr({char}, {self.size}, {self.weight}, {self.rotation}, " \
-               f"{self.render_mode}, {self.font}, {hex(self.flags)}, " \
-               f"{self.fill}, {self.stroke}, {repr(self.bbox)})"
+        return (
+            f"Chr({char}, {self.size}, {self.weight}, {self.rotation}, "
+            f"{self.render_mode}, {self.font}, {hex(self.flags)}, "
+            f"{self.fill}, {self.stroke}, {repr(self.bbox)})"
+        )
 
     def __str__(self) -> str:
         return self.char
 
     def __repr__(self) -> str:
         char = chr(self.unicode)
-        escape = {0xa: "\\n", 0xd: "\\r", 0x9: "\\t", 0x20: "␣"}
+        escape = {0xA: "\\n", 0xD: "\\r", 0x9: "\\t", 0x20: "␣"}
         char = escape.get(self.unicode, char if char.isprintable() else hex(self.unicode))
         return char

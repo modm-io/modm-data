@@ -10,8 +10,7 @@ class ReversePreOrderIter(AbstractIter):
         for child_ in reversed(children):
             if not AbstractIter._abort_at_level(2, maxlevel):
                 descendantmaxlevel = maxlevel - 1 if maxlevel else None
-                yield from ReversePreOrderIter._iter(
-                    child_.children, filter_, stop, descendantmaxlevel)
+                yield from ReversePreOrderIter._iter(child_.children, filter_, stop, descendantmaxlevel)
                 if stop(child_):
                     continue
                 if filter_(child_):

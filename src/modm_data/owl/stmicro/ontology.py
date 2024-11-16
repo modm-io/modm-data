@@ -1,9 +1,9 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re
 import owlready2 as owl
 from .. import Store
+
 
 class KeyDict:
     def __init__(self, values):
@@ -12,7 +12,7 @@ class KeyDict:
     def __getattr__(self, attr):
         val = self.values.get(attr, None)
         if val is None:
-            raise AttributeError("'{}' has no property '{}'".format(repr(self), attr))
+            raise AttributeError(f"'{self!r}' has no property '{attr}'")
         return val
 
 

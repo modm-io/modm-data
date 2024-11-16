@@ -30,12 +30,11 @@ def svd_file_devices() -> dict[Path, list[DeviceIdentifier]]:
                     hd_files[file] = devices
 
             files = list(root_path("ext/cmsis/svd/data/STMicro/").glob("*.svd"))
+
             def _sortkey(file):
                 name = re.sub(r"x+$", "", file.stem)
-                return (-len(name),
-                        name.count("x"),
-                        name.index("x") if "x" in name else 0,
-                        name)
+                return (-len(name), name.count("x"), name.index("x") if "x" in name else 0, name)
+
             files.sort(key=_sortkey)
 
             def _match(file, devices):
@@ -50,17 +49,19 @@ def svd_file_devices() -> dict[Path, list[DeviceIdentifier]]:
                 mdevices -= set(devices)
                 cm_files[file] = devices
 
-            filefmt = {"cm": {str(p):[str(d) for d in v] for p,v in cm_files.items()},
-                       "hd": {str(p):[str(d) for d in v] for p,v in hd_files.items()},
-                       "rm": {str(p):[str(d) for d in v] for p,v in rm_files.items()}}
-            with _SVD_MAP_FILE.open('w', encoding='utf-8') as fh:
+            filefmt = {
+                "cm": {str(p): [str(d) for d in v] for p, v in cm_files.items()},
+                "hd": {str(p): [str(d) for d in v] for p, v in hd_files.items()},
+                "rm": {str(p): [str(d) for d in v] for p, v in rm_files.items()},
+            }
+            with _SVD_MAP_FILE.open("w", encoding="utf-8") as fh:
                 json.dump(filefmt, fh, indent=4)
         else:
-            with _SVD_MAP_FILE.open('r', encoding='utf-8') as fh:
+            with _SVD_MAP_FILE.open("r", encoding="utf-8") as fh:
                 cache = json.load(fh)
-            rm_files = {Path(p):[did_from_string(d) for d in v] for p,v in cache["rm"].items()}
-            hd_files = {Path(p):[did_from_string(d) for d in v] for p,v in cache["hd"].items()}
-            cm_files = {Path(p):[did_from_string(d) for d in v] for p,v in cache["cm"].items()}
+            rm_files = {Path(p): [did_from_string(d) for d in v] for p, v in cache["rm"].items()}
+            hd_files = {Path(p): [did_from_string(d) for d in v] for p, v in cache["hd"].items()}
+            cm_files = {Path(p): [did_from_string(d) for d in v] for p, v in cache["cm"].items()}
 
         _SVD_FILES = (hd_files, cm_files, rm_files)
 
@@ -80,4 +81,3 @@ def svd_device_files() -> dict[DeviceIdentifier, list[Path]]:
     _remap(cm_files, "cm")
     _remap(rm_files, "rm")
     return device_files
-

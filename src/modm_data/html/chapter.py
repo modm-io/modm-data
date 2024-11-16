@@ -56,9 +56,13 @@ class Chapter:
                 current[1].append(item)
         if current[1]:
             heading_texts.append(tuple(current))
-        if pattern is None: return heading_texts
-        return [ht for ht in heading_texts if re.search(pattern,
-                ht[0].text(**subs) if ht[0] is not None else "", re.IGNORECASE)]
+        if pattern is None:
+            return heading_texts
+        return [
+            ht
+            for ht in heading_texts
+            if re.search(pattern, ht[0].text(**subs) if ht[0] is not None else "", re.IGNORECASE)
+        ]
 
     def heading_texts(self, pattern=None, **subs) -> list:
         return self._heading_objects(Text, pattern, **subs)
@@ -68,7 +72,8 @@ class Chapter:
 
     def tables(self, pattern: str = None, **subs) -> list[Table]:
         tables = [t for t in self.items if isinstance(t, Table)]
-        if pattern is None: return tables
+        if pattern is None:
+            return tables
         return [t for t in tables if re.search(pattern, t.caption(**subs), re.IGNORECASE)]
 
     def table(self, pattern: str) -> Table:

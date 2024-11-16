@@ -2,24 +2,23 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import re
-from functools import cached_property
 from collections import defaultdict
-from .text import replace as html_replace, ReDict, Text
+from .text import ReDict, Text, Heading
 
 
 class Cell(Text):
-    def __init__(self, x: int, y: int, xs: int=1, ys: int=1, head: bool=False):
+    def __init__(self, x: int, y: int, xs: int = 1, ys: int = 1, head: bool = False):
         super().__init__()
         self._span = (xs, ys)
         self._pos = [(x, y)]
         self._head = head
 
     @property
-    def span(self) -> tuple[int,int]:
+    def span(self) -> tuple[int, int]:
         return self._span
 
     @property
-    def positions(self) -> list[tuple[int,int]]:
+    def positions(self) -> list[tuple[int, int]]:
         return self._pos
 
     @property
@@ -69,7 +68,7 @@ class Domains:
                         # print(x, y, dom_x, dom_y)
                         cells[dom_y][dom_x].add(self._table.cell(x, y))
 
-        return ReDict({k:ReDict({vk:list(vv) for vk,vv in v.items()}) for k,v in cells.items()})
+        return ReDict({k: ReDict({vk: list(vv) for vk, vv in v.items()}) for k, v in cells.items()})
 
     def __repr__(self) -> str:
         return f"Domains({self.domains_x()}, {self.domains_y()})"
@@ -79,7 +78,7 @@ class Table:
     def __init__(self, heading=None):
         self._heading = heading or Heading("")
         self._cells = []
-        self._size = (0,0)
+        self._size = (0, 0)
         self._grid = None
         self._hrows = 0
         self._caption = Text("")
@@ -160,11 +159,8 @@ class Table:
         return self._size[1]
 
     @property
-    def size(self) -> tuple[int,int]:
+    def size(self) -> tuple[int, int]:
         return self._size
-
-    def cell(self, x, y) -> Cell:
-        return self._grid[y][x]
 
     def _normalize(self):
         xsize = sum(c._span[0] for c in self._cells if c._pos[0][1] == 0)
@@ -193,5 +189,3 @@ class Table:
             for x in range(self.columns):
                 print(self.cell(x, y).text()[:15] if self.cell(x, y) is not None else "None", end="\t")
             print()
-
-

@@ -16,7 +16,7 @@ def split_device_filter(device_filter: str) -> list[str]:
     if len(parts := device_filter.split("/")) >= 2:
         base = parts[0]
         devices.append(base)
-        base = base[:-len(parts[1])]
+        base = base[: -len(parts[1])]
         for part in parts[1:]:
             devices.append(base + part)
     else:

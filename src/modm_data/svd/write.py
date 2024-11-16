@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: MPL-2.0
 
 from lxml import etree
-from .model import *
+from .model import Device, Peripheral, Register, BitField
 
 
 def _add_element(node, tag, text=None):
     element = etree.Element(tag)
-    if text is not None: element.text = str(text)
+    if text is not None:
+        element.text = str(text)
     node.append(element)
     return element
 
@@ -55,7 +56,6 @@ def _format_bit_field(xmlnode, treenode):
 
 
 def _format_svd(xmlnode, treenode):
-
     current = xmlnode
     if isinstance(treenode, Device):
         current = _format_device(xmlnode, treenode)
@@ -90,16 +90,4 @@ def format_svd(register_tree):
 
 def write_svd(svd, path, pretty=True):
     with open(path, "wb") as file:
-        svd.write(file, pretty_print=pretty,
-                  doctype='<?xml version="1.0" encoding="utf-8" standalone="no"?>')
-
-
-def read_svd(path) -> Device:
-
-    parser = SVDParser.for_xml_file(path)
-    for peripheral in parser.get_device().peripherals:
-        print("%s @ 0x%08x" % (peripheral.name, peripheral.base_address))
-
-    with open(path, "wb") as file:
-        svd.write(file, pretty_print=pretty,
-                  doctype='<?xml version="1.0" encoding="utf-8" standalone="no"?>')
+        svd.write(file, pretty_print=pretty, doctype='<?xml version="1.0" encoding="utf-8" standalone="no"?>')

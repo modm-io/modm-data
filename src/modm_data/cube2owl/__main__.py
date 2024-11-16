@@ -1,19 +1,17 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re
 import tqdm
 import argparse
 import subprocess
 from pathlib import Path
-from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
 from modm_data.cubemx import devices_from_prefix, devices_from_partname
 from modm_data.header2svd.stmicro import Header
 from modm_data.html.stmicro import datasheet_for_device, reference_manual_for_device
 from modm_data.owl.stmicro import create_ontology
-from modm_data.py2owl.stmicro import *
+from modm_data.py2owl.stmicro import owl_from_did, owl_from_cubemx, owl_from_header, owl_from_doc
 
 
 def main():
@@ -29,23 +27,26 @@ def main():
         partnames = sorted(list(set(p[:9] for p in partnames)))
 
         Path("log/stmicro/owl").mkdir(exist_ok=True, parents=True)
-        calls = [f"python3 -m modm_data.cubemx2owl --prefix {partname} "
-                 f"> log/stmicro/owl/cubemx_{partname}.txt 2>&1"
-                 for partname in partnames]
+        calls = [
+            f"python3 -m modm_data.cube2owl --prefix {partname} > log/stmicro/owl/cubemx_{partname}.txt 2>&1"
+            for partname in partnames
+        ]
         with ThreadPool() as pool:
             retvals = list(tqdm.tqdm(pool.imap(lambda c: subprocess.run(c, shell=True), calls), total=len(calls)))
         for retval, call in zip(retvals, calls):
-            if retval.returncode != 0: print(call)
+            if retval.returncode != 0:
+                print(call)
         return all(r.returncode == 0 for r in retvals)
-
 
     for partname in devices_from_prefix(args.prefix.lower()):
         ds, rm = None, None
         for device in devices_from_partname(partname):
             did = device["id"]
             # Only change the documentation object if necessary to preserve caching
-            if ds != (nds := datasheet_for_device(did)): ds = nds
-            if rm != (nrm := reference_manual_for_device(did)): rm = nrm
+            if ds != (nds := datasheet_for_device(did)):
+                ds = nds
+            if rm != (nrm := reference_manual_for_device(did)):
+                rm = nrm
             print(did, ds, rm)
             if ds is None or rm is None:
                 print(f"Ignoring {did} due to lack of documents")

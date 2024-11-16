@@ -5,11 +5,7 @@ import re
 
 
 def replace(html, **substitutions) -> str:
-    subs = {
-        "u": "*", "i": "*", "b": "*",
-        "sub": "*", "sup": "*",
-        "br": "*", "p": "*"
-    }
+    subs = {"u": "*", "i": "*", "b": "*", "sub": "*", "sup": "*", "br": "*", "p": "*"}
     subs.update(substitutions)
     for tag, replacement in subs.items():
         if tag in {"u", "i", "b", "p", "br", "sup", "sub"}:
@@ -27,7 +23,8 @@ def replace(html, **substitutions) -> str:
 
 
 def listify(text, pattern=None, strip=True) -> list[str]:
-    if pattern is None: pattern = " |,|/|<br>"
+    if pattern is None:
+        pattern = " |,|/|<br>"
     text = re.split(pattern, text)
     if strip:
         return [t.strip() for t in text if t.strip()]
@@ -49,8 +46,10 @@ class ReDict(dict):
 
     def match_key(self, pattern, default=None, **subs) -> str:
         keys = self.match_keys(pattern, **subs)
-        if default is None: assert len(keys) == 1
-        if len(keys) != 1: return default
+        if default is None:
+            assert len(keys) == 1
+        if len(keys) != 1:
+            return default
         return keys[0]
 
     def match_keys(self, pattern, **subs) -> list:

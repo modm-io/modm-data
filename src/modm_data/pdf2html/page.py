@@ -1,19 +1,16 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re
-import math
 import logging
-import textwrap
 import statistics
 from typing import Callable
-from functools import cached_property, cache, reduce
+from functools import cached_property
 from collections import defaultdict
 from .table import Table
 from .figure import Figure
 from .line import CharLine
-from ..utils import HLine, VLine, Rectangle, Region
-from ..pdf import Path, Image, Page as PdfPage, Character
+from ..utils import Rectangle, Region
+from ..pdf import Page as PdfPage, Character
 from anytree import Node
 
 
@@ -53,16 +50,24 @@ class Page(PdfPage):
 
     def _line_size(self, line: CharLine) -> str:
         rsize = line.height
-        if rsize >= 17.5: return "h1"
-        elif rsize >= 15.5: return "h2"
-        elif rsize >= 13.5: return "h3"
-        elif rsize >= 11.4: return "h4"
-        elif rsize >= 8.5: return "n"
-        else: return "fn"
+        if rsize >= 17.5:
+            return "h1"
+        elif rsize >= 15.5:
+            return "h2"
+        elif rsize >= 13.5:
+            return "h3"
+        elif rsize >= 11.4:
+            return "h4"
+        elif rsize >= 8.5:
+            return "n"
+        else:
+            return "fn"
 
     def _colors(self, color: int) -> str:
-        if 0xff <= color <= 0xff: return "black"
-        if 0xffffffff <= color <= 0xffffffff: return "white"
+        if 0xFF <= color <= 0xFF:
+            return "black"
+        if 0xFFFFFFFF <= color <= 0xFFFFFFFF:
+            return "white"
         return "unknown"
 
     @cached_property
@@ -70,9 +75,10 @@ class Page(PdfPage):
         content = Rectangle(0.1, 0.1, 0.9, 0.9)
         areas = {"content": [content]}
         scaled_areas = {}
+
         def _s(r):
-            return Rectangle(r.left * self.width, r.bottom * self.height,
-                             r.right * self.width, r.top * self.height)
+            return Rectangle(r.left * self.width, r.bottom * self.height, r.right * self.width, r.top * self.height)
+
         for name, area in areas.items():
             scaled_areas[name] = [_s(r) for r in area] if isinstance(area, list) else _s(area)
         return scaled_areas
@@ -107,17 +113,21 @@ class Page(PdfPage):
         :param check_length: assert that the text has a length.
         :return: the concatenated text of the named area(s) or `None` if area not found.
         """
-        if name not in self._areas: return None
+        if name not in self._areas:
+            return None
         text = ""
         areas = self._areas[name]
-        if not isinstance(areas, list): areas = [areas]
-        for area in areas: text += self.text_in_area(area)
-        if check_length: assert text
+        if not isinstance(areas, list):
+            areas = [areas]
+        for area in areas:
+            text += self.text_in_area(area)
+        if check_length:
+            assert text
         return text
 
-    def charlines_in_area(self, area: Rectangle,
-                          predicate: Callable[[Character], bool] = None,
-                          rtol: float = None) -> list[CharLine]:
+    def charlines_in_area(
+        self, area: Rectangle, predicate: Callable[[Character], bool] = None, rtol: float = None
+    ) -> list[CharLine]:
         """
         Coalesce the characters in the area and predicate into lines.
 
@@ -135,7 +145,8 @@ class Page(PdfPage):
         :param rtol: Relative tolerance to separate lines vertically or use `sc` spacing by default.
         :return: A list of character lines sorted by x or y position.
         """
-        if rtol is None: rtol = self._spacing["sc"]
+        if rtol is None:
+            rtol = self._spacing["sc"]
         # Split all chars into lines based on rounded origin
         origin_lines_y = defaultdict(list)
         origin_lines_x = defaultdict(list)
@@ -144,12 +155,13 @@ class Page(PdfPage):
             if predicate is not None and not predicate(char):
                 continue
             cunicode = self._unicode_filter(char.unicode)
-            if cunicode is None: continue
+            if cunicode is None:
+                continue
             char.unicode = cunicode
-            if char.unicode < 32 and char.unicode not in {0xa}:
+            if char.unicode < 32 and char.unicode not in {0xA}:
                 continue
             # Ignore characters without width that are not spaces
-            if not char.width and char.unicode not in {0xa, 0xd, 0x20}:
+            if not char.width and char.unicode not in {0xA, 0xD, 0x20}:
                 _LOGGER.error(f"Unknown char width for {char}: {char.bbox}")
             # Split up the chars depending on the orientation
             if 45 < char.rotation <= 135 or 225 < char.rotation <= 315:
@@ -163,32 +175,38 @@ class Page(PdfPage):
         bbox_lines_y = []
         for chars in origin_lines_y.values():
             # Remove lines with whitespace only
-            if all(c.unicode in {0xa, 0xd, 0x20} for c in chars):
+            if all(c.unicode in {0xA, 0xD, 0x20} for c in chars):
                 continue
             origin = statistics.fmean(c.origin.y for c in chars)
-            line = CharLine(self, chars,
-                            min(c.bbox.bottom for c in chars),
-                            origin,
-                            max(c.bbox.top for c in chars),
-                            max(c.height for c in chars),
-                            sort_origin=self.height - origin)
+            line = CharLine(
+                self,
+                chars,
+                min(c.bbox.bottom for c in chars),
+                origin,
+                max(c.bbox.top for c in chars),
+                max(c.height for c in chars),
+                sort_origin=self.height - origin,
+            )
             bbox_lines_y.append(line)
             # print(line, line.top, line.origin, line.bottom, line.height)
-        bbox_lines = sorted(bbox_lines_y, key=lambda l: l._sort_origin)
+        bbox_lines = sorted(bbox_lines_y, key=lambda line: line._sort_origin)
 
         bbox_lines_x = []
         for chars in origin_lines_x.values():
             # Remove lines with whitespace only
-            if all(c.unicode in {0xa, 0xd, 0x20} for c in chars):
+            if all(c.unicode in {0xA, 0xD, 0x20} for c in chars):
                 continue
-            line = CharLine(self, chars,
-                            min(c.bbox.left for c in chars),
-                            statistics.fmean(c.origin.x for c in chars),
-                            max(c.bbox.right for c in chars),
-                            max(c.width for c in chars),
-                            270 if sum(c.rotation for c in chars) <= 135 * len(chars) else 90)
+            line = CharLine(
+                self,
+                chars,
+                min(c.bbox.left for c in chars),
+                statistics.fmean(c.origin.x for c in chars),
+                max(c.bbox.right for c in chars),
+                max(c.width for c in chars),
+                270 if sum(c.rotation for c in chars) <= 135 * len(chars) else 90,
+            )
             bbox_lines_x.append(line)
-        bbox_lines += sorted(bbox_lines_x, key=lambda l: l._sort_origin)
+        bbox_lines += sorted(bbox_lines_x, key=lambda line: line._sort_origin)
 
         if not bbox_lines:
             return []
@@ -200,8 +218,7 @@ class Page(PdfPage):
         for next_line in bbox_lines[1:]:
             height = max(current_line.height, next_line.height)
             # Calculate overlap via normalize origin (increasing with line index)
-            if ((current_line._sort_origin + rtol * height) >
-                (next_line._sort_origin - rtol * height)):
+            if (current_line._sort_origin + rtol * height) > (next_line._sort_origin - rtol * height):
                 # if line.rotation or self.rotation:
                 #     # The next line overlaps this one, we merge the shorter line
                 #     # (typically super- and subscript) into taller line
@@ -209,10 +226,16 @@ class Page(PdfPage):
                 # else:
                 use_current = current_line.height >= next_line.height
                 line = current_line if use_current else next_line
-                current_line = CharLine(self, current_line.chars + next_line.chars,
-                                        line.bottom, line.origin, line.top,
-                                        height, line.rotation,
-                                        sort_origin=line._sort_origin)
+                current_line = CharLine(
+                    self,
+                    current_line.chars + next_line.chars,
+                    line.bottom,
+                    line.origin,
+                    line.top,
+                    height,
+                    line.rotation,
+                    sort_origin=line._sort_origin,
+                )
             else:
                 # The next line does not overlap the current line
                 merged_lines.append(current_line)
@@ -224,29 +247,43 @@ class Page(PdfPage):
         sorted_lines = []
         for line in merged_lines:
             if line.rotation == 90:
+
                 def sort_key(char):
-                    if char.unicode in {0xa, 0xd}:
+                    if char.unicode in {0xA, 0xD}:
                         return char.tbbox.midpoint.y - 1e9
                     return char.tbbox.midpoint.y
             elif line.rotation == 270:
+
                 def sort_key(char):
-                    if char.unicode in {0xa, 0xd}:
+                    if char.unicode in {0xA, 0xD}:
                         return -char.tbbox.midpoint.y + 1e9
                     return -char.tbbox.midpoint.y
             else:
+
                 def sort_key(char):
-                    if char.unicode in {0xa, 0xd}:
+                    if char.unicode in {0xA, 0xD}:
                         return char.origin.x + 1e9
                     return char.origin.x
-            sorted_lines.append(CharLine(self, sorted(line.chars, key=sort_key),
-                                         line.bottom, line.origin,
-                                         line.top, line.height,
-                                         line.rotation, area.left,
-                                         sort_origin=line._sort_origin))
+
+            sorted_lines.append(
+                CharLine(
+                    self,
+                    sorted(line.chars, key=sort_key),
+                    line.bottom,
+                    line.origin,
+                    line.top,
+                    line.height,
+                    line.rotation,
+                    area.left,
+                    sort_origin=line._sort_origin,
+                )
+            )
 
         return sorted_lines
 
-    def graphic_bboxes_in_area(self, area: Rectangle, with_graphics: bool = True) -> list[tuple[Rectangle, Table | Figure | None]]:
+    def graphic_bboxes_in_area(
+        self, area: Rectangle, with_graphics: bool = True
+    ) -> list[tuple[Rectangle, Table | Figure | None]]:
         """
         Coalesce the graphics in the area into full width bounding boxes.
 
@@ -305,7 +342,10 @@ class Page(PdfPage):
                 objects += self.charlines_in_area(narea)
             else:
                 oarea = obj.bbox.joined(obj.cbbox) if obj.cbbox else obj.bbox
-                predicate = lambda c: not obj.bbox.contains(c.origin)
+
+                def predicate(c):
+                    return not obj.bbox.contains(c.origin)
+
                 lines = self.charlines_in_area(oarea, predicate)
                 # print(obj, oarea, lines, [line.content for line in lines])
                 objects += list(sorted(lines + [obj], key=lambda o: (-o.bbox.y, o.bbox.x)))

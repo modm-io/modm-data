@@ -4,11 +4,11 @@
 import logging
 from lxml import etree
 import anytree
-from anytree import RenderTree
 from ..utils import list_strip
 from .ast import normalize_lines, normalize_lists, normalize_paragraphs
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def _format_html_figure(xmlnode, figurenode):
     tnode = etree.Element("table")
@@ -84,8 +84,9 @@ def _format_html_table(xmlnode, tablenode):
             cell_doc = normalize_lists(cell_doc)
             cell_doc = normalize_paragraphs(cell_doc)
             # _LOGGER.debug(RenderTree(cell_doc))
-            _format_html(xynodespan, cell_doc, with_newlines=True,
-                         ignore_formatting={"bold"} if cell.is_header else None)
+            _format_html(
+                xynodespan, cell_doc, with_newlines=True, ignore_formatting={"bold"} if cell.is_header else None
+            )
 
 
 def _format_char(node, state, chars, ignore):
@@ -96,9 +97,10 @@ def _format_char(node, state, chars, ignore):
         "bold": False,
         "underline": False,
     }
-    if state is None: state = NOFMT
+    if state is None:
+        state = NOFMT
     char = chars[0]
-    if char["char"] in {'\r'}:
+    if char["char"] in {"\r"}:
         return (True, node, state)
 
     # print(node, state, char["char"])
@@ -110,7 +112,7 @@ def _format_char(node, state, chars, ignore):
     if not diffs:
         prev_name = node.children[-1].name if node.children else None
         # print(node)
-        if prev_name != "newline" and char["char"] == '\n':
+        if prev_name != "newline" and char["char"] == "\n":
             # if not (prev_name == "chars" and node.children[-1].chars[-1] == " "):
             anytree.Node("newline", parent=node)
         elif prev_name != "chars":
@@ -136,21 +138,22 @@ def _format_lines(textnode, ignore, with_newlines, with_start):
     chars = []
     for line in textnode.children:
         if line.name == "line":
-            for char in line.obj.chars[0 if with_start else line.start:]:
-                if not with_newlines and char.unicode in {0xa, 0xd}:
+            for char in line.obj.chars[0 if with_start else line.start :]:
+                if not with_newlines and char.unicode in {0xA, 0xD}:
                     continue
                 chars.append(char_props(line.obj, char))
-            if with_newlines and chars[-1]["char"] not in {'\n'}:
+            if with_newlines and chars[-1]["char"] not in {"\n"}:
                 char = char_props(line.obj, line.obj.chars[-1])
-                char["char"] = '\n'
+                char["char"] = "\n"
                 chars.append(char)
 
-    chars = list_strip(chars, lambda c: c["char"] in {' ', '\n'})
+    chars = list_strip(chars, lambda c: c["char"] in {" ", "\n"})
     state = None
     node = formatn
     while chars:
         popchar, node, state = _format_char(node, state, chars, ignore)
-        if popchar: chars.pop(0)
+        if popchar:
+            chars.pop(0)
     return formatn
 
 
@@ -173,7 +176,8 @@ def _format_html_fmt(xmlnode, treenode, tail=False):
         return (tail, xmlnode)
     else:
         # print(f"sub {treenode.name}")
-        if tail: xmlnode = xmlnode.getparent()
+        if tail:
+            xmlnode = xmlnode.getparent()
         subnode = etree.SubElement(xmlnode, CONV[treenode.name])
         tail = False
         iternode = subnode
@@ -193,8 +197,7 @@ def _format_html_text(xmlnode, treenode, ignore=None, with_newlines=False, with_
     # print(etree.tostring(xmlnode, pretty_print=True).decode("utf-8"))
 
 
-def _format_html(xmlnode, treenode, ignore_formatting=None,
-                 with_newlines=False, with_start=True):
+def _format_html(xmlnode, treenode, ignore_formatting=None, with_newlines=False, with_start=True):
     if ignore_formatting is None:
         ignore_formatting = set()
     # print(xmlnode, treenode.name)
@@ -232,9 +235,9 @@ def _format_html(xmlnode, treenode, ignore_formatting=None,
         _format_html_figure(xmlnode, treenode)
         return
 
-    elif treenode.name == "bits":
-        _format_html_bits(xmlnode, treenode)
-        return
+    # elif treenode.name == "bits":
+    #     _format_html_bits(xmlnode, treenode)
+    #     return
 
     elif treenode.name.startswith("list"):
         if treenode.name[4] in {"b", "s"}:

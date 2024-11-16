@@ -3,29 +3,32 @@
 
 from functools import cached_property
 from anytree import Node
-from ..utils import Rectangle
+from dataclasses import dataclass
+from ..utils import Rectangle, Point
 from .line import CharLine
 
 
-class TableCell:
-    class Borders:
-        """The four borders of a Cell"""
-        def __init__(self, l, b, r, t):
-            self.l = l
-            self.b = b
-            self.r = r
-            self.t = t
+@dataclass
+class Borders:
+    """The four borders of a `Cell`"""
 
-    def __init__(self, table, position, bbox, borders, is_simple=False):
+    left: bool
+    bottom: bool
+    right: bool
+    top: bool
+
+
+class Cell:
+    def __init__(self, table, position: Point, bbox: Rectangle, borders: Borders, is_simple: bool = False):
         self._table = table
         self._bboxes = [bbox]
-        self.b = borders
-        """Borders of the cell"""
-        self.positions = [position]
-        """Index positions of the cell"""
-        self.is_header = False
-        """Is this cell a header?"""
         self._is_simple = is_simple
+        self.borders: Borders = borders
+        """Borders of the cell"""
+        self.positions: list[Point] = [position]
+        """Index positions of the cell"""
+        self.is_header: bool = False
+        """Is this cell a header?"""
 
     def _merge(self, other):
         self.positions.extend(other.positions)
@@ -74,16 +77,19 @@ class TableCell:
     @cached_property
     def rotation(self) -> int:
         """The rotation of the cell text."""
-        if not self.lines: return 0
+        if not self.lines:
+            return 0
         return self.lines[0].rotation
 
     @cached_property
     def bbox(self) -> Rectangle:
         """The tight bounding box of this cell."""
-        return Rectangle(min(bbox.left   for bbox in self._bboxes),
-                         min(bbox.bottom for bbox in self._bboxes),
-                         max(bbox.right  for bbox in self._bboxes),
-                         max(bbox.top    for bbox in self._bboxes))
+        return Rectangle(
+            min(bbox.left for bbox in self._bboxes),
+            min(bbox.bottom for bbox in self._bboxes),
+            max(bbox.right for bbox in self._bboxes),
+            max(bbox.top for bbox in self._bboxes),
+        )
 
     @cached_property
     def lines(self) -> list[CharLine]:
@@ -107,19 +113,22 @@ class TableCell:
     @cached_property
     def ast(self) -> Node:
         """The abstract syntax tree of the cell without graphics."""
-        ast = self._table._page.ast_in_area(self.bbox, with_graphics=False,
-                                            ignore_xpos=not self.is_left_aligned,
-                                            with_bits=False, with_notes=False)
+        ast = self._table._page.ast_in_area(
+            self.bbox, with_graphics=False, ignore_xpos=not self.is_left_aligned, with_bits=False, with_notes=False
+        )
         ast.name = "cell"
         return ast
 
     def __repr__(self) -> str:
         positions = ",".join(f"({p[1]},{p[0]})" for p in self.positions)
         borders = ""
-        if self.b.l: borders += "["
-        if self.b.b: borders += "_"
-        if self.b.t: borders += "^"
-        if self.b.r: borders += "]"
+        if self.borders.left:
+            borders += "["
+        if self.borders.bottom:
+            borders += "_"
+        if self.borders.top:
+            borders += "^"
+        if self.borders.right:
+            borders += "]"
         start = "CellH" if self.is_header else "Cell"
         return start + f"[{positions}] {borders}"
-

@@ -5,17 +5,25 @@ from anytree import RenderTree
 
 from .html import format_document, write_html
 from .render import render_page_pdf
-from ..utils import pkg_apply_patch, pkg_file_exists
+from ..utils import pkg_apply_patch, pkg_file_exists, apply_patch
 from .ast import merge_area
 from pathlib import Path
 import pypdfium2 as pp
-import subprocess
 
 
-def convert(doc, page_range, output_path, format_chapters=False, pretty=True,
-            render_html=True, render_pdf=False, render_all=False,
-            show_ast=False, show_tree=False, show_tags=False) -> bool:
-
+def convert(
+    doc,
+    page_range,
+    output_path,
+    format_chapters=False,
+    pretty=True,
+    render_html=True,
+    render_pdf=False,
+    render_all=False,
+    show_ast=False,
+    show_tree=False,
+    show_tags=False,
+) -> bool:
     document = None
     debug_doc = None
     debug_index = 0
@@ -43,7 +51,7 @@ def convert(doc, page_range, output_path, format_chapters=False, pretty=True,
             debug_index += 1
 
     if render_pdf:
-        with open(f"debug_{output_path.stem}.pdf", 'wb') as file_handle:
+        with open(f"debug_{output_path.stem}.pdf", "wb") as file_handle:
             pp.PdfDocument(debug_doc).save(file_handle)
 
     if show_tree or render_html:

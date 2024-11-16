@@ -1,12 +1,11 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re, os, sys, subprocess, shutil
+import re
+import sys
+import subprocess
 from pathlib import Path
 from jinja2 import Environment
-from os import listdir
-from os.path import isfile, join, abspath
-from collections import defaultdict
 
 TABLE_TEMPLATE = \
 r"""
@@ -55,7 +54,7 @@ def extract(text, key):
 
 def format_table(items, width, align=None):
     subs = {"items": items, "width": width}
-    if align: subs["align"] = align;
+    if align: subs["align"] = align
     return Environment().from_string(TABLE_TEMPLATE).render(subs)
 
 def template(path_in, path_out, substitutions):

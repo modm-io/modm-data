@@ -1,7 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re
 import tqdm
 import argparse
 import subprocess
@@ -31,20 +30,22 @@ def main():
                 docs.append(doc)
 
         Path("log/stmicro/svd").mkdir(exist_ok=True, parents=True)
-        calls = [f"python3 -m modm_data.html2svd.stmicro --stm32 {doc.path} "
-                 f"> log/stmicro/svd/html_{doc.name}.txt 2>&1" for doc in docs]
+        calls = [
+            f"python3 -m modm_data.html2svd.stmicro --stm32 {doc.path} " f"> log/stmicro/svd/html_{doc.name}.txt 2>&1"
+            for doc in docs
+        ]
         with ThreadPool() as pool:
             retvals = list(tqdm.tqdm(pool.imap(lambda c: subprocess.run(c, shell=True), calls), total=len(calls)))
         for retval, call in zip(retvals, calls):
-            if retval.returncode != 0: print(call)
+            if retval.returncode != 0:
+                print(call)
         return all(r.returncode == 0 for r in retvals)
 
     if args.stm32:
         doc = ReferenceManual(args.stm32.absolute())
     elif args.sensor:
         doc = DatasheetSensor(args.sensor.absolute())
-    print(doc.path_pdf.relative_to(Path().cwd()),
-          doc.path.relative_to(Path().cwd()))
+    print(doc.path_pdf.relative_to(Path().cwd()), doc.path.relative_to(Path().cwd()))
 
     if args.stm32:
         mmaptrees = memory_map_from_reference_manual(doc)

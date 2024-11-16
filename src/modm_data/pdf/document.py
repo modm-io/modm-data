@@ -11,7 +11,6 @@ You should extend from this class for a specific vendor to provide the
 correct page class from `page()` function.
 """
 
-
 import ctypes
 import logging
 import pypdfium2 as pp
@@ -30,7 +29,8 @@ class _OutlineItem(pp.PdfOutlineItem):
         return hash(f"{self.page_index}+{self.title}")
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, type(self)): return NotImplemented
+        if not isinstance(other, type(self)):
+            return NotImplemented
         return self.page_index == other.page_index and self.title == other.title
 
     def __repr__(self) -> str:
@@ -42,6 +42,7 @@ class Document(pp.PdfDocument):
     This class is a convenience wrapper with caching around the high-level APIs
     of pypdfium.
     """
+
     def __init__(self, path: Path, autoclose: bool = False):
         """
         :param path: Path to the PDF to open.
@@ -65,9 +66,9 @@ class Document(pp.PdfDocument):
         for ii in range(pp.raw.FPDF_CountNamedDests(self)):
             length = pp.raw.FPDF_GetNamedDest(self, ii, 0, 0)
             clength = ctypes.c_long(length)
-            cbuffer = ctypes.create_string_buffer(length*2)
+            cbuffer = ctypes.create_string_buffer(length * 2)
             dest = pp.raw.FPDF_GetNamedDest(self, ii, cbuffer, clength)
-            name = cbuffer.raw[:clength.value*2].decode("utf-16-le").rstrip("\x00")
+            name = cbuffer.raw[: clength.value * 2].decode("utf-16-le").rstrip("\x00")
             page = pp.raw.FPDFDest_GetDestPageIndex(self, dest)
             yield (page, name)
 
@@ -81,9 +82,15 @@ class Document(pp.PdfDocument):
         # Sometimes the TOC contains duplicates so we must use a set
         last_page_index = 0
         for toc in self.get_toc():
-            outline = _OutlineItem(toc.level, toc.title, toc.is_closed,
-                                   toc.n_kids, toc.page_index or last_page_index,
-                                   toc.view_mode, toc.view_pos)
+            outline = _OutlineItem(
+                toc.level,
+                toc.title,
+                toc.is_closed,
+                toc.n_kids,
+                toc.page_index or last_page_index,
+                toc.view_mode,
+                toc.view_pos,
+            )
             last_page_index = toc.page_index or last_page_index
             tocs.add(outline)
         return list(sorted(list(tocs), key=lambda o: (o.page_index, o.level, o.title)))

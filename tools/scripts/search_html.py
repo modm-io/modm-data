@@ -121,7 +121,7 @@ def main():
                 chanode = anytree.Node("chapter", parent=docnode, obj=chapter)
                 for table in tables:
                     print(table, table.caption())
-                    tabnode = anytree.Node("table", parent=chanode, obj=table)
+                    anytree.Node("table", parent=chanode, obj=table)
 
     html = format_document(rootnode)
     with open(Path(args.html), "wb") as f:

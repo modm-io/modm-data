@@ -12,7 +12,6 @@ Both types can be extracted by calling the `modm_data.pdf.page.Page.objlinks`
 and `modm_data.pdf.page.Page.weblinks` properties.
 """
 
-import copy
 import ctypes
 from functools import cached_property
 import pypdfium2 as pp
@@ -21,7 +20,8 @@ from ..utils import Rectangle
 
 class ObjLink:
     """A link to a PDF object giving the bounding box and destination page."""
-    def __init__(self, page: "modm_data.pdf.Page", link: pp.raw.FPDF_LINK):
+
+    def __init__(self, page: "modm_data.pdf.Page", link: pp.raw.FPDF_LINK):  # noqa: F821
         """
         :param page: Page containing the link, used to compute bounding box.
         :param link: Raw link object.
@@ -33,8 +33,7 @@ class ObjLink:
         assert pp.raw.FPDFLink_GetAnnotRect(link, bbox)
         bbox = Rectangle(bbox)
         if page.rotation:
-            bbox = Rectangle(bbox.p0.y, page.height - bbox.p1.x,
-                             bbox.p1.y, page.height - bbox.p0.x)
+            bbox = Rectangle(bbox.p0.y, page.height - bbox.p1.x, bbox.p1.y, page.height - bbox.p0.x)
         self.bbox: Rectangle = bbox
         """Bounding box of the link source"""
 
@@ -49,7 +48,8 @@ class ObjLink:
 
 class WebLink:
     """A weblink object giving the bounding box and destination URL."""
-    def __init__(self, page: "modm_data.pdf.Page", index: int):
+
+    def __init__(self, page: "modm_data.pdf.Page", index: int):  # noqa: F821
         """
         :param page: Page containing the link, used to compute bounding box.
         :param index: 0-index of the weblink object.
@@ -73,9 +73,10 @@ class WebLink:
             assert pp.raw.FPDFLink_GetRect(self._link, self._index, ii, x0, y1, x1, y0)
             bboxes.append(Rectangle(x0.value, y0.value, x1.value, y1.value))
         if self._page.rotation:
-            bboxes = [Rectangle(bbox.p0.y, self._page.height - bbox.p1.x,
-                                bbox.p1.y, self._page.height - bbox.p0.x)
-                      for bbox in bboxes]
+            bboxes = [
+                Rectangle(bbox.p0.y, self._page.height - bbox.p1.x, bbox.p1.y, self._page.height - bbox.p0.x)
+                for bbox in bboxes
+            ]
         return bboxes
 
     @cached_property
