@@ -30,3 +30,15 @@ jobs:
       - name: Run Regression Tests
         run: |
           make run-regression-tests
+
+      - name: Run Ruff Formatter
+        uses: chartboost/ruff-action@v1
+        with:
+          src: "./src"
+          args: "format --check"
+
+      - name: Run Ruff Linter
+        uses: chartboost/ruff-action@v1
+        with:
+          src: "./src"
+          args: "check"
