@@ -14,14 +14,14 @@ from ...owl.stmicro import did_from_string
 import modm_data.html as html
 
 
-class DatasheetMicro(html.Document):
+class DatasheetStm32(html.Document):
     def __init__(self, path: str):
         super().__init__(path)
         self._id = {}
         self._devices = {}
 
     def __repr__(self) -> str:
-        return f"DSµC({self.fullname})"
+        return f"DSstm32({self.fullname})"
 
     @cached_property
     def device_family(self) -> str:
@@ -247,11 +247,3 @@ class DatasheetMicro(html.Document):
                         data_pin["alternate"][af].extend(signals)
 
         return data_packages, data_pins
-
-
-class DatasheetSensor(html.Document):
-    def __init__(self, path: str):
-        super().__init__(path)
-
-    def __repr__(self) -> str:
-        return f"DSsens({self.fullname})"

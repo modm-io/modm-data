@@ -1,7 +1,7 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re
+import re, os
 import logging
 from pathlib import Path
 from functools import cached_property
@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 class Document:
     def __init__(self, path: str):
         self.path = Path(path)
-        self.relpath = self.path.relative_to(Path().cwd())
+        self.relpath = os.path.relpath(self.path, Path().cwd())
         self.fullname = self.path.stem
         self.name = self.fullname.split("-")[0]
         self.version = self.fullname.split("-")[1]
@@ -41,6 +41,8 @@ class Document:
             LOGGER.error(f"Cannot find chapter with pattern '{pattern}'!")
         if len(chapters) > 1:
             LOGGER.error(f"Found multiple chapters with pattern '{pattern}'!")
+            for chapter in chapters:
+                LOGGER.error(f"  - {chapter.name}")
         assert len(chapters) == 1
         return chapters[0]
 

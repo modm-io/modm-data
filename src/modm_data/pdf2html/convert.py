@@ -3,10 +3,11 @@
 
 from anytree import RenderTree
 
-from .ast import merge_area, normalize_document
-from .ast import format_document, write_html
-from ..render import render_page_pdf
-from ...utils import pkg_apply_patch, pkg_file_exists
+from .html import format_document, write_html
+from .render import render_page_pdf
+from ..utils import pkg_apply_patch, pkg_file_exists
+from .ast import merge_area
+from pathlib import Path
 import pypdfium2 as pp
 import subprocess
 
@@ -19,7 +20,7 @@ def convert(doc, page_range, output_path, format_chapters=False, pretty=True,
     debug_doc = None
     debug_index = 0
     for page in doc.pages(page_range):
-        if not render_all and any(c in page.top for c in {"Contents", "List of ", "Index"}):
+        if not render_all and not page.is_relevant:
             continue
         print(f"\n\n=== {page.top} #{page.number} ===\n")
 
@@ -50,7 +51,7 @@ def convert(doc, page_range, output_path, format_chapters=False, pretty=True,
             print("No pages parsed, empty document!")
             return True
 
-        document = normalize_document(document)
+        document = doc._normalize(document)
         if show_tree:
             print(RenderTree(document))
 
@@ -72,15 +73,14 @@ def convert(doc, page_range, output_path, format_chapters=False, pretty=True,
     return True
 
 
-def patch(doc, output_path, patch_file=None) -> bool:
+def patch(doc, data_module, output_path: Path, patch_file: Path = None) -> bool:
     if patch_file is None:
-        from . import data
         # First try the patch file for the specific version
         patch_file = f"{doc.name}.patch"
-        if not pkg_file_exists(data, patch_file):
+        if not pkg_file_exists(data_module, patch_file):
             # Then try the patch file shared between versions
             patch_file = f"{doc.name.split('-')[0]}.patch"
-            if not pkg_file_exists(data, patch_file):
+            if not pkg_file_exists(data_module, patch_file):
                 return True
-        return pkg_apply_patch(data, patch_file, output_path)
+        return pkg_apply_patch(data_module, patch_file, output_path)
     return apply_patch(patch_file, output_path)

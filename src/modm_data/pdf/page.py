@@ -19,10 +19,11 @@ import pypdfium2 as pp
 from ..utils import Rectangle, Region
 from .character import Character
 from .link import ObjLink, WebLink
-from .graphics import Path, Image
+from .path import Path
+from .image import Image
 from .structure import Structure
 
-LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class Page(pp.PdfPage):
@@ -46,7 +47,7 @@ class Page(pp.PdfPage):
         self._weblinks = None
         self._linked = False
 
-        LOGGER.debug(f"Loading: {index}")
+        _LOGGER.debug(f"Loading: {index}")
 
         self._text = self.get_textpage()
         self._linkpage = pp.raw.FPDFLink_LoadWebLinks(self._text)
@@ -177,9 +178,8 @@ class Page(pp.PdfPage):
         """All images."""
         return [Image(o) for o in self.get_objects([pp.raw.FPDF_PAGEOBJ_IMAGE])]
 
-    def graphic_clusters(self, predicate: Callable[[Path|Image], bool] = None,
-                         absolute_tolerance: float = None) -> \
-                                            list[tuple[Rectangle, list[Path]]]:
+    def graphic_clusters(self, predicate: Callable[[Path | Image], bool] = None,
+                         absolute_tolerance: float = None) -> list[tuple[Rectangle, list[Path]]]:
         if absolute_tolerance is None:
             absolute_tolerance = min(self.width, self.height) * 0.01
 
@@ -287,4 +287,4 @@ class Page(pp.PdfPage):
                 bbox = bbox.rotated(-self.rotation - char._rotation).translated(char.origin)
                 char._bbox = bbox
             elif char.unicode not in {0x20, 0xa, 0xd}:
-                LOGGER.debug(f"Unable to fix bbox for {char.descr()}!")
+                _LOGGER.debug(f"Unable to fix bbox for {char.descr()}!")

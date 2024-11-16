@@ -8,15 +8,17 @@ import textwrap
 import statistics
 from functools import cached_property, cache, reduce
 from collections import defaultdict
-from .table import Table
+from ..table import Table
 from ..figure import Figure
 from ..line import CharLine
 from ...utils import HLine, VLine, Rectangle, Region
 from ...pdf import Path, Image, Page as PdfPage
+from ..page import Page as BasePage
 from anytree import Node
 
 
-LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
+
 
 def is_compatible(document) -> bool:
     if "stmicro" in document.metadata.get("Author", "").lower():
@@ -24,7 +26,7 @@ def is_compatible(document) -> bool:
     return False
 
 
-def areas_black_white(page) -> dict:
+def _areas_black_white(page) -> dict:
     def _scale(r):
         if page.rotation:
             return Rectangle(r.bottom * page.width, (1 - r.right) * page.height,
@@ -94,7 +96,7 @@ def areas_black_white(page) -> dict:
     return scaled_areas
 
 
-def areas_blue_gray(page) -> dict:
+def _areas_blue_gray(page) -> dict:
     def _scale(r):
         return Rectangle(r.left * page.width, r.bottom * page.height,
                          r.right * page.width, r.top * page.height)
@@ -146,7 +148,7 @@ def areas_blue_gray(page) -> dict:
     return scaled_areas
 
 
-def spacing_black_white(page) -> dict:
+def _spacing_black_white(page) -> dict:
     content = 0.1125
     spacing = {
         # Horizontal spacing: left->right
@@ -177,10 +179,10 @@ def spacing_black_white(page) -> dict:
             "lh": 1.2,
             "sc": 0.4,
         })
-    return spacing
+    return spacing | _spacing_special(page)
 
 
-def spacing_blue_gray(page) -> dict:
+def _spacing_blue_gray(page) -> dict:
     content = 0.07
     spacing = {
         # Horizontal spacing: left->right
@@ -210,10 +212,25 @@ def spacing_blue_gray(page) -> dict:
             "lh": 1.6,
             "sc": 0.2,
         })
-    return spacing
+    return spacing | _spacing_special(page)
 
 
-def linesize_black_white(line: float) -> str:
+def _spacing_special(page) -> dict:
+    # Patches to detect the header cells correctly
+    if ((page.pdf.name == "DS12930-v1" and page.index in range(90, 106)) or
+        (page.pdf.name == "DS12931-v1" and page.index in range(89, 105))):
+        return {"th": 0.1}
+    if ((page.pdf.name == "RM0453-v2" and page.index in [1354]) or
+        (page.pdf.name == "RM0456-v2" and page.index in [2881]) or
+        (page.pdf.name == "RM0456-v3" and page.index in [2880]) or
+        (page.pdf.name == "RM0461-v4" and page.index in [1246])):
+        return {"th": 0.5}
+    if ((page.pdf.name == "RM0456-v2" and page.index in [3005])):
+        return {"th": 0.52}
+    return {}
+
+
+def _linesize_black_white(line: CharLine) -> str:
     rsize = line.height
     if rsize >= 17.5: return "h1"
     elif rsize >= 15.5: return "h2"
@@ -223,7 +240,7 @@ def linesize_black_white(line: float) -> str:
     else: return "fn"
 
 
-def linesize_blue_gray(line: float) -> str:
+def _linesize_blue_gray(line: CharLine) -> str:
     rsize = round(line.height)
     if rsize >= 16: return "h1"
     elif rsize >= 14: return "h2"
@@ -233,7 +250,7 @@ def linesize_blue_gray(line: float) -> str:
     else: return "fn"
 
 
-def colors_black_white(color: int) -> str:
+def _colors_black_white(color: int) -> str:
     if 0xff <= color <= 0xff:
         return "black"
     if 0xffffffff <= color <= 0xffffffff:
@@ -241,7 +258,7 @@ def colors_black_white(color: int) -> str:
     return "unknown"
 
 
-def colors_blue_gray(color: int) -> str:
+def _colors_blue_gray(color: int) -> str:
     if 0xff <= color <= 0xff:
         return "black"
     if 0xffffffff <= color <= 0xffffffff:
@@ -257,229 +274,52 @@ def colors_blue_gray(color: int) -> str:
     return "unknown"
 
 
-class Page(PdfPage):
-
+class Page(BasePage):
     def __init__(self, document, index: int):
         super().__init__(document, index)
-        self._template = "black_white"
         producer = self.pdf.metadata.get("Producer", "").lower()
-        if "acrobat" in producer:
-            pass # default
+        self._template = "black_white"
+        if "acrobat" in producer or "adobe" in producer:
+            pass
         elif "antenna" in producer:
             self._template = "blue_gray"
         else:
-            LOGGER.error(f"Unknown page template! Defaulting to Black/White template. '{producer}'")
+            _LOGGER.error(f"Unknown page template! Defaulting to Black/White template. '{producer}'")
 
         if "blue_gray" in self._template:
-            self._areas = areas_blue_gray(self)
-            self._spacing = spacing_blue_gray(self)
-            self._colors = colors_blue_gray
-            self._line_size = linesize_blue_gray
+            self._areas = _areas_blue_gray(self)
+            self._spacing = _spacing_blue_gray(self)
+            self._colors = _colors_blue_gray
+            self._line_size = _linesize_blue_gray
         elif "black_white" in self._template:
-            self._areas = areas_black_white(self)
-            self._spacing = spacing_black_white(self)
-            self._colors = colors_black_white
-            self._line_size = linesize_black_white
+            self._areas = _areas_black_white(self)
+            self._spacing = _spacing_black_white(self)
+            self._colors = _colors_black_white
+            self._line_size = _linesize_black_white
 
-        # Patches to detect the header cells correctly
-        if ((self.pdf.name == "DS12930-v1" and self.index in range(90, 106)) or
-            (self.pdf.name == "DS12931-v1" and self.index in range(89, 105))):
-            self._spacing["th"] = 0.1
-        if ((self.pdf.name == "RM0453-v2" and self.index in [1354]) or
-            (self.pdf.name == "RM0456-v2" and self.index in [2881]) or
-            (self.pdf.name == "RM0456-v3" and self.index in [2880]) or
-            (self.pdf.name == "RM0461-v4" and self.index in [1246])):
-            self._spacing["th"] = 0.5
-        if ((self.pdf.name == "RM0456-v2" and self.index in [3005])):
-            self._spacing["th"] = 0.52
-
-    def _text_in_area(self, name, check_length=True) -> str:
-        if name not in self._areas: return ""
-        text = ""
-        areas = self._areas[name]
-        if not isinstance(areas, list): areas = [areas]
-        for area in areas:
-            text += self.text_in_area(area)
-        if check_length: assert text
-        return text
+    def _unicode_filter(self, code: int) -> int:
+        # Ignore Carriage Return characters and ® (superscript issues)
+        if code in {0xd, ord("®")}: return None
+        # Correct some weird unicode stuffing choices
+        if code in {2}: return ord("-")
+        if code in {61623, 61664}: return ord("•")
+        return code
 
     @cached_property
     def identifier(self) -> str:
-        return self._text_in_area("id", check_length=False)
+        return self.text_in_named_area("id", check_length=False)
 
     @cached_property
     def top(self) -> str:
         if self.index == 0:
             return "Cover"
-        return self._text_in_area("top", check_length=False)
+        return self.text_in_named_area("top", check_length=False)
 
+    @cached_property
     def is_relevant(self) -> bool:
         if any(c in self.top for c in {"Contents", "List of ", "Index"}):
             return False
         return True
-
-    def _charlines_filtered(self, area, predicate = None, rtol = None) -> list[CharLine]:
-        if rtol is None: rtol = self._spacing["sc"]
-        # Split all chars into lines based on rounded origin
-        origin_lines_y = defaultdict(list)
-        origin_lines_x = defaultdict(list)
-        for char in self.chars_in_area(area):
-            # Ignore all characters we don't want
-            if predicate is not None and not predicate(char):
-                continue
-            # Ignore Carriage Return characters and ® (superscript issues)
-            if char.unicode in {0xd, ord("®")}:
-                continue
-            # Correct some weird unicode stuffing choices
-            if char.unicode in {2}:
-                char.unicode = ord("-")
-            if char.unicode in {61623, 61664}:
-                char.unicode = ord("•")
-            if char.unicode < 32 and char.unicode not in {0xa}:
-                continue
-            # Ignore characters without width that are not spaces
-            if not char.width and char.unicode not in {0xa, 0xd, 0x20}:
-                LOGGER.error(f"Unknown char width for {char}: {char.bbox}")
-            # Split up the chars depending on the orientation
-            if 45 < char.rotation <= 135 or 225 < char.rotation <= 315:
-                origin_lines_x[round(char.origin.x, 1)].append(char)
-            elif char.rotation <= 45 or 135 < char.rotation <= 225 or 315 < char.rotation:
-                origin_lines_y[round(char.origin.y, 1)].append(char)
-            else:
-                LOGGER.error("Unknown char rotation:", char, char.rotation)
-
-        # Convert characters into lines
-        bbox_lines_y = []
-        for chars in origin_lines_y.values():
-            # Remove lines with whitespace only
-            if all(c.unicode in {0xa, 0xd, 0x20} for c in chars):
-                continue
-            origin = statistics.fmean(c.origin.y for c in chars)
-            line = CharLine(self, chars,
-                            min(c.bbox.bottom for c in chars),
-                            origin,
-                            max(c.bbox.top for c in chars),
-                            max(c.height for c in chars),
-                            sort_origin=self.height - origin)
-            bbox_lines_y.append(line)
-            # print(line, line.top, line.origin, line.bottom, line.height)
-        bbox_lines = sorted(bbox_lines_y, key=lambda l: l._sort_origin)
-
-        bbox_lines_x = []
-        for chars in origin_lines_x.values():
-            # Remove lines with whitespace only
-            if all(c.unicode in {0xa, 0xd, 0x20} for c in chars):
-                continue
-            line = CharLine(self, chars,
-                            min(c.bbox.left for c in chars),
-                            statistics.fmean(c.origin.x for c in chars),
-                            max(c.bbox.right for c in chars),
-                            max(c.width for c in chars),
-                            270 if sum(c.rotation for c in chars) <= 135 * len(chars) else 90)
-            bbox_lines_x.append(line)
-        bbox_lines += sorted(bbox_lines_x, key=lambda l: l._sort_origin)
-
-        if not bbox_lines:
-            return []
-
-        # Merge lines that have overlapping bbox_lines
-        # FIXME: This merges lines that "collide" vertically like in formulas
-        merged_lines = []
-        current_line = bbox_lines[0]
-        for next_line in bbox_lines[1:]:
-            height = max(current_line.height, next_line.height)
-            # Calculate overlap via normalize origin (increasing with line index)
-            if ((current_line._sort_origin + rtol * height) >
-                (next_line._sort_origin - rtol * height)):
-                # if line.rotation or self.rotation:
-                #     # The next line overlaps this one, we merge the shorter line
-                #     # (typically super- and subscript) into taller line
-                #     use_current = len(current_line.chars) >= len(next_line.chars)
-                # else:
-                use_current = current_line.height >= next_line.height
-                line = current_line if use_current else next_line
-                current_line = CharLine(self, current_line.chars + next_line.chars,
-                                        line.bottom, line.origin, line.top,
-                                        height, line.rotation,
-                                        sort_origin=line._sort_origin)
-            else:
-                # The next line does not overlap the current line
-                merged_lines.append(current_line)
-                current_line = next_line
-        # append last line
-        merged_lines.append(current_line)
-
-        # Sort all lines horizontally based on character origin
-        sorted_lines = []
-        for line in merged_lines:
-            if line.rotation == 90:
-                def sort_key(char):
-                    if char.unicode in {0xa, 0xd}:
-                        return char.tbbox.midpoint.y - 1e9
-                    return char.tbbox.midpoint.y
-            elif line.rotation == 270:
-                def sort_key(char):
-                    if char.unicode in {0xa, 0xd}:
-                        return -char.tbbox.midpoint.y + 1e9
-                    return -char.tbbox.midpoint.y
-            else:
-                def sort_key(char):
-                    if char.unicode in {0xa, 0xd}:
-                        return char.origin.x + 1e9
-                    return char.origin.x
-            sorted_lines.append(CharLine(self, sorted(line.chars, key=sort_key),
-                                         line.bottom, line.origin,
-                                         line.top, line.height,
-                                         line.rotation, area.left,
-                                         sort_origin=line._sort_origin))
-
-        return sorted_lines
-
-    def _content_areas(self, area: Rectangle, with_graphics: bool = True) -> list:
-        if with_graphics:
-            graphics = self._graphics_filtered(area)
-            regions = []
-            for graphic in sorted(graphics, key=lambda g: (-g.bbox.top, g.bbox.x)):
-                gbbox = graphic.bbox.joined(graphic.cbbox) if graphic.cbbox else graphic.bbox
-                for reg in regions:
-                    if reg.overlaps(gbbox.bottom, gbbox.top):
-                        # They overlap, so merge them
-                        reg.v0 = min(reg.v0, gbbox.bottom)
-                        reg.v1 = max(reg.v1, gbbox.top)
-                        reg.objs.append(graphic)
-                        break
-                else:
-                    regions.append(Region(gbbox.bottom, gbbox.top, graphic))
-
-            # print(regions)
-            areas = []
-            ypos = area.top
-            for reg in regions:
-                if ypos - reg.v1 > self._spacing["y_em"]:
-                    areas.append((Rectangle(area.left, reg.v1, area.right, ypos), None))
-                for obj in reg.objs:
-                    oarea = obj.bbox.joined(obj.cbbox) if obj.cbbox else obj.bbox
-                    areas.append((oarea, obj))
-                ypos = reg.v0
-            areas.append((Rectangle(area.left, area.bottom, area.right, ypos), None))
-        else:
-            areas = [(area, None)]
-        return areas
-
-    def _objects_filtered(self, area: Rectangle, with_graphics: bool = True) -> list:
-        self._link_characters()
-        areas = self._content_areas(area, with_graphics)
-        objects = []
-        for narea, obj in areas:
-            if obj is None:
-                objects += self._charlines_filtered(narea)
-            else:
-                oarea = obj.bbox.joined(obj.cbbox) if obj.cbbox else obj.bbox
-                predicate = lambda c: not obj.bbox.contains(c.origin)
-                lines = self._charlines_filtered(oarea, predicate)
-                # print(obj, oarea, lines, [line.content for line in lines])
-                objects += list(sorted(lines + [obj], key=lambda o: (-o.bbox.y, o.bbox.x)))
-        return objects
 
     @property
     def content_ast(self) -> list:
@@ -492,13 +332,13 @@ class Page(PdfPage):
                                re.search("ordering +information|part +numbering", item.title, re.IGNORECASE)), -1)
             with_graphics = (order_page != self.index)
         for area in self._areas["content"]:
-            ast.append(self._ast_filtered(area, with_graphics=with_graphics))
+            ast.append(self.ast_in_area(area, with_graphics=with_graphics))
         # Add a page node to the first leaf to keep track of where a page starts
         first_leaf = next((n for n in iter(ast[0].descendants) if n.is_leaf), ast[0])
         Node("page", parent=first_leaf, xpos=first_leaf.xpos, number=self.number)
         return ast
 
-    def _graphics_filtered(self, area) -> list:
+    def graphics_in_area(self, area: Rectangle) -> list[Table | Figure]:
         # Find all graphic clusters in this area
         em = self._spacing["y_em"]
         large_area = area.offset_x(em/2)
@@ -511,7 +351,7 @@ class Page(PdfPage):
 
         # Find the captions and group them by y origin to catch side-by-side figures
         ycaptions = defaultdict(list)
-        for line in self._charlines_filtered(area, lambda c: "Bold" in c.font):
+        for line in self.charlines_in_area(area, lambda c: "Bold" in c.font):
             for cluster in line.clusters():
                 for phrase in [r"Figure \d+\.", r"Table \d+\."]:
                     if re.match(phrase, cluster.content):
@@ -531,7 +371,7 @@ class Page(PdfPage):
                                 if b.bottom <= bottom and
                                    left <= b.left and b.right <= right), None)
                 if graphic is None:
-                    LOGGER.error(f"Graphic cluster not found for caption {''.join(c.char for c in chars)}")
+                    _LOGGER.error(f"Graphic cluster not found for caption {''.join(c.char for c in chars)}")
                     continue
 
                 if self._template == "blue_gray":
@@ -545,7 +385,7 @@ class Page(PdfPage):
                             break
                         cbbox = nbbox
                         cchars = nchars
-                elif self._template == "black_white":
+                else:
                     cbbox = Rectangle(left, min(graphic[0].top, bottom), right, top)
 
                 otype = phrase.split(" ")[0].lower()
@@ -583,6 +423,7 @@ class Page(PdfPage):
         for gbbox, paths in graphic_clusters:
             if gbbox.width < self._spacing["x_em"] or gbbox.height < self._spacing["y_em"]:
                 continue
+            category = ""
             if any(isinstance(p, Image) for p in paths):
                 category = "figure"
             elif self._template == "blue_gray":
@@ -643,9 +484,9 @@ class Page(PdfPage):
                                 elif line.direction == line.Direction.HORIZONTAL:
                                     ylines.append(line.specialize())
                                 else:
-                                    LOGGER.warn(f"Line not vertical or horizontal: {line}")
+                                    _LOGGER.warn(f"Line not vertical or horizontal: {line}")
                             else:
-                                LOGGER.warn(f"Path too long: {path}")
+                                _LOGGER.warn(f"Path too long: {path}")
                         elif self._colors(path.fill) == "darkblue":
                             # Add the bottom line of the dark blue header box as a very thick line
                             line = HLine(path.bbox.bottom, path.bbox.left, path.bbox.right, 5)
@@ -681,58 +522,9 @@ class Page(PdfPage):
 
         return objects
 
-    @property
-    def content_objects(self) -> list:
-        objs = []
-        for area in self._areas["content"]:
-            objs.extend(self._objects_filtered(area))
-        return objs
-
-    @property
-    def content_graphics(self) -> list:
-        objs = []
-        for area in self._areas["content"]:
-            objs.extend(self._graphics_filtered(area))
-        return objs
-
-    @property
-    def content_lines(self) -> list:
-        return [o for o in self.content_objects if isinstance(o, CharLine)]
-
-    @property
-    def content_tables(self) -> list:
-        return [o for o in self.content_graphics if isinstance(o, Table)]
-
-    @property
-    def content_figures(self) -> list:
-        return [o for o in self.content_graphics if isinstance(o, Figure)]
-
-    def _char_properties(self, line, char):
-        cp = {
-            "superscript": False,
-            "subscript": False,
-            "bold": any(frag in char.font for frag in {"Bold"}),
-            "italic": any(frag in char.font for frag in {"Italic", "Oblique"}),
-            "underline": (char.objlink or char.weblink) is not None,
-            "size": round(line.height),
-            "relsize": self._line_size(line),
-            "char": chr(char.unicode),
-        }
-
-        if line.rotation:
-            if char.origin.x < (line.origin - 0.25 * line.height):
-                cp["superscript"] = True
-            elif char.origin.x > (line.origin + 0.15 * line.height):
-                cp["subscript"] = True
-        elif char.origin.y > (line.origin + 0.25 * line.height):
-            cp["superscript"] = True
-        elif char.origin.y < (line.origin - 0.15 * line.height):
-            cp["subscript"] = True
-
-        return cp
-
-    def _ast_filtered(self, area: Rectangle, with_graphics=True,
-                      ignore_xpos=False, with_bits=True, with_notes=True) -> list:
+    def ast_in_area(self, area: Rectangle, with_graphics: bool = True,
+                    ignore_xpos: bool = False, with_bits: bool = True,
+                    with_notes: bool = True) -> Node:
         x_em = self._spacing["x_em"]
         spacing_content = self._spacing["x_content"]
         lh_factor = self._spacing["lh"]
@@ -753,8 +545,9 @@ class Page(PdfPage):
 
         current = root
         ypos = area.top
-        for obj in self._objects_filtered(area, with_graphics):
+        for obj in self.objects_in_area(area, with_graphics):
             xpos = round(obj.bbox.left)
+
             # Tables should remain in their current hierarchy regardless of indentation
             if isinstance(obj, (Table, Figure)):
                 current = next((c for c in current.iter_path_reverse()
@@ -763,6 +556,7 @@ class Page(PdfPage):
                 Node(name, parent=current, obj=obj, xpos=xpos, number=-1,
                      _width=obj.bbox.width / area.width, _type=obj._type)
                 ypos = obj.bbox.bottom
+
             # Lines of text need to be carefully checked for indentation
             elif isinstance(obj, CharLine):
                 newlines = round((ypos - obj.origin) / (lh_factor * obj.height))
@@ -783,6 +577,7 @@ class Page(PdfPage):
                     current = current.parent.parent
 
                 # print(obj.fonts, ypos, xpos, current.xpos, f"{obj.height:.2f}", content)
+
                 # Check if line is a heading, which may be multi-line, so we must
                 # be careful not to nest them, but group them properly
                 # Headings are always inserted into the root note!
@@ -853,15 +648,15 @@ class Page(PdfPage):
                     else:
                         # Default back to the regex
                         if "Reserved" not in content:
-                            LOGGER.warning(f"Fallback to Regex length for Bit pattern '{content}'!\nFonts: {obj.fonts}")
+                            _LOGGER.warning(f"Fallback to Regex length for Bit pattern '{content}'!\nFonts: {obj.fonts}")
                         content_start = re.match(r" *([Bb]ytes? *.+? *)?(B[uio]t)( *\d+:?|s *(\d+ *([:-] *\d+ *)? *,? *)+) *", content)
                         if content_start is None:
-                            LOGGER.error(f"Unable to match Bit regex at all! '{content}'!")
+                            _LOGGER.error(f"Unable to match Bit regex at all! '{content}'!")
                             content_start = 0
                         else:
                             content_start = len(content_start.group(0))
                         if not content_start:
-                            LOGGER.error(f"Missing content start (=0)! '{content}'!")
+                            _LOGGER.error(f"Missing content start (=0)! '{content}'!")
                         content_start = min(content_start, len(obj.chars) - 1)
 
                     current = next((c for c in current.iter_path_reverse()
@@ -895,4 +690,4 @@ class Page(PdfPage):
         return root
 
     def __repr__(self) -> str:
-        return f"StPage({self.number})"
+        return f"StmPage({self.number})"

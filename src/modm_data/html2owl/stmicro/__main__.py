@@ -9,7 +9,7 @@ from pathlib import Path
 from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
-from modm_data.html.stmicro import DatasheetMicro, ReferenceManual, load_documents
+from modm_data.html.stmicro import DatasheetStm32, ReferenceManual, load_documents
 from modm_data.owl import Store
 from modm_data.py2owl.stmicro import owl_from_doc
 
@@ -25,7 +25,7 @@ def main():
         for name, versions in load_documents().items():
             # always use latest version for now
             doc = list(versions.values())[-1]
-            if isinstance(doc, DatasheetMicro):
+            if isinstance(doc, DatasheetStm32):
                 docs.append(doc)
             elif isinstance(doc, ReferenceManual):
                 docs.append(doc)
@@ -40,7 +40,7 @@ def main():
 
     path = Path(args.document).absolute()
     if path.stem.startswith("DS"):
-        doc = DatasheetMicro(path)
+        doc = DatasheetStm32(path)
     elif path.stem.startswith("RM"):
         doc = ReferenceManual(path)
 

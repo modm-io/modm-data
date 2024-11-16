@@ -1,11 +1,5 @@
-# Copyright (c) 2022, Niklas Hauser
-#
-# This file is part of the modm-data project.
-#
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-# -----------------------------------------------------------------------------
+# Copyright 2022, Niklas Hauser
+# SPDX-License-Identifier: MPL-2.0
 
 import re
 import sys
@@ -15,7 +9,6 @@ from lxml import etree
 from pathlib import Path
 sys.path.append(".")
 
-from modm_data.utils import ext_path
 from modm_data.html import Document
 
 def _format_html(xmlnode, treenode):
@@ -93,7 +86,7 @@ def format_document(document):
 
     link = etree.Element("link")
     link.set("rel", "stylesheet")
-    link.set("href", "ext/stmicro/html/style.css")
+    link.set("href", "ext/stmicro/html-archive/style.css")
     head.append(link)
 
     body = etree.Element("body")
@@ -113,8 +106,8 @@ def main():
     parser.add_argument("--html", type=str)
     args = parser.parse_args()
 
-    documents = ext_path("stmicro/html").glob(args.document)
-    documents = [Document(d) for d in documents]
+    documents = (Path(__file__).parents[2] / "ext/stmicro/html-archive").absolute()
+    documents = [Document(d) for d in documents.glob(args.document)]
 
     rootnode = anytree.Node("root", document=args.document, chapter=args.chapter, table=args.table)
 

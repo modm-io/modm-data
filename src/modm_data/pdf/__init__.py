@@ -16,5 +16,6 @@ from .document import Document
 from .page import Page
 from .character import Character
 from .link import ObjLink, WebLink
-from .graphics import Path, Image
+from .path import Path
+from .image import Image
 from .render import render_page_pdf

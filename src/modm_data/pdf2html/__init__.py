@@ -7,5 +7,5 @@
 
 from . import stmicro
 from .render import render_page_pdf
-from .line import CharCluster, CharLine
-from .figure import Figure
+from .convert import convert, patch
+from .html import format_document, write_html

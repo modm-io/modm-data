@@ -21,7 +21,7 @@ from functools import cached_property, cache
 from collections import defaultdict
 from .page import Page
 
-LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 # We cannot monkey patch this class, since it's a named tuple. :-(
@@ -48,11 +48,11 @@ class Document(pp.PdfDocument):
         """
         path = Path(path)
         self.name: str = path.stem
-        super().__init__(path, autoclose=autoclose)
         """Stem of the document file name"""
+        super().__init__(path, autoclose=autoclose)
         self._path = path
         self._bbox_cache = defaultdict(dict)
-        LOGGER.debug(f"Loading: {path}")
+        _LOGGER.debug(f"Loading: {path}")
 
     @cached_property
     def metadata(self) -> dict[str, str]:
@@ -84,7 +84,7 @@ class Document(pp.PdfDocument):
             outline = _OutlineItem(toc.level, toc.title, toc.is_closed,
                                    toc.n_kids, toc.page_index or last_page_index,
                                    toc.view_mode, toc.view_pos)
-            last_page_index = toc.page_index
+            last_page_index = toc.page_index or last_page_index
             tocs.add(outline)
         return list(sorted(list(tocs), key=lambda o: (o.page_index, o.level, o.title)))
 

@@ -3,15 +3,16 @@
 
 import re
 import tqdm
+import logging
 import argparse
 import subprocess
 from pathlib import Path
 from multiprocessing.pool import ThreadPool
 
-import modm_data
-from . import convert, patch
+from .. import convert, patch
 
 def main():
+    import modm_data
     parser = argparse.ArgumentParser()
     parser.add_argument("--document", type=Path)
     parser.add_argument("--output", type=str, default="")
@@ -25,12 +26,14 @@ def main():
     parser.add_argument("--chapters", action="store_true")
     parser.add_argument("--tags", action="store_true")
     parser.add_argument("--all", action="store_true")
+    parser.add_argument("-v", dest="verbose", action="count", default=0)
     args = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
     doc = modm_data.pdf2html.stmicro.Document(args.document)
-    # if doc.page_count == 0 or not doc.page(1).width:
-    #     print("Corrupt PDF!")
-    #     exit(1)
+    if doc.page_count == 0 or not doc.page(1).width:
+        print("Corrupt PDF!")
+        exit(1)
 
     if args.page or args.range:
         page_range = list(map(lambda p: p - 1, args.page or []))
@@ -79,7 +82,8 @@ def main():
         for retval, call in zip(retvals, calls):
             if retval.returncode != 0: print(call)
         if all(r.returncode == 0 for r in retvals):
-            return patch(doc, output_dir)
+            from . import data
+            return patch(doc, data, output_dir)
         return False
 
     return convert(doc, page_range, output_path, format_chapters=args.chapters,
