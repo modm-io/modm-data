@@ -39,7 +39,7 @@ clean-venv:
 	@rm -rf .venv
 
 
-# ============================== Documentation  ===============================
+# =============================== Documentation ===============================
 .PHONY: build-homepage
 ## Generate the entire homepage to /docs.
 build-homepage:
@@ -54,3 +54,15 @@ build-homepage:
 ## Serve the API docs locally for development.
 serve-api-docs:
 	@pdoc --mermaid modm_data
+
+
+# ================================== Testing ==================================
+ext/test/regression/:
+	@git clone --depth=1 git@github.com:modm-ext/modm-data-test-docs.git $@
+
+.PHONY: run-regression-tests
+## Convert some PDF pages and check against their known HTML.
+run-regression-tests: ext/test/regression/
+	@test/convert_html.sh
+	@git diff --exit-code -- test/data/html
+

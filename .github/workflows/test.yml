@@ -1,0 +1,32 @@
+name: Run Regression Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out Repository
+        uses: actions/checkout@v3
+
+      - name: Check out Test Docs Repository
+        uses: actions/checkout@v3
+        with:
+          repository: modm-ext/modm-data-test-docs
+          path: ext/test/regression
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Python Dependencies
+        run: |
+          pip3 install .
+
+      - name: Run Regression Tests
+        run: |
+          make run-regression-tests

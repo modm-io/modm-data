@@ -1,0 +1,4518 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="../style.css"/>
+  </head>
+  <body>
+    <h4 id="section10.10.38">10.10.38 PWR port I pull-down control register (PWR_PDCRI)</h4>
+    <p>Each register bit PDy is protected against non-secure access when SECy = 1 in <br/>GPIOI_SECCFGR.</p>
+    <p>Each register bit PDy is protected against unprivileged access when SECy = 1 in <br/>GPIOI_SECCFGR and SPRIV = 1 in PWR_PRIVCFGR, or when SECy = 0 and <br/>NSPRIV = 1.</p>
+    <p>Access: 14 AHB clock cycles added compared to a standard AHB access</p>
+    <p>Address offset: 0x94</p>
+    <p>Reset value: 0x0000 0000</p>
+    <p>(reset value not affected by exit Standby mode)</p>
+    <table class="rt">
+      <tr>
+        <td>31</td>
+        <td>30</td>
+        <td>29</td>
+        <td>28</td>
+        <td>27</td>
+        <td>26</td>
+        <td>25</td>
+        <td>24</td>
+        <td>23</td>
+        <td>22</td>
+        <td>21</td>
+        <td>20</td>
+        <td>19</td>
+        <td>18</td>
+        <td>17</td>
+        <td>16</td>
+        <td>15</td>
+        <td>14</td>
+        <td>13</td>
+        <td>12</td>
+        <td>11</td>
+        <td>10</td>
+        <td>9</td>
+        <td>8</td>
+        <td>7</td>
+        <td>6</td>
+        <td>5</td>
+        <td>4</td>
+        <td>3</td>
+        <td>2</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>Res.</td>
+        <td>PD7</td>
+        <td>PD6</td>
+        <td>PD5</td>
+        <td>PD4</td>
+        <td>PD3</td>
+        <td>PD2</td>
+        <td>PD1</td>
+        <td>PD0</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>rw</td>
+        <td>rw</td>
+        <td>rw</td>
+        <td>rw</td>
+        <td>rw</td>
+        <td>rw</td>
+        <td>rw</td>
+        <td>rw</td>
+      </tr>
+    </table>
+    <table class="bt">
+      <tr>
+        <td>Bits 31:8</td>
+        <td class="tl">Reserved, must be kept at reset value.</td>
+      </tr>
+      <tr>
+        <td>Bits 7:0</td>
+        <td class="tl">
+          <p><b>PDy</b>: Port I pull-down bit y (y = 7 to 0)</p>
+          <p>When set, each bit activates the pull-down on PIy when the APC bit is set in PWR_APCR.</p>
+        </td>
+      </tr>
+    </table>
+    <h4 id="section10.10.39">10.10.39 PWR register map</h4>
+    <table id="table100">
+      <caption>
+        <b>Table 100. PWR register map and reset values</b>
+      </caption>
+      <tr>
+        <th class="thb">Offset</th>
+        <th class="thb">Register</th>
+        <th class="thb">
+          <span class="tv">31</span>
+        </th>
+        <th class="thb">
+          <span class="tv">30</span>
+        </th>
+        <th class="thb">
+          <span class="tv">29</span>
+        </th>
+        <th class="thb">
+          <span class="tv">28</span>
+        </th>
+        <th class="thb">
+          <span class="tv">27</span>
+        </th>
+        <th class="thb">
+          <span class="tv">26</span>
+        </th>
+        <th class="thb">
+          <span class="tv">25</span>
+        </th>
+        <th class="thb">
+          <span class="tv">24</span>
+        </th>
+        <th class="thb">
+          <span class="tv">23</span>
+        </th>
+        <th class="thb">
+          <span class="tv">22</span>
+        </th>
+        <th class="thb">
+          <span class="tv">21</span>
+        </th>
+        <th class="thb">
+          <span class="tv">20</span>
+        </th>
+        <th class="thb">
+          <span class="tv">19</span>
+        </th>
+        <th class="thb">
+          <span class="tv">18</span>
+        </th>
+        <th class="thb">
+          <span class="tv">17</span>
+        </th>
+        <th class="thb">
+          <span class="tv">16</span>
+        </th>
+        <th class="thb">
+          <span class="tv">15</span>
+        </th>
+        <th class="thb">
+          <span class="tv">14</span>
+        </th>
+        <th class="thb">
+          <span class="tv">13</span>
+        </th>
+        <th class="thb">
+          <span class="tv">12</span>
+        </th>
+        <th class="thb">
+          <span class="tv">11</span>
+        </th>
+        <th class="thb">
+          <span class="tv">10</span>
+        </th>
+        <th class="thb">
+          <span class="tv">9</span>
+        </th>
+        <th class="thb">
+          <span class="tv">8</span>
+        </th>
+        <th class="thb">
+          <span class="tv">7</span>
+        </th>
+        <th class="thb">
+          <span class="tv">6</span>
+        </th>
+        <th class="thb">
+          <span class="tv">5</span>
+        </th>
+        <th class="thb">
+          <span class="tv">4</span>
+        </th>
+        <th class="thb">
+          <span class="tv">3</span>
+        </th>
+        <th class="thb">
+          <span class="tv">2</span>
+        </th>
+        <th class="thb">
+          <span class="tv">1</span>
+        </th>
+        <th class="thb">
+          <span class="tv">0</span>
+        </th>
+      </tr>
+      <tr>
+        <td rowspan="2">0x00</td>
+        <td>
+          <b>PWR_CR1</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">SRAM4PD</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PD</span>
+        </td>
+        <td>
+          <span class="tv">SRAM2PD</span>
+        </td>
+        <td>
+          <span class="tv">SRAM1PD</span>
+        </td>
+        <td>
+          <span class="tv">ULPMEN</span>
+        </td>
+        <td>
+          <span class="tv">RRSB2</span>
+        </td>
+        <td>
+          <span class="tv">RRSB1</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="3">
+          <span class="tv">LPMS [2:0]</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x04</td>
+        <td>
+          <b>PWR_CR2</b>
+        </td>
+        <td>
+          <span class="tv">SRDRUN</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PDS8</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PDS7</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PDS6</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PDS5</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PDS4</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PDS3</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PDS2</span>
+        </td>
+        <td>
+          <span class="tv">SRAM3PDS1</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">FLASHFWU</span>
+        </td>
+        <td>
+          <span class="tv">SRAM4FWU</span>
+        </td>
+        <td>
+          <span class="tv">PKARAMPDS</span>
+        </td>
+        <td>
+          <span class="tv">PRAMPDS</span>
+        </td>
+        <td>
+          <span class="tv">DMA2DRAMPDS</span>
+        </td>
+        <td>
+          <span class="tv">DC1RAMPDS</span>
+        </td>
+        <td>
+          <span class="tv">ICRAMPDS</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">SRAM4PDS</span>
+        </td>
+        <td>
+          <span class="tv">SRAM2PDS2</span>
+        </td>
+        <td>
+          <span class="tv">SRAM2PDS1</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">SRAM1PDS3</span>
+        </td>
+        <td>
+          <span class="tv">SRAM1PDS2</span>
+        </td>
+        <td>
+          <span class="tv">SRAM1PDS1</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x08</td>
+        <td>
+          <b>PWR_CR3</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">FSTEN</span>
+        </td>
+        <td>
+          <span class="tv">REGSEL</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+      </tr>
+      <tr>
+        <td rowspan="2">0x0C</td>
+        <td>
+          <b>PWR_VOSR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">BOOSTEN</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">VOS[1:0]</span>
+        </td>
+        <td>
+          <span class="tv">VOSRDY</span>
+        </td>
+        <td>
+          <span class="tv">BOOSTRDY</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>1</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+      </tr>
+      <tr>
+        <td rowspan="2">0x10</td>
+        <td>
+          <b>PWR_SVMCR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">ASV</span>
+        </td>
+        <td>
+          <span class="tv">IO2SV</span>
+        </td>
+        <td>
+          <span class="tv">USV</span>
+        </td>
+        <td>
+          <span class="tv">AVM2EN</span>
+        </td>
+        <td>
+          <span class="tv">AVM1EN</span>
+        </td>
+        <td>
+          <span class="tv">IO2VMEN</span>
+        </td>
+        <td>
+          <span class="tv">UVMEN</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="3">
+          <span class="tv">PVDLS[2:0]</span>
+        </td>
+        <td>
+          <span class="tv">PVDE</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+      </tr>
+      <tr>
+        <td rowspan="2">0x14</td>
+        <td>
+          <b>PWR_WUCR1</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">WUPEN8</span>
+        </td>
+        <td>
+          <span class="tv">WUPEN7</span>
+        </td>
+        <td>
+          <span class="tv">WUPEN6</span>
+        </td>
+        <td>
+          <span class="tv">WUPEN5</span>
+        </td>
+        <td>
+          <span class="tv">WUPEN4</span>
+        </td>
+        <td>
+          <span class="tv">WUPEN3</span>
+        </td>
+        <td>
+          <span class="tv">WUPEN2</span>
+        </td>
+        <td>
+          <span class="tv">WUPEN1</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x18</td>
+        <td>
+          <b>PWR_WUCR2</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">WUPP8</span>
+        </td>
+        <td>
+          <span class="tv">WUPP7</span>
+        </td>
+        <td>
+          <span class="tv">WUPP6</span>
+        </td>
+        <td>
+          <span class="tv">WUPP5</span>
+        </td>
+        <td>
+          <span class="tv">WUPP4</span>
+        </td>
+        <td>
+          <span class="tv">WUPP3</span>
+        </td>
+        <td>
+          <span class="tv">WUPP2</span>
+        </td>
+        <td>
+          <span class="tv">WUPP1</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x1C</td>
+        <td>
+          <b>PWR_WUCR3</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">WUSEL8[1:0]</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">WUSEL7[1:0]</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">WUSEL6[1:0]</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">WUSEL5[1:0]</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">WUSEL4[1:0]</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">WUSEL3[1:0]</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">WUSEL2[1:0]</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">WUSEL1[1:0]</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x20</td>
+        <td>
+          <b>PWR_BDCR1</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">MONEN</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">BREN</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x24</td>
+        <td>
+          <b>PWR_BDCR2</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">VBRS</span>
+        </td>
+        <td>
+          <span class="tv">VBE</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x28</td>
+        <td>
+          <b>PWR_DBPR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBP</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x2C</td>
+        <td>
+          <b>PWR_UCPDR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">UCPD_STBY</span>
+        </td>
+        <td>
+          <span class="tv">UCPD_DBDIS</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x30</td>
+        <td>
+          <b>PWR_SECCFGR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">APCSEC</span>
+        </td>
+        <td>
+          <span class="tv">VBSEC</span>
+        </td>
+        <td>
+          <span class="tv">VDMSEC</span>
+        </td>
+        <td>
+          <span class="tv">LPMSEC</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">WUP8SEC</span>
+        </td>
+        <td>
+          <span class="tv">WUP7SEC</span>
+        </td>
+        <td>
+          <span class="tv">WUP6SEC</span>
+        </td>
+        <td>
+          <span class="tv">WUP5SEC</span>
+        </td>
+        <td>
+          <span class="tv">WUP4SEC</span>
+        </td>
+        <td>
+          <span class="tv">WUP3SEC</span>
+        </td>
+        <td>
+          <span class="tv">WUP2SEC</span>
+        </td>
+        <td>
+          <span class="tv">WUP1SEC</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x34</td>
+        <td>
+          <b>PWR_PRIVCFGR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">NSPRIV</span>
+        </td>
+        <td>
+          <span class="tv">SPRIV</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x38</td>
+        <td>
+          <b>PWR_SR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">SBF</span>
+        </td>
+        <td>
+          <span class="tv">STOPF</span>
+        </td>
+        <td>
+          <span class="tv">CSSF</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x3C</td>
+        <td>
+          <b>PWR_SVMSR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">.VDDA2RDY</span>
+        </td>
+        <td>
+          <span class="tv">.VDDA1RDY</span>
+        </td>
+        <td>
+          <span class="tv">VDDIO2RDY</span>
+        </td>
+        <td>
+          <span class="tv">VDDUSBRDY.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="2">
+          <span class="tv">ACTVOS [1:0]</span>
+        </td>
+        <td>
+          <span class="tv">ACTVOSRDY</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">PVDO</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">REGS</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>1</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+      </tr>
+    </table>
+    <table id="table684">
+      <caption id="page3005">
+        <b>Table 684. DBGMCU register map and reset values (continued)</b>
+      </caption>
+      <tr>
+        <th class="thb">Offset</th>
+        <th class="thb">Register name</th>
+        <th class="thb">
+          <span class="tv">31</span>
+        </th>
+        <th class="thb">
+          <span class="tv">30</span>
+        </th>
+        <th class="thb">
+          <span class="tv">29</span>
+        </th>
+        <th class="thb">
+          <span class="tv">28</span>
+        </th>
+        <th class="thb">
+          <span class="tv">27</span>
+        </th>
+        <th class="thb">
+          <span class="tv">26</span>
+        </th>
+        <th class="thb">
+          <span class="tv">25</span>
+        </th>
+        <th class="thb">
+          <span class="tv">24</span>
+        </th>
+        <th class="thb">
+          <span class="tv">23</span>
+        </th>
+        <th class="thb">
+          <span class="tv">22</span>
+        </th>
+        <th class="thb">
+          <span class="tv">21</span>
+        </th>
+        <th class="thb">
+          <span class="tv">20</span>
+        </th>
+        <th class="thb">
+          <span class="tv">19</span>
+        </th>
+        <th class="thb">
+          <span class="tv">18</span>
+        </th>
+        <th class="thb">
+          <span class="tv">17</span>
+        </th>
+        <th class="thb">
+          <span class="tv">16</span>
+        </th>
+        <th class="thb">
+          <span class="tv">15</span>
+        </th>
+        <th class="thb">
+          <span class="tv">14</span>
+        </th>
+        <th class="thb">
+          <span class="tv">13</span>
+        </th>
+        <th class="thb">
+          <span class="tv">12</span>
+        </th>
+        <th class="thb">
+          <span class="tv">11</span>
+        </th>
+        <th class="thb">
+          <span class="tv">10</span>
+        </th>
+        <th class="thb">
+          <span class="tv">9</span>
+        </th>
+        <th class="thb">
+          <span class="tv">8</span>
+        </th>
+        <th class="thb">
+          <span class="tv">7</span>
+        </th>
+        <th class="thb">
+          <span class="tv">6</span>
+        </th>
+        <th class="thb">
+          <span class="tv">5</span>
+        </th>
+        <th class="thb">
+          <span class="tv">4</span>
+        </th>
+        <th class="thb">
+          <span class="tv">3</span>
+        </th>
+        <th class="thb">
+          <span class="tv">2</span>
+        </th>
+        <th class="thb">
+          <span class="tv">1</span>
+        </th>
+        <th class="thb">
+          <span class="tv">0</span>
+        </th>
+      </tr>
+      <tr>
+        <td rowspan="2">0x008</td>
+        <td>
+          <b>DBGMCU_</b>
+          <br/>
+          <b>APB1LFZR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_I2C2_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_I2C1_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_IWDG_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_WWDG_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM7_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM6_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM5_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM4_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM3_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM2_STOP</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x0C0</td>
+        <td>
+          <b>DBGMCU_</b>
+          <br/>
+          <b>APB1HFZR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_LPTIM2_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_I2C4_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+      </tr>
+      <tr>
+        <td rowspan="2">0x010</td>
+        <td>
+          <b>DBGMCU_</b>
+          <br/>
+          <b>APB2FZR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM17_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM16_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM15_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM8_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_TIM1_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+      </tr>
+      <tr>
+        <td rowspan="2">0x04</td>
+        <td>
+          <b>DBGMCU_</b>
+          <br/>
+          <b>APB3FZR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_RTC_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_LPTIM4_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_LPTIM3_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_LPTIM1_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_I2C3_STOP</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+      </tr>
+      <tr>
+        <td>0x018 to <br/>0x01C</td>
+        <td>Reserved</td>
+        <td colspan="32">Reserved</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x020</td>
+        <td>
+          <b>DBGMCU_</b>
+          <br/>
+          <b>AHB1FZR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA15_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA14_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA13_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA12_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA11_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA10_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA9_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA8_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA7_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA6_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA5_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA4_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA3_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA2_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA1_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_GPDMA0_STOP</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>0x024</td>
+        <td>Reserved</td>
+        <td colspan="32">Reserved</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x028</td>
+        <td>
+          <b>DBGMCU_</b>
+          <br/>
+          <b>AHB3FZR</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">DBG_LPDMA3_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_LPDMA2_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_LPDMA1_STOP</span>
+        </td>
+        <td>
+          <span class="tv">DBG_LPDMA0_STOP</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>0x02C to <br/>0x0F8</td>
+        <td>Reserved</td>
+        <td colspan="32">Reserved</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x0FC</td>
+        <td>
+          <b>DBGMCU_SR</b>
+        </td>
+        <td colspan="16">AP_ENABLED[15:0]</td>
+        <td colspan="16">AP_PRESENT[15:0]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x100</td>
+        <td>
+          <b>DBGMCU_DBG_</b>
+          <br/>
+          <b>AUTH_HOST</b>
+        </td>
+        <td colspan="32">AUTH_KEY[31:0]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0x104</td>
+        <td>
+          <b>DBGMCU_DBG_</b>
+          <br/>
+          <b>AUTH_DEVICE</b>
+        </td>
+        <td colspan="32">AUTH_ID[31:0]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+        <td>X</td>
+      </tr>
+      <tr>
+        <td>0x108 to <br/>0xFBC</td>
+        <td>Reserved</td>
+        <td colspan="32">Reserved</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFD0</td>
+        <td>
+          <b>DBGMCU_PIDR4</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="4">4KCOUNT<br/>[3:0]</td>
+        <td colspan="4">JEP106CON<br/>[3:0]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>0xFD4 to <br/>0xFDC</td>
+        <td>Reserved</td>
+        <td colspan="32">Reserved</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFE0</td>
+        <td>
+          <b>DBGMCU_PIDR0</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="8">PARTNUM[7:0]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFE4</td>
+        <td>
+          <b>DBGMCU_PIDR1</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="4">JEP106ID<br/>[3:0]</td>
+        <td colspan="4">PARTNUM<br/>[11:8]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFE8</td>
+        <td>
+          <b>DBGMCU_PIDR2</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="4">REVISION<br/>[3:0]</td>
+        <td>
+          <span class="tv">JEDEC</span>
+        </td>
+        <td colspan="3">JEP106ID<br/>[6:4]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>1</td>
+        <td>0</td>
+        <td>1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFEC</td>
+        <td>
+          <b>DBGMCU_PIDR3</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="4">REVAND[3:0]</td>
+        <td colspan="4">CMOD[3:0]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFF0</td>
+        <td>
+          <b>DBGMCU_CIDR0</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="8">PREAMBLE[7:0]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>1</td>
+        <td>1</td>
+        <td>0</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFF4</td>
+        <td>
+          <b>DBGMCU_CIDR1</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="4">CLASS[3:0]</td>
+        <td colspan="4">PREAMBLE<br/>[11:8]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>1</td>
+        <td>1</td>
+        <td>1</td>
+        <td>1</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFF8</td>
+        <td>
+          <b>DBGMCU_CIDR2</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="8">PREAMBLE[19:12]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>1</td>
+        <td>0</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td rowspan="2">0xFFC</td>
+        <td>
+          <b>DBGMCU_CIDR3</b>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td>
+          <span class="tv">Res.</span>
+        </td>
+        <td colspan="8">PREAMBLE[27:20]</td>
+      </tr>
+      <tr>
+        <td>Reset value</td>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td/>
+        <td>1</td>
+        <td>0</td>
+        <td>1</td>
+        <td>1</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>1</td>
+      </tr>
+    </table>
+    <p>Refer to <i><u>Section 2.3</u></i> for register boundary addresses.</p>
+  </body>
+</html>
