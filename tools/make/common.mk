@@ -39,6 +39,13 @@ clean-venv:
 	@rm -rf .venv
 
 
+.PHONY: format
+## Format the Python source code
+format:
+	@ruff format src
+	@ruff check --fix src
+	@ruff format src
+
 # =============================== Documentation ===============================
 .PHONY: build-homepage
 ## Generate the entire homepage to /docs.

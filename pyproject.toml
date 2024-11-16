@@ -63,3 +63,8 @@ modm_data = ["*.md", "*/*.md", "*/*/*.md", "*/*/*/*.md"]
 
 [tool.setuptools-git-versioning]
 version_file = "VERSION"
+
+[tool.ruff]
+exclude = [".venv/", "ext/", "build/", "log/"]
+line-length = 120
+target-version = "py311"
