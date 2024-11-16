@@ -87,18 +87,18 @@ ext/stmicro/html-archive/%: ext/stmicro/pdf/%.pdf log/stmicro/html/
 ## archive. The log will be placed in log/stmicro/html/%.txt.
 convert-stmicro-html-%: ext/stmicro/html-archive/%
 
-stmicro_pdf2html = $(sort $(1:ext/stmicro/pdf/%.pdf=ext/stmicro/html-archive/%))
+stmicro_pdf2html = $(sort $(foreach path,$1,$(path:ext/stmicro/pdf/%.pdf=ext/stmicro/html-archive/%)))
 .PHONY: convert-stmicro-html-rm
 ## Convert all STMicro Reference Manual PDFs into HTML.
-convert-stmicro-html-rm: $(stmicro_pdf2html $(wildcard ext/stmicro/pdf/RM*.pdf))
+convert-stmicro-html-rm: $(call stmicro_pdf2html,$(wildcard ext/stmicro/pdf/RM*.pdf))
 
 .PHONY: convert-stmicro-html-ds
 ## Convert all STMicro Datasheet PDFs into HTML.
-convert-stmicro-html-ds: $(stmicro_pdf2html $(wildcard ext/stmicro/pdf/DS*.pdf))
+convert-stmicro-html-ds: $(call stmicro_pdf2html,$(wildcard ext/stmicro/pdf/DS*.pdf))
 
 .PHONY: convert-stmicro-html
 ## Convert all STMicro PDFs into HTML.
-convert-stmicro-html: $(stmicro_pdf2html $(wildcard ext/stmicro/pdf/*.pdf))
+convert-stmicro-html: $(call stmicro_pdf2html,$(wildcard ext/stmicro/pdf/*.pdf))
 
 .PHONY: clean-stmicro-html-%
 ## Remove all STMicro HTML folders of a specific document number.
