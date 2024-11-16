@@ -27,11 +27,11 @@ clone-sources-stmicro: clone-sources-arm ext/stmicro/cubehal/ ext/stmicro/header
 .PHONY: update-sources-stmicro
 ## Update all STMicro related repositories to the latest version.
 update-sources-stmicro: update-sources-arm
-	@(cd ext/stmicro/cubehal && git pull) &
-	@(cd ext/stmicro/header && git pull) &
-	@(cd ext/stmicro/svd && git pull) &
-	@(cd ext/stmicro/owl-archive && git pull) &
-	@(cd ext/stmicro/svd-archive && git pull) &
+	@(cd ext/stmicro/cubehal && git fetch && git reset --hard origin/main) &
+	@(cd ext/stmicro/header && git fetch && git reset --hard origin/master) &
+	@(cd ext/stmicro/svd && git fetch && git reset --hard origin/main) &
+	@(cd ext/stmicro/owl-archive && git fetch && git reset --hard origin/main) &
+	@(cd ext/stmicro/svd-archive && git fetch && git reset --hard origin/master) &
 	@wait
 
 
@@ -71,9 +71,9 @@ clone-sources-stmicro-private: clone-sources-stmicro ext/stmicro/cubemx/ \
 
 .PHONY: update-sources-stmicro-private
 update-sources-stmicro-private: update-sources-stmicro
-	@(cd ext/stmicro/cubemx && git pull) &
-	@(cd ext/stmicro/html-archive && git pull) &
-	@(cd ext/stmicro/pdf && git pull) &
+	@(cd ext/stmicro/cubemx && git fetch && git reset --hard origin/main) &
+	@(cd ext/stmicro/html-archive && git fetch && git reset --hard origin/main) &
+	@(cd ext/stmicro/pdf && git fetch && git reset --hard origin/main) &
 	@wait
 
 
