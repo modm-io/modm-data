@@ -20,8 +20,9 @@ class Point:
         self.type = type
 
     def isclose(self, other, rtol: float = 1e-09, atol: float = 0.0) -> bool:
-        return (math.isclose(self.x, other.x, rel_tol=rtol, abs_tol=atol) and
-                math.isclose(self.y, other.y, rel_tol=rtol, abs_tol=atol))
+        return math.isclose(self.x, other.x, rel_tol=rtol, abs_tol=atol) and math.isclose(
+            self.y, other.y, rel_tol=rtol, abs_tol=atol
+        )
 
     def distance_squared(self, other) -> float:
         return math.pow(self.x - other.x, 2) + math.pow(self.y - other.y, 2)
@@ -67,14 +68,12 @@ class Line:
 
     @cached_property
     def bbox(self):
-        return Rectangle(min(self.p0.x, self.p1.x),
-                         min(self.p0.y, self.p1.y),
-                         max(self.p0.x, self.p1.x),
-                         max(self.p0.y, self.p1.y))
+        return Rectangle(
+            min(self.p0.x, self.p1.x), min(self.p0.y, self.p1.y), max(self.p0.x, self.p1.x), max(self.p0.y, self.p1.y)
+        )
 
     def isclose(self, other, rtol: float = 1e-09, atol: float = 0.0) -> bool:
-        return (self.p0.isclose(other.p0, rtol, atol) and
-                self.p1.isclose(other.p1, rtol, atol))
+        return self.p0.isclose(other.p0, rtol, atol) and self.p1.isclose(other.p1, rtol, atol)
 
     def contains(self, point, atol: float = 0.0) -> bool:
         # if the point lies on the line (A-C---B), the distance A-C + C-B = A-B
@@ -100,14 +99,17 @@ class Line:
 
     def __repr__(self) -> str:
         data = [repr(self.p0), repr(self.p1)]
-        if self.width: data += [f"{self.width:.1f}"]
-        if self.type is not None: data += [self.type.name]
+        if self.width:
+            data += [f"{self.width:.1f}"]
+        if self.type is not None:
+            data += [self.type.name]
         return f"<{','.join(data)}>"
 
 
 class VLine(Line):
     def __init__(self, x: float, y0: float, y1: float, width: float = None):
-        if y0 > y1: y0, y1 = y1, y0
+        if y0 > y1:
+            y0, y1 = y1, y0
         super().__init__(Point(x, y0), Point(x, y1), width=width)
         self.length = y1 - y0
 
@@ -120,13 +122,15 @@ class VLine(Line):
         y0 = f"{self.p0.y:.1f}" if isinstance(self.p0.y, float) else self.p0.y
         y1 = f"{self.p1.y:.1f}" if isinstance(self.p1.y, float) else self.p1.y
         out = f"<X{x}:{y0},{y1}"
-        if self.width: out += f"|{self.width:.1f}"
+        if self.width:
+            out += f"|{self.width:.1f}"
         return out + ">"
 
 
 class HLine(Line):
     def __init__(self, y: float, x0: float, x1: float, width: float = None):
-        if x0 > x1: x0, x1 = x1, x0
+        if x0 > x1:
+            x0, x1 = x1, x0
         super().__init__(Point(x0, y), Point(x1, y), width=width)
         self.length = x1 - x0
 
@@ -139,7 +143,8 @@ class HLine(Line):
         x0 = f"{self.p0.x:.1f}" if isinstance(self.p0.x, float) else self.p0.x
         x1 = f"{self.p1.x:.1f}" if isinstance(self.p1.x, float) else self.p1.x
         out = f"<Y{y}:{x0},{x1}"
-        if self.width: out += f"|{self.width:.1f}"
+        if self.width:
+            out += f"|{self.width:.1f}"
         return out + ">"
 
 
@@ -182,19 +187,21 @@ class Rectangle:
 
     def contains(self, other) -> bool:
         if isinstance(other, Point):
-            return (self.bottom <= other.y <= self.top and
-                    self.left <= other.x <= self.right)
+            return self.bottom <= other.y <= self.top and self.left <= other.x <= self.right
         # Comparing y-axis first may be faster for "content areas filtering"
         # when doing subparsing of page content (like in tables)
-        return (self.bottom <= other.bottom and other.top <= self.top and
-                self.left <= other.left and other.right <= self.right)
+        return (
+            self.bottom <= other.bottom
+            and other.top <= self.top
+            and self.left <= other.left
+            and other.right <= self.right
+        )
 
     def overlaps(self, other) -> bool:
         return self.contains(other.p0) or self.contains(other.p1)
 
     def isclose(self, other, rtol: float = 1e-09, atol: float = 0.0) -> bool:
-        return (self.p0.isclose(other.p0, rtol, atol) and
-                self.p1.isclose(other.p1, rtol, atol))
+        return self.p0.isclose(other.p0, rtol, atol) and self.p1.isclose(other.p1, rtol, atol)
 
     @cached_property
     def midpoint(self) -> Point:
@@ -202,42 +209,45 @@ class Rectangle:
 
     @cached_property
     def points(self) -> list[Point]:
-        return [self.p0, Point(self.right, self.bottom),
-                self.p1, Point(self.left, self.top)]
+        return [self.p0, Point(self.right, self.bottom), self.p1, Point(self.left, self.top)]
 
     def offset(self, offset):
-        return Rectangle(self.p0.x - offset, self.p0.y - offset,
-                         self.p1.x + offset, self.p1.y + offset)
+        return Rectangle(self.p0.x - offset, self.p0.y - offset, self.p1.x + offset, self.p1.y + offset)
 
     def offset_x(self, offset):
-        return Rectangle(self.p0.x - offset, self.p0.y,
-                         self.p1.x + offset, self.p1.y)
+        return Rectangle(self.p0.x - offset, self.p0.y, self.p1.x + offset, self.p1.y)
 
     def offset_y(self, offset):
-        return Rectangle(self.p0.x, self.p0.y - offset,
-                         self.p1.x, self.p1.y + offset)
+        return Rectangle(self.p0.x, self.p0.y - offset, self.p1.x, self.p1.y + offset)
 
     def translated(self, point):
-        return Rectangle(self.p0.x + point.x, self.p0.y + point.y,
-                         self.p1.x + point.x, self.p1.y + point.y)
+        return Rectangle(self.p0.x + point.x, self.p0.y + point.y, self.p1.x + point.x, self.p1.y + point.y)
 
     def rotated(self, rotation):
         cos = math.cos(math.radians(rotation))
         sin = math.sin(math.radians(rotation))
-        return Rectangle(self.p0.x * cos - self.p0.y * sin,
-                         self.p0.x * sin + self.p0.y * cos,
-                         self.p1.x * cos - self.p1.y * sin,
-                         self.p1.x * sin + self.p1.y * cos)
+        return Rectangle(
+            self.p0.x * cos - self.p0.y * sin,
+            self.p0.x * sin + self.p0.y * cos,
+            self.p1.x * cos - self.p1.y * sin,
+            self.p1.x * sin + self.p1.y * cos,
+        )
 
     def joined(self, other):
-        return Rectangle(min(self.p0.x, other.p0.x),
-                         min(self.p0.y, other.p0.y),
-                         max(self.p1.x, other.p1.x),
-                         max(self.p1.y, other.p1.y))
+        return Rectangle(
+            min(self.p0.x, other.p0.x),
+            min(self.p0.y, other.p0.y),
+            max(self.p1.x, other.p1.x),
+            max(self.p1.y, other.p1.y),
+        )
 
     def round(self, accuracy=0):
-        return Rectangle(round(self.p0.x, accuracy), round(self.p0.y, accuracy),
-                         round(self.p1.x, accuracy), round(self.p1.y, accuracy))
+        return Rectangle(
+            round(self.p0.x, accuracy),
+            round(self.p0.y, accuracy),
+            round(self.p1.x, accuracy),
+            round(self.p1.y, accuracy),
+        )
 
     def __hash__(self):
         return hash(self.p0) + hash(self.p1)
@@ -248,14 +258,16 @@ class Rectangle:
 
 class Region:
     def __init__(self, v0, v1, obj=None):
-        if v0 > v1: v0, v1 = v1, v0
+        if v0 > v1:
+            v0, v1 = v1, v0
         self.v0 = v0
         self.v1 = v1
         self.objs = [] if obj is None else [obj]
         self.subregions = []
 
     def overlaps(self, o0, o1, atol=0) -> bool:
-        if o0 > o1: o0, o1 = o1, o0
+        if o0 > o1:
+            o0, o1 = o1, o0
         # if reg top is lower then o0
         if (self.v1 + atol) <= o0:
             return False

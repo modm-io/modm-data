@@ -1,9 +1,7 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re
-from functools import cached_property
-from .text import replace as html_replace, Text
+from .text import Text
 
 
 class List(Text):

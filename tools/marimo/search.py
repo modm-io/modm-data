@@ -26,7 +26,8 @@ def __(mo):
 
 @app.cell
 def __(__file__, filter_chapter, filter_document, filter_table, mo):
-    import lxml.html, lxml.etree
+    import lxml.html
+    import lxml.etree
     import re
     from pathlib import Path
     import pandas as pd

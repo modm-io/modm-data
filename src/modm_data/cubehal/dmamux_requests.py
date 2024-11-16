@@ -4,17 +4,18 @@
 import re
 from pathlib import Path
 from ..utils import ext_path
+from ..owl import DeviceIdentifier
 
 _CUBE_PATH = ext_path("stmicro/cubehal")
 _DMAMUX_PATTERN = re.compile(r"^\s*#define\s+(?P<name>(LL_DMAMUX_REQ_\w+))\s+(?P<id>(0x[0-9A-Fa-f]+))U")
 _REQUEST_PATTERN = re.compile(r"^\s*#define\s+(?P<name>(DMA_REQUEST_\w+))\s+(?P<id>([0-9]+))U")
 
-def read_request_map(did: "modm_data.owl.DeviceIdentifier") -> dict[str, int]:
+
+def read_request_map(did: DeviceIdentifier) -> dict[str, int]:
     """
     Reads the DMA requests mapping from the Low-Level (LL) CubeHAL header files.
 
     :param did: Device to query for.
-
     :return: A dictionary of DMA trigger name to trigger position.
     """
     dma_header = _get_hal_dma_header_path(did.family)
@@ -27,7 +28,7 @@ def read_request_map(did: "modm_data.owl.DeviceIdentifier") -> dict[str, int]:
     elif did.family == "l4" and did.name[0] in ["p", "q", "r", "s"]:
         request_map = _read_requests_l4(did.name in ["p5", "q5"])
     else:
-        raise RuntimeError("No DMAMUX request data available for {}".format(did))
+        raise RuntimeError(f"No DMAMUX request data available for {did}")
     _fix_request_data(request_map)
     return request_map
 
@@ -63,20 +64,21 @@ def _fix_request_data(request_map):
         else:
             m = dac_pattern.match(name)
             if m:
-                fix_requests["{}_CH{}".format(m.group("dac"), m.group("ch"))] = number
+                fix_requests[f'{m.group("dac")}_CH{m.group("ch")}'] = number
 
     request_map.update(fix_requests)
 
+
 def _get_include_path(family):
-    return _CUBE_PATH / Path("stm32{}xx/Inc".format(family))
+    return _CUBE_PATH / Path(f"stm32{family}xx/Inc")
 
 
 def _get_hal_dma_header_path(family):
-    return _get_include_path(family) / Path("stm32{}xx_hal_dma.h".format(family))
+    return _get_include_path(family) / Path(f"stm32{family}xx_hal_dma.h")
 
 
 def _get_ll_dmamux_header_path(family):
-    return _get_include_path(family) / Path("stm32{}xx_ll_dmamux.h".format(family))
+    return _get_include_path(family) / Path(f"stm32{family}xx_ll_dmamux.h")
 
 
 # For G4, H7 and L5
@@ -91,7 +93,7 @@ def _read_requests(hal_dma_file):
 # For G0, WB and WL
 def _read_requests_from_ll_dmamux(hal_dma_file, ll_dmamux_file):
     dmamux_map = _read_map(ll_dmamux_file, _DMAMUX_PATTERN)
-    request_pattern = re.compile("^\s*#define\s+(?P<name>(DMA_REQUEST_\w+))\s+(?P<id>(LL_DMAMUX?_REQ_\w+))\s*")
+    request_pattern = re.compile(r"^\s*#define\s+(?P<name>(DMA_REQUEST_\w+))\s+(?P<id>(LL_DMAMUX?_REQ_\w+))\s*")
     requests_map = _read_map(hal_dma_file, request_pattern)
     out_map = {}
     for r in requests_map.keys():
@@ -130,7 +132,7 @@ def _read_requests_l4(read_for_p5_q5):
                 if m:
                     name = m.group("name").replace("DMA_REQUEST_", "", 1)
                     if name in out_map:
-                        raise RuntimeError("Duplicate entry {}".format(name))
+                        raise RuntimeError(f"Duplicate entry {name}")
                     out_map[name] = int(m.group("id"))
     return out_map
 
@@ -143,6 +145,6 @@ def _read_map(filename, pattern):
             if m:
                 name = m.group("name")
                 if name in out_map:
-                    raise RuntimeError("Duplicate entry {}".format(name))
+                    raise RuntimeError(f"Duplicate entry {name}")
                 out_map[name] = m.group("id")
     return out_map

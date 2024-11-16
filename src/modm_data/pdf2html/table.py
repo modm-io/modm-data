@@ -6,14 +6,15 @@ import statistics
 from functools import cached_property
 from collections import defaultdict
 from ..utils import HLine, VLine, Rectangle
-from .cell import TableCell
+from .cell import Cell, Borders
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Table:
-    def __init__(self, page, bbox: Rectangle, xlines: list, ylines: list,
-                 cbbox: Rectangle = None, is_register: bool = False):
+    def __init__(
+        self, page, bbox: Rectangle, xlines: list, ylines: list, cbbox: Rectangle = None, is_register: bool = False
+    ):
         self._page = page
         self._spacing = page._spacing
         self.bbox = bbox
@@ -33,8 +34,9 @@ class Table:
                 grid[current].append(line)
                 last = key(line)
             return grid
-        xgrid = _cluster(xlines, lambda l: l.p0.x)
-        ygrid = _cluster(ylines, lambda l: l.p0.y)
+
+        xgrid = _cluster(xlines, lambda line: line.p0.x)
+        ygrid = _cluster(ylines, lambda line: line.p0.y)
 
         if is_register:
             self._type = "register"
@@ -51,16 +53,17 @@ class Table:
             # Find the positions of the second row of numbers
             if len(ygrid) > 2:
                 for yi, (ypos0, ypos1) in enumerate(zip(sorted(ygrid), sorted(ygrid)[1:])):
-                    nbbox = Rectangle(self.bbox.left, ygrid[ypos0][0].p0.y,
-                                      self.bbox.right, ygrid[ypos1][0].p0.y)
+                    nbbox = Rectangle(self.bbox.left, ygrid[ypos0][0].p0.y, self.bbox.right, ygrid[ypos1][0].p0.y)
                     if lines := self._page.charlines_in_area(nbbox):
-                        if all(c.char.isnumeric() or c.unicode in {0x20, 0xa, 0xd} for c in lines[0].chars):
+                        if all(c.char.isnumeric() or c.unicode in {0x20, 0xA, 0xD} for c in lines[0].chars):
                             if not len(cluster := lines[0].clusters(self._page._spacing["x_em"] / 2)) % 16:
                                 clusters.append((cluster, nbbox))
                                 self._bit_headers = len(ygrid) - yi - 1
                             else:
                                 self.grid = (len(cluster), 0)
-                                _LOGGER.warning(f"Second bit pattern does not have 16 or 32 clusters! {self} ({self._page})")
+                                _LOGGER.warning(
+                                    f"Second bit pattern does not have 16 or 32 clusters! {self} ({self._page})"
+                                )
                             break
 
             # Merge these clusters to find their positions
@@ -71,8 +74,14 @@ class Table:
                 # Now close the lines in between
                 for cleft, cright in zip(cluster, cluster[1:]):
                     # find a line between the clusters
-                    xpos = next(((x, xgrid[x][0].p0.x) for x in sorted(xgrid)
-                                 if cleft.bbox.right < xgrid[x][0].p0.x < cright.bbox.left), None)
+                    xpos = next(
+                        (
+                            (x, xgrid[x][0].p0.x)
+                            for x in sorted(xgrid)
+                            if cleft.bbox.right < xgrid[x][0].p0.x < cright.bbox.left
+                        ),
+                        None,
+                    )
                     # Didn't find one, we must add one manually
                     if xpos is None:
                         xpos = (cleft.bbox.right + cright.bbox.left) / 2
@@ -83,10 +92,8 @@ class Table:
             ygrid[self.bbox.top].append(HLine(self.bbox.top, self.bbox.left, self.bbox.right))
 
         # Fix the position keys properly
-        self._xgrid = {int(round(statistics.fmean(m.p0.x for m in l))): l
-                       for l in xgrid.values()}
-        self._ygrid = {int(round(statistics.fmean(m.p0.y for m in l))): l
-                       for l in ygrid.values()}
+        self._xgrid = {int(round(statistics.fmean(m.p0.x for m in line))): line for line in xgrid.values()}
+        self._ygrid = {int(round(statistics.fmean(m.p0.y for m in line))): line for line in ygrid.values()}
         # Map the positions to integers
         self._xpos = list(sorted(self._xgrid))
         self._ypos = list(sorted(self._ygrid))
@@ -94,8 +101,7 @@ class Table:
         self.grid = (len(self._xpos) - 1, len(self._ypos) - 1)
         self._cells = None
 
-    def _cell_borders(self, x: int, y: int, bbox: Rectangle,
-                      mask: int = 0b1111) -> tuple[int, int, int, int]:
+    def _cell_borders(self, x: int, y: int, bbox: Rectangle, mask: int = 0b1111) -> tuple[int, int, int, int]:
         # left, bottom, right, top
         borders = [0, 0, 0, 0]
         mp = bbox.midpoint
@@ -124,38 +130,37 @@ class Table:
                     assert line.width
                     break
 
-        return TableCell.Borders(*borders)
+        return Borders(*borders)
 
     def _fix_borders(self, cells, x: int, y: int):
         # We are looking at the 9 neighbors around the cells
-        cell = cells[(x, y)]
-        c = cells[(x, y)].b
-        r = cells[(x + 1, y)].b if cells[(x + 1, y)] is not None else TableCell.Borders(0, 0, 1, 0)
-        t = cells[(x, y + 1)].b if cells[(x, y + 1)] is not None else TableCell.Borders(0, 1, 0, 0)
+        c = cells[(x, y)].borders
+        r = cells[(x + 1, y)].borders if cells[(x + 1, y)] is not None else Borders(0, 0, 1, 0)
+        t = cells[(x, y + 1)].borders if cells[(x, y + 1)] is not None else Borders(0, 1, 0, 0)
 
-        # if (not c.t and csand c.r and c.b) and "Reset value" in cell.content:
-        #     c.t = 1
+        # if (not c.top and c.left and c.right and c.bottom) and "Reset value" in cell.content:
+        #     c.top = 1
 
         # Open at the top into a span
-        if (not c.t and c.r) and (not t.r or not t.l):
-            c.t = 1
-            t.b = 1
+        if (not c.top and c.right) and (not t.right or not t.left):
+            c.top = 1
+            t.bottom = 1
         # Open at the top and self is a span
-        if (not c.t and not c.r) and (t.r and t.l):
-            c.t = 1
-            t.b = 1
+        if (not c.top and not c.right) and (t.right and t.left):
+            c.top = 1
+            t.bottom = 1
 
         # Open to the right into a span
-        if (not c.r and c.t) and (not r.t or not r.b):
-            c.r = 1
-            r.l = 1
+        if (not c.right and c.top) and (not r.top or not r.bottom):
+            c.right = 1
+            r.left = 1
         # Open to the right and self is a span
-        if (not c.r and not c.t) and (r.t and r.b):
-            c.r = 1
-            r.l = 1
+        if (not c.right and not c.top) and (r.top and r.bottom):
+            c.right = 1
+            r.left = 1
 
     @property
-    def cells(self) -> list[TableCell]:
+    def cells(self) -> list[Cell]:
         if self._cells is None:
             if self.grid < (1, 1):
                 self._cells = []
@@ -167,8 +172,7 @@ class Table:
                 for xi, (x0, x1) in enumerate(zip(self._xpos, self._xpos[1:])):
                     bbox = Rectangle(x0, y0, x1, y1)
                     borders = self._cell_borders(xi, yi, bbox, 0b1111)
-                    cells[(xi, yi)] = TableCell(self, (self.grid[1] - 1 - yi, xi),
-                                                bbox, borders, self._type == "register")
+                    cells[(xi, yi)] = Cell(self, (self.grid[1] - 1 - yi, xi), bbox, borders, self._type == "register")
 
             # Fix table cell borders via consistency checks
             for yi in range(self.grid[1]):
@@ -181,17 +185,18 @@ class Table:
                     return
                 # print(cells[(x, y)])
                 # Right border is open
-                if not cells[(x, y)].b.r:
+                if not cells[(x, y)].borders.right:
                     if cells[(x + 1, y)] is not None:
                         cells[(px, py)]._merge(cells[(x + 1, y)])
                         _merge(px, py, x + 1, y)
                         cells[(x + 1, y)] = None
                 # Top border is open
-                if not cells[(x, y)].b.t:
+                if not cells[(x, y)].borders.top:
                     if cells[(x, y + 1)] is not None:
                         cells[(px, py)]._merge(cells[(x, y + 1)])
                         _merge(px, py, x, y + 1)
                         cells[(x, y + 1)] = None
+
             # Start merging in bottom left cell
             for yi in range(self.grid[1]):
                 for xi in range(self.grid[0]):
@@ -201,15 +206,21 @@ class Table:
             y_header_pos = self.grid[1]
             if self._type != "register":
                 if self.grid[1] > 1:
-                    line_widths = {round(line.width, 1) for llist in self._ygrid.values()
-                                   for line in llist if line.width != 0.1} # magic width of virtual borders
+                    line_widths = {
+                        round(line.width, 1) for llist in self._ygrid.values() for line in llist if line.width != 0.1
+                    }  # magic width of virtual borders
                     if line_widths:
                         line_width_max = max(line_widths) * 0.9
                         if min(line_widths) < line_width_max:
                             # Find the first thick line starting from the top
-                            y_header_pos = next((yi for yi, ypos in reversed(list(enumerate(self._ypos)))
-                                                 if any(line.width > line_width_max for line in self._ygrid[ypos])),
-                                                y_header_pos)
+                            y_header_pos = next(
+                                (
+                                    yi
+                                    for yi, ypos in reversed(list(enumerate(self._ypos)))
+                                    if any(line.width > line_width_max for line in self._ygrid[ypos])
+                                ),
+                                y_header_pos,
+                            )
 
                 # Map all the header
                 is_bold = []
@@ -221,7 +232,8 @@ class Table:
                                 bbox = cell.bbox
                             else:
                                 bbox = bbox.joined(cell.bbox)
-                    if bbox is None: continue
+                    if bbox is None:
+                        continue
                     chars = self._page.chars_in_area(bbox)
                     is_bold_pct = sum(1 if "Bold" in c.font else 0 for c in chars) / len(chars) if chars else 1
                     is_bold.append((yi, is_bold_pct > self._spacing["th"]))
@@ -229,7 +241,8 @@ class Table:
                 # Some tables have no bold cells at all
                 if all(not b[1] for b in is_bold):
                     # Special case for two row tables without bold headers, but a bold line inbetween
-                    if self.grid[1] == 2 and y_header_pos == 1: y_header_pos = 2
+                    if self.grid[1] == 2 and y_header_pos == 1:
+                        y_header_pos = 2
                 else:
                     if y_header_pos < self.grid[1]:
                         # Find the lowest bold row starting from bold line
@@ -237,7 +250,8 @@ class Table:
                     else:
                         # Find the lowest bold row starting from the top
                         for b in reversed(is_bold):
-                            if not b[1]: break
+                            if not b[1]:
+                                break
                             y_header_pos = b[0]
 
             # Tell the header cells
@@ -355,25 +369,30 @@ class Table:
                         if insert_only:
                             src = merged_xpos[ii - 1]
                             dsts = merged_xpos[ii:]
-                            if debug: print(f"{src}->{dsts} I")
+                            if debug:
+                                print(f"{src}->{dsts} I")
                             for cell in cells:
                                 _insert_cells(cell, src, dsts, True)
                             break
                         else:
                             src = own_xpos[ii]
-                            dsts = merged_xpos[ii:ii + 1]
-                            if debug: print(f"{src}->{dsts} M")
+                            dsts = merged_xpos[ii : ii + 1]
+                            if debug:
+                                print(f"{src}->{dsts} M")
                             for cell in cells:
                                 _insert_cells(cell, src, dsts, False)
 
-                if debug: print()
+                if debug:
+                    print()
                 if self_xpos != merged_xpos:
                     if debug:
                         print(f"====== Self:  x={self_xhead}->{merged_xhead} xpos={self_xpos}->{merged_xpos}")
                     _move_cells(self.cells, self_xpos)
                 if other_xpos != merged_xpos:
                     if debug:
-                        print(f"====== Other: x={other_xhead}->{merged_xhead} xpos={other_xheaders[other_xhead]}->{merged_xheaders[merged_xhead]}")
+                        print(
+                            f"====== Other: x={other_xhead}->{merged_xhead} xpos={other_xheaders[other_xhead]}->{merged_xheaders[merged_xhead]}"
+                        )
                     _move_cells(other.cells, other_xpos)
             if debug:
                 print()
@@ -396,7 +415,9 @@ class Table:
     def append_side(self, other, expand=False) -> bool:
         if self.grid[1] != other.grid[1]:
             if expand:
-                _LOGGER.debug(f"Expanding bottom cells to match height: {self} ({self._page}) + {other} ({other._page})")
+                _LOGGER.debug(
+                    f"Expanding bottom cells to match height: {self} ({self._page}) + {other} ({other._page})"
+                )
                 ymin = min(self.grid[1], other.grid[1])
                 ymax = max(self.grid[1], other.grid[1])
                 etable = other if self.grid[1] > other.grid[1] else self

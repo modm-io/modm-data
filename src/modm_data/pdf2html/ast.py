@@ -6,7 +6,7 @@ import anytree
 from anytree import RenderTree, Node
 from collections import defaultdict
 from ..utils import Rectangle, ReversePreOrderIter
-from .table import VirtualTable, TableCell
+from .table import VirtualTable, Cell
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,36 +29,42 @@ def merge_area(document: Node, area: Node, debug: bool = False) -> Node:
         document._end = document
     if not area.children:
         return document
-    if debug: _LOGGER.debug()
+    if debug:
+        _LOGGER.debug()
 
     def _find_end(node):
         # Find the last leaf node but skip lines, paragraphs, captions/tables/figures
-        return next((c for c in ReversePreOrderIter(node)
-                     if any(c.name.startswith(name) for name in {"head", "list", "note"})),
-                    next(ReversePreOrderIter(node), node))
+        return next(
+            (c for c in ReversePreOrderIter(node) if any(c.name.startswith(name) for name in {"head", "list", "note"})),
+            next(ReversePreOrderIter(node), node),
+        )
+
     def _find_ancestor(filter_):
-        if filter_(document._end): return document._end
-        return next((c for c in document._end.iter_path_reverse()
-                     if filter_(c)), document.root)
+        if filter_(document._end):
+            return document._end
+        return next((c for c in document._end.iter_path_reverse() if filter_(c)), document.root)
 
     area = _normalize_area(area)
-    if debug: _LOGGER.debug(RenderTree(area))
+    if debug:
+        _LOGGER.debug(RenderTree(area))
     children = area.children
     # All area nodes up to the next top-level element must now be
     # xpos-aligned with the previous area's last leaf node
-    connect_index = next((ii for ii, c in enumerate(children)
-                          if c.name.startswith("head")), len(children))
+    connect_index = next((ii for ii, c in enumerate(children) if c.name.startswith("head")), len(children))
     x_em = area.page._spacing["x_em"]
 
-    if debug: _LOGGER.debug("area=", area, "connect_index=", connect_index)
+    if debug:
+        _LOGGER.debug("area=", area, "connect_index=", connect_index)
     # Align these children with the last leaf node xpos
     for child in children[:connect_index]:
         if any(child.name.startswith(name) for name in {"list"}):
             # Find the node that is left of the current node but not too far left
-            host = _find_ancestor(lambda c: -4 * x_em < (c.xpos - child.xpos) < -x_em or
-                                            c.name.startswith("head"))
-        elif (child.name == "para" and document._end.name == "note" and
-              child.children[0].obj.contains_font("Italic", "Oblique")):
+            host = _find_ancestor(lambda c: -4 * x_em < (c.xpos - child.xpos) < -x_em or c.name.startswith("head"))
+        elif (
+            child.name == "para"
+            and document._end.name == "note"
+            and child.children[0].obj.contains_font("Italic", "Oblique")
+        ):
             host = document._end
         else:
             # Insert underneath the next heading
@@ -67,7 +73,9 @@ def merge_area(document: Node, area: Node, debug: bool = False) -> Node:
         child.parent = host
         document._end = _find_end(document)
         if debug:
-            _LOGGER.debug(f"{child=}", )
+            _LOGGER.debug(
+                f"{child=}",
+            )
             _LOGGER.debug(f"{host=}")
             _LOGGER.debug(f"end={document._end}")
             _LOGGER.debug()
@@ -75,7 +83,7 @@ def merge_area(document: Node, area: Node, debug: bool = False) -> Node:
     # Add the remaining top-level children to connect index node
     if connect_index < len(children):
         children[connect_index].parent = document
-        for child in children[connect_index + 1:]:
+        for child in children[connect_index + 1 :]:
             child.parent = children[connect_index]
 
     document._end = _find_end(document)
@@ -109,8 +117,7 @@ def normalize_lists(node: Node) -> Node:
     for llist in lists:
         # Insert a new list group node and redirect all children to it
         if llist[0].name.startswith("list"):
-            nlist = Node(llist[0].name, obj=llist[0].obj,
-                                 start=llist[0].value, xpos=llist[0].xpos)
+            nlist = Node(llist[0].name, obj=llist[0].obj, start=llist[0].value, xpos=llist[0].xpos)
             for lnode in llist:
                 lnode.name = "element"
                 lnode.parent = nlist
@@ -158,7 +165,7 @@ def normalize_captions(document: Node) -> Node:
     for caption in captions:
         cindex = caption.parent.children.index(caption)
         # Find the next table for this caption within 5 nodes
-        for sibling in caption.parent.children[cindex:cindex + 6]:
+        for sibling in caption.parent.children[cindex : cindex + 6]:
             if sibling.name == caption._type:
                 caption.parent = sibling
                 sibling.number = caption.number
@@ -187,15 +194,14 @@ def normalize_headings(document: Node) -> Node:
 def normalize_registers(document: Node) -> Node:
     bits_list = []
     sections = anytree.search.findall(document, filter_=lambda n: n.name == "section")
-    for section in (sections + (document,)):
+    for section in sections + (document,):
         new_children = []
         bits = None
         for child in section.children:
             if child.name == "bit":
                 # Insert a new bits group node and redirect all children to it
                 if bits is None or bits._page != child._page:
-                    bits = Node("table", xpos=child.xpos, obj=None,
-                                        _type="bits", _width=1, _page=child._page)
+                    bits = Node("table", xpos=child.xpos, obj=None, _type="bits", _width=1, _page=child._page)
                     new_children.append(bits)
                     bits_list.append(bits)
                 child.parent = bits
@@ -215,14 +221,16 @@ def normalize_registers(document: Node) -> Node:
             bottom = next(c.obj.bbox.bottom for c in reversed(bit.descendants) if c.name == "line")
             # Left table cell contains Bits
             left_bbox = Rectangle(bit._left, bottom, bit._middle, top)
-            cells.append(TableCell(None, (ypos, 0), left_bbox, (1,1,1,1), is_simple=True))
+            cells.append(Cell(None, (ypos, 0), left_bbox, (1, 1, 1, 1), is_simple=True))
             # Right cell contains description
             right_bbox = Rectangle(bit._middle, bottom, bit._right, top)
-            cells.append(TableCell(None, (ypos, 1), right_bbox, (1,1,1,1)))
-        tbbox = Rectangle(min(c.bbox.left for c in cells),
-                          min(c.bbox.bottom for c in cells),
-                          max(c.bbox.right for c in cells),
-                          max(c.bbox.top for c in cells))
+            cells.append(Cell(None, (ypos, 1), right_bbox, (1, 1, 1, 1)))
+        tbbox = Rectangle(
+            min(c.bbox.left for c in cells),
+            min(c.bbox.bottom for c in cells),
+            max(c.bbox.right for c in cells),
+            max(c.bbox.top for c in cells),
+        )
         bits.obj = VirtualTable(bits._page, tbbox, cells, "bitfield")
 
     return document
@@ -247,7 +255,7 @@ def normalize_tables(document: Node) -> Node:
 
     sections = anytree.search.findall(document, filter_=lambda n: n.name == "section")
     last_number = 0
-    for section in (sections + (document,)):
+    for section in sections + (document,):
         current_rtables = []
         current_bitstables = []
         for child in section.children:
@@ -317,7 +325,7 @@ def normalize_chapters(document: Node) -> Node:
         if heading.name == "head1":
             chapter_name = "0 " + chapter_name
         filename = chapter_name.lower().translate(cleaner)
-        chapters.append( (chapter_name, filename, document.children[idx0:idx1 + 1]) )
+        chapters.append((chapter_name, filename, document.children[idx0 : idx1 + 1]))
 
     for title, filename, nodes in chapters:
         chapter = Node("chapter", title=title, _filename=filename, parent=document)

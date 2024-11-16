@@ -3,8 +3,6 @@
 
 from ..utils import ext_path
 import owlready2 as owl
-import lxml.etree as ET
-from pathlib import Path
 
 
 XSLT_SORT = r"""
@@ -54,13 +52,15 @@ class Store:
         return self.ontology.get_namespace(f"{self.vendor}/{name}")
 
     def load(self, name=None):
-        if name is None: name = "ontology"
+        if name is None:
+            name = "ontology"
         fileobj = open(self._path / f"{name}.owl", "rb")
         self.ontology.load(only_local=True, fileobj=fileobj, reload=True)
 
     def save(self, name=None):
         self._path.mkdir(exist_ok=True, parents=True)
-        if name is None: name = "ontology"
+        if name is None:
+            name = "ontology"
         file = str(self._path / f"{name}.owl")
         self.ontology.save(file=file)
 
@@ -81,4 +81,3 @@ class Store:
 
     def __repr__(self) -> str:
         return f"Store({self.vendor}/{self.device})"
-

@@ -19,3 +19,16 @@ from .link import ObjLink, WebLink
 from .path import Path
 from .image import Image
 from .render import render_page_pdf
+from .structure import Structure
+
+__all__ = [
+    "Document",
+    "Page",
+    "Character",
+    "ObjLink",
+    "WebLink",
+    "Path",
+    "Image",
+    "Structure",
+    "render_page_pdf",
+]

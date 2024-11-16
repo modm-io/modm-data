@@ -23,10 +23,12 @@ class CharCluster:
 
     @cached_property
     def bbox(self) -> Rectangle:
-        return Rectangle(min(c.bbox.left for c in self.chars),
-                         min(c.bbox.bottom for c in self.chars),
-                         max(c.bbox.right for c in self.chars),
-                         max(c.bbox.top for c in self.chars))
+        return Rectangle(
+            min(c.bbox.left for c in self.chars),
+            min(c.bbox.bottom for c in self.chars),
+            max(c.bbox.right for c in self.chars),
+            max(c.bbox.top for c in self.chars),
+        )
 
 
 class CharLine:
@@ -34,10 +36,18 @@ class CharLine:
     A line of characters with super- and sub-script chars merged into.
     """
 
-    def __init__(self, page, chars: list, bottom: float,
-                 origin: float, top: float,
-                 height: float = None, rotation: int = 0,
-                 offset: float = 0, sort_origin: float = None):
+    def __init__(
+        self,
+        page,
+        chars: list,
+        bottom: float,
+        origin: float,
+        top: float,
+        height: float = None,
+        rotation: int = 0,
+        offset: float = 0,
+        sort_origin: float = None,
+    ):
         self._page = page
         self.chars = chars
         self.bottom = bottom
@@ -51,10 +61,12 @@ class CharLine:
     @cached_property
     def bbox(self) -> Rectangle:
         """Bounding box of the character line"""
-        return Rectangle(min(c.bbox.left for c in self.chars),
-                         min(c.bbox.bottom for c in self.chars),
-                         max(c.bbox.right for c in self.chars),
-                         max(c.bbox.top for c in self.chars))
+        return Rectangle(
+            min(c.bbox.left for c in self.chars),
+            min(c.bbox.bottom for c in self.chars),
+            max(c.bbox.right for c in self.chars),
+            max(c.bbox.top for c in self.chars),
+        )
 
     @cached_property
     def fonts(self) -> set[str]:
@@ -75,6 +87,7 @@ class CharLine:
 
     def clusters(self, absolute_tolerance: float = None) -> list[CharCluster]:
         """Find clusters of characters in a line separated by `absolute_tolerance`."""
+
         def _cluster(clusters, chars):
             if chars:
                 clusters.append(CharCluster(self, chars))
@@ -89,7 +102,7 @@ class CharLine:
             if next_char.bbox.left - last_char.bbox.right < absolute_tolerance:
                 # Keep this char in the current cluster
                 current_chars.append(next_char)
-                if next_char.unicode not in {0x20, 0xa, 0xd}:
+                if next_char.unicode not in {0x20, 0xA, 0xD}:
                     last_char = next_char
             else:
                 # Larger spacing detected, create a new cluster

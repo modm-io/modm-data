@@ -11,8 +11,10 @@ from multiprocessing.pool import ThreadPool
 
 from .. import convert, patch
 
+
 def main():
     import modm_data
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--document", type=Path)
     parser.add_argument("--output", type=str, default="")
@@ -49,13 +51,12 @@ def main():
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    document = None
     if args.parallel:
         log = Path(f"log/stmicro/html/{doc.name}.txt")
         log.parent.mkdir(exist_ok=True, parents=True)
-        with log.open('w') as logfile:
+        with log.open("w") as logfile:
             print(doc.page_count, doc.metadata, doc.is_tagged, file=logfile)
-            output_dir = (output_path.parent / output_path.stem)
+            output_dir = output_path.parent / output_path.stem
             output_dir.mkdir(parents=True, exist_ok=True)
             dests = [(0, "introduction")]
             for toc in doc.toc:
@@ -72,22 +73,36 @@ def main():
             ranges = [(p0, p1, t0) for (p0, t0), (p1, t1) in zip(dests, dests[1:]) if p0 != p1]
             calls = []
             for ii, (p0, p1, title) in enumerate(ranges):
-                call = f"python3 -m modm_data.pdf2html.stmicro " \
-                       f"--document {args.document} --range {p0 + 1}:{p1} --html " \
-                       f"--output {output_dir}/chapter_{ii}_{title}.html"
+                call = (
+                    f"python3 -m modm_data.pdf2html.stmicro "
+                    f"--document {args.document} --range {p0 + 1}:{p1} --html "
+                    f"--output {output_dir}/chapter_{ii}_{title}.html"
+                )
                 calls.append(call + f" >> {log} 2>&1")
                 print(call, file=logfile)
         with ThreadPool() as pool:
             retvals = list(tqdm.tqdm(pool.imap(lambda c: subprocess.run(c, shell=True), calls), total=len(calls)))
         for retval, call in zip(retvals, calls):
-            if retval.returncode != 0: print(call)
+            if retval.returncode != 0:
+                print(call)
         if all(r.returncode == 0 for r in retvals):
             from . import data
+
             return patch(doc, data, output_dir)
         return False
 
-    return convert(doc, page_range, output_path, format_chapters=args.chapters,
-                   render_html=args.html, render_pdf=args.pdf, render_all=args.all,
-                   show_ast=args.ast, show_tree=args.tree, show_tags=args.tags)
+    return convert(
+        doc,
+        page_range,
+        output_path,
+        format_chapters=args.chapters,
+        render_html=args.html,
+        render_pdf=args.pdf,
+        render_all=args.all,
+        show_ast=args.ast,
+        show_tree=args.tree,
+        show_tags=args.tags,
+    )
+
 
 exit(0 if main() else 1)

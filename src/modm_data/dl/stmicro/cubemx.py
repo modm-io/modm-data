@@ -2,12 +2,10 @@
 # SPDX-License-Identifier: MPL-2.0
 
 
-import urllib.request
 import zipfile
 import shutil
 import re
 import io
-import os
 import random
 import time
 import logging
@@ -20,27 +18,19 @@ from ..store import _hdr
 
 LOGGER = logging.getLogger(__name__)
 
-_hdr = {
-    'Accept': '*',
-    'Accept-Encoding': '*',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
-    'Accept-Language': 'en-GB,en;q=0.9',
-    'Connection': 'keep-alive',
-}
-
 
 def _dl(url):
-    cmd = f"curl '{url}' -L -s --max-time 120 -o - " + " ".join(f"-H '{k}: {v}'" for k,v in _hdr.items())
+    cmd = f"curl '{url}' -L -s --max-time 120 -o - " + " ".join(f"-H '{k}: {v}'" for k, v in _hdr.items())
     return subprocess.run(cmd, shell=True, stdout=subprocess.PIPE).stdout
 
 
 def download_cubemx(extraction_path: Path, with_download: bool = True, with_patch: bool = True) -> bool:
     # First check STMUpdaterDefinitions.xml from this zip
     update_url = "https://sw-center.st.com/packs/resource/utility/updaters.zip"
-    update_url2 = "https://www.ebuc23.com/s3/stm_test/software/utility/updaters.zip"
+    update_url2 = "https://www.ebuc23.com/s3/stm_test/software/utility/updaters.zip"  # noqa: F841
     # Then Release="MX.6.2.0" maps to this: -win, -lin, -mac
     cube_url = "https://sw-center.st.com/packs/resource/library/stm32cube_mx_v{}-lin.zip"
-    cube_url2 = "https://www.ebuc23.com/s3/stm_test/software/library/stm32cube_mx_v{}-lin.zip"
+    cube_url2 = "https://www.ebuc23.com/s3/stm_test/software/library/stm32cube_mx_v{}-lin.zip"  # noqa: F841
 
     if with_download:
         LOGGER.info("Downloading Update Info...")
@@ -63,7 +53,7 @@ def download_cubemx(extraction_path: Path, with_download: bool = True, with_patc
 
         LOGGER.info("Downloading Database...")
         LOGGER.debug(cube_url.format(version))
-        time.sleep(random.randrange(1,6))
+        time.sleep(random.randrange(1, 6))
 
         z = zipfile.ZipFile(io.BytesIO(_dl(cube_url.format(version))))
         LOGGER.info("Extracting Database...")
@@ -80,15 +70,14 @@ def download_cubemx(extraction_path: Path, with_download: bool = True, with_patc
         for file in Path(extraction_path).glob("**/*"):
             if str(file).endswith(".xml"):
                 with file.open("r", newline=None, encoding="utf-8", errors="replace") as rfile:
-                    content = [l.rstrip()+"\n" for l in rfile.readlines()]
+                    content = [line.rstrip() + "\n" for line in rfile.readlines()]
                 with file.open("w", encoding="utf-8") as wfile:
                     wfile.writelines(content)
 
     if with_patch:
         LOGGER.info("Patching Database...")
         from . import data
+
         return pkg_apply_patch(data, "cubemx.patch", extraction_path)
 
     return True
-
-

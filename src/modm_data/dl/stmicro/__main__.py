@@ -1,20 +1,18 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import os
-import sys
 import shutil
 import tempfile
 import argparse
 from pathlib import Path
 
 import modm_data
-from modm_data.utils import ext_path
 from modm_data.dl.stmicro import download_cubemx
 from modm_data.dl.stmicro import load_remote_info, store_remote_info
 from modm_data.dl.stmicro import load_local_info, store_local_info, Document
 
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger("update")
 
@@ -74,28 +72,16 @@ def download_pdfs(base_dir, with_download, new_pdfs=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--download",
-        action="store_true",
-        help="Download the data source.")
-    parser.add_argument(
-        "--directory",
-        type=Path,
-        help="Where to put the downloaded files.")
+    parser.add_argument("--download", action="store_true", help="Download the data source.")
+    parser.add_argument("--directory", type=Path, help="Where to put the downloaded files.")
 
     subparsers = parser.add_subparsers(title="Command", dest="command")
 
     pdf_parser = subparsers.add_parser("pdf", help="PDF documents.")
-    pdf_parser.add_argument(
-        "--new",
-        type=Path,
-        help="Dump the newly downloaded PDFs into this file.")
+    pdf_parser.add_argument("--new", type=Path, help="Dump the newly downloaded PDFs into this file.")
 
     cubemx_parser = subparsers.add_parser("cubemx", help="CubeMX database.")
-    cubemx_parser.add_argument(
-        "--patch",
-        action="store_true",
-        help="Apply the patch to the database.")
+    cubemx_parser.add_argument("--patch", action="store_true", help="Apply the patch to the database.")
 
     args = parser.parse_args()
 

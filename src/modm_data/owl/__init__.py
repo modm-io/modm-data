@@ -4,3 +4,9 @@
 from .store import Store
 from .identifier import DeviceIdentifier
 from . import stmicro
+
+__all__ = [
+    "stmicro",
+    "Store",
+    "DeviceIdentifier",
+]

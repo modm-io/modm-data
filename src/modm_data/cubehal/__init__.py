@@ -11,3 +11,5 @@ The STM32CubeHAL source code provides useful information:
 """
 
 from .dmamux_requests import read_request_map
+
+__all__ = ["read_request_map"]

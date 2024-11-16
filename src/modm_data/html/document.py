@@ -1,7 +1,8 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re, os
+import re
+import os
 import logging
 from pathlib import Path
 from functools import cached_property
@@ -32,8 +33,7 @@ class Document:
     def chapters(self, pattern: str = None) -> list[Chapter]:
         if pattern is None:
             return list(self._chapters.values())
-        return [c for name, c in self._chapters.items()
-                if re.search(pattern, name, re.IGNORECASE)]
+        return [c for name, c in self._chapters.items() if re.search(pattern, name, re.IGNORECASE)]
 
     def chapter(self, pattern: str) -> Chapter:
         chapters = self.chapters(pattern)

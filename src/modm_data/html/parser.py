@@ -2,14 +2,13 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import re
-import os.path
 import logging
-from functools import cached_property
 from html.parser import HTMLParser
 from .table import Table, Cell
 from .text import Text, Heading
 
 LOGGER = logging.getLogger(__name__)
+
 
 class Parser(HTMLParser):
     def __init__(self):
@@ -49,8 +48,8 @@ class Parser(HTMLParser):
                 self._tx = -1
             if self._table and tag in ["th", "td"]:
                 self._tx += 1
-                tys = next((a[1] for a in  attrs if a[0] == "rowspan"), 1)
-                txs = next((a[1] for a in  attrs if a[0] == "colspan"), 1)
+                tys = next((a[1] for a in attrs if a[0] == "rowspan"), 1)
+                txs = next((a[1] for a in attrs if a[0] == "colspan"), 1)
                 self._cell = Cell(self._tx, self._ty, int(txs), int(tys), tag == "th")
 
         elif re.match(r"h[1-6]", tag):
@@ -87,7 +86,7 @@ class Parser(HTMLParser):
         elif self._table and tag == "table":
             if self._table._cells:
                 self._table._normalize()
-                if self._table.size > (1,1) or self._table.cell(0,0).html != "(omitted)":
+                if self._table.size > (1, 1) or self._table.cell(0, 0).html != "(omitted)":
                     self._items.append(self._table)
             self._table = None
             self._type = None
@@ -98,6 +97,3 @@ class Parser(HTMLParser):
 
         if self._collect_data and tag not in self._ignore_tags:
             self._data += f"</{tag}>"
-
-
-

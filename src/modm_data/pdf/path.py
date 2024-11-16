@@ -23,20 +23,24 @@ class Path(pp.PdfObject):
 
     You must construct the paths by calling `modm_data.pdf.page.Page.paths`.
     """
+
     class Type(Enum):
         """Path Type"""
+
         LINE = 0
         BEZIER = 1
         MOVE = 2
 
     class Cap(Enum):
         """Path Cap Type"""
+
         BUTT = 0
         ROUND = 1
         PROJECTING_SQUARE = 2
 
     class Join(Enum):
         """Path Join Type"""
+
         MITER = 0
         ROUND = 1
         BEVEL = 2
@@ -102,13 +106,12 @@ class Path(pp.PdfObject):
             The bounding is only approximated using the control points!
             Therefore bezier curves will likely have a larger bounding box.
         """
-        l, b = ctypes.c_float(), ctypes.c_float()
-        r, t = ctypes.c_float(), ctypes.c_float()
-        assert pp.raw.FPDFPageObj_GetBounds(self, l, b, r, t)
-        bbox = Rectangle(l.value, b.value, r.value, t.value)
+        left, bottom = ctypes.c_float(), ctypes.c_float()
+        right, top = ctypes.c_float(), ctypes.c_float()
+        assert pp.raw.FPDFPageObj_GetBounds(self, left, bottom, right, top)
+        bbox = Rectangle(left.value, bottom.value, right.value, top.value)
         if self.page.rotation:
-            bbox = Rectangle(bbox.p0.y, self.page.height - bbox.p1.x,
-                             bbox.p1.y, self.page.height - bbox.p0.x)
+            bbox = Rectangle(bbox.p0.y, self.page.height - bbox.p1.x, bbox.p1.y, self.page.height - bbox.p0.x)
         return bbox
 
     @cached_property
@@ -140,8 +143,10 @@ class Path(pp.PdfObject):
     def lines(self) -> list[Line]:
         """List of lines between the path points."""
         points = self.points
-        return [Line(points[ii], points[ii + 1], width=self.width,
-                     type=points[ii + 1].type) for ii in range(len(points) - 1)]
+        return [
+            Line(points[ii], points[ii + 1], width=self.width, type=points[ii + 1].type)
+            for ii in range(len(points) - 1)
+        ]
 
     def __repr__(self) -> str:
         points = ",".join(repr(p) for p in self.points)

@@ -6,3 +6,5 @@
 """
 
 from . import stmicro
+
+__all__ = ["stmicro"]

@@ -8,6 +8,7 @@ import logging
 from collections import defaultdict
 
 from ..owl.stmicro import did_from_string
+from ..owl import DeviceIdentifier
 from ..utils import ext_path, XmlReader
 from . import stm32_data
 from ..cubehal import read_request_map as dmamux_request_map
@@ -18,6 +19,7 @@ LOGGER = logging.getLogger(__file__)
 
 _MCU_PATH = ext_path("stmicro/cubemx/mcu")
 _FAMILY_FILE = None
+
 
 def _family_file() -> XmlReader:
     global _FAMILY_FILE
@@ -63,7 +65,8 @@ def devices_from_prefix(prefix: str) -> list[str]:
     LOGGER.info("Found devices for prefix '{}': {}".format(prefix, ", ".join(devices)))
     return list(sorted(devices))
 
-def cubemx_device_list() -> list["modm_data.owl.DeviceIdentifier"]:
+
+def cubemx_device_list() -> list[DeviceIdentifier]:
     """
     :return: A list of all STM32 device identifiers.
     """
@@ -83,16 +86,18 @@ def devices_from_partname(partname: str) -> list[dict[str]]:
     :param partname: A full STM32 device name.
     :return: a list of dictionaries containing a device specific data structure.
     """
-    deviceNames = _family_file().query('//Family/SubFamily/Mcu[starts-with(@RefName,"{}")]'
-                                                 .format(partname[:12] + "x" + partname[13:]))
+    deviceNames = _family_file().query(
+        f'//Family/SubFamily/Mcu[starts-with(@RefName,"{partname[:12]}x{partname[13:]}")]'
+    )
     comboDeviceName = sorted([d.get("Name") for d in deviceNames])[0]
     device_file = XmlReader(os.path.join(_MCU_PATH, comboDeviceName + ".xml"))
     did = did_from_string(partname.lower())
-    LOGGER.info("Parsing '{}'".format(did.string))
+    LOGGER.info(f"Parsing '{did.string}'")
 
     # information about the core and architecture
-    cores = [c.text.lower().replace("arm ", "") for c in device_file.query('//Core')]
-    if len(cores) > 1: did.naming_schema += "@{core}"
+    cores = [c.text.lower().replace("arm ", "") for c in device_file.query("//Core")]
+    if len(cores) > 1:
+        did.naming_schema += "@{core}"
     devices = [_properties_from_id(comboDeviceName, device_file, did.copy(), c) for c in cores]
     return [d for d in devices if d is not None]
 
@@ -107,9 +112,10 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
     p = {"id": did, "core": core}
 
     # Maximum operating frequency
-    max_frequency = float(device_file.query('//Frequency')[0].text)
+    max_frequency = float(device_file.query("//Frequency")[0].text)
     # H7 dual-core devices run the M4 core at half the frequency as the M7 core
-    if did.get("core", "") == "m4": max_frequency /= 2.0;
+    if did.get("core", "") == "m4":
+        max_frequency /= 2.0
     p["max_frequency"] = int(max_frequency * 1e6)
 
     # Information from the CMSIS headers
@@ -131,30 +137,30 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
         sizeIndexFlash = sizeArray.index(did.size)
         sizeIndexRam = sizeIndexFlash
 
-    rams = sorted([int(r.text) for r in device_file.query('//Ram')])
+    rams = sorted([int(r.text) for r in device_file.query("//Ram")])
     if sizeIndexRam >= len(rams):
         sizeIndexRam = len(rams) - 1
 
-    flashs = sorted([int(f.text) for f in device_file.query('//Flash')])
+    flashs = sorted([int(f.text) for f in device_file.query("//Flash")])
     if sizeIndexFlash >= len(flashs):
         sizeIndexFlash = len(flashs) - 1
-
 
     p["ram"] = rams[sizeIndexRam] * 1024
     p["flash"] = flashs[sizeIndexFlash] * 1024
 
     memories = []
-    for (mem_name, mem_start, mem_size) in stm32_data.getMemoryForDevice(did, p["flash"], p["ram"]):
+    for mem_name, mem_start, mem_size in stm32_data.getMemoryForDevice(did, p["flash"], p["ram"]):
         access = "rwx"
-        if did.family == "f4" and mem_name == "ccm": access = "rw";
-        if "flash" in mem_name: access = "rx";
-        memories.append({"name": mem_name, "access": access, "size": str(mem_size),
-                         "start": "0x{:02X}".format(mem_start)})
+        if did.family == "f4" and mem_name == "ccm":
+            access = "rw"
+        if "flash" in mem_name:
+            access = "rx"
+        memories.append({"name": mem_name, "access": access, "size": str(mem_size), "start": f"0x{mem_start:02X}"})
 
     p["memories"] = memories
 
     # packaging
-    package = device_file.query('//@Package')[0]
+    package = device_file.query("//@Package")[0]
     p["pin-count"] = re.findall(r"[0-9]+", package)[0]
     p["package"] = re.findall(r"[A-Za-z\.]+", package)[0]
 
@@ -169,12 +175,31 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
 
     modules = []
     dmaFile = None
-    for ip in device_file.query('//IP'):
+    for ip in device_file.query("//IP"):
         # These IPs are all software modules, NOT hardware modules. Their version string is weird too.
-        software_ips = {"GFXSIMULATOR", "GRAPHICS", "FATFS", "TOUCHSENSING", "PDM2PCM",
-                        "MBEDTLS", "FREERTOS", "CORTEX_M", "NVIC", "USB_DEVICE",
-                        "USB_HOST", "LWIP", "LIBJPEG", "GUI_INTERFACE", "TRACER",
-                        "FILEX", "LEVELX", "THREADX", "USBX", "LINKEDLIST", "NETXDUO"}
+        software_ips = {
+            "GFXSIMULATOR",
+            "GRAPHICS",
+            "FATFS",
+            "TOUCHSENSING",
+            "PDM2PCM",
+            "MBEDTLS",
+            "FREERTOS",
+            "CORTEX_M",
+            "NVIC",
+            "USB_DEVICE",
+            "USB_HOST",
+            "LWIP",
+            "LIBJPEG",
+            "GUI_INTERFACE",
+            "TRACER",
+            "FILEX",
+            "LEVELX",
+            "THREADX",
+            "USBX",
+            "LINKEDLIST",
+            "NETXDUO",
+        }
         if any(ip.get("Name").upper().startswith(p) for p in software_ips):
             continue
 
@@ -193,12 +218,11 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
 
         modules.append(tuple([m.lower() for m in module]))
 
-    modules.append( ("flash", "flash", "v1.0"))
+    modules.append(("flash", "flash", "v1.0"))
     modules = [m + peripherals.getPeripheralData(did, m) for m in modules]
 
     p["modules"] = modules
     LOGGER.debug("Available Modules are:\n" + _modulesToString(modules))
-    instances = [m[1] for m in modules]
     # print("\n".join(str(m) for m in modules))
 
     # p["stm_header"] = stm_header
@@ -212,12 +236,14 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
     gpioFile = XmlReader(ip_file)
 
     pins = device_file.query('//Pin[@Type="I/O"][starts-with(@Name,"P")]')
+
     def raw_pin_sort(p):
         port = p.get("Name")[1:2]
         pin = p.get("Name")[:4]
         if len(pin) > 3 and not pin[3].isdigit():
             pin = pin[:3]
         return (port, int(pin[2:]))
+
     pins = sorted(pins, key=raw_pin_sort)
     # Remove package remaps from GPIO data (but not from package)
     pins.sort(key=lambda p: "PINREMAP" not in p.get("Variant", ""))
@@ -232,11 +258,13 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
 
     # Find the remap pin pairs, if they exist
     double_pinouts = defaultdict(list)
-    for pin in device_file.query('//Pin'):
+    for pin in device_file.query("//Pin"):
         double_pinouts[pin.get("Position")].append((pin.get("Name"), pin.get("Variant", "DEFAULT")))
-    double_pinouts = {pos: {pin:variant for (pin, variant) in pins}
-                            for pos, pins in double_pinouts.items()
-                                if len(pins) > 1 and any("PINREMAP" in pin[1] for pin in pins)}
+    double_pinouts = {
+        pos: {pin: variant for (pin, variant) in pins}
+        for pos, pins in double_pinouts.items()
+        if len(pins) > 1 and any("PINREMAP" in pin[1] for pin in pins)
+    }
 
     # Get the pinout for this package with correct remap variants
     pinout = []
@@ -249,9 +277,9 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
             "type": pin.get("Type"),
         }
         variant = double_pinouts.get(pos, {}).get(name)
-        if (variant is not None and (pin.get("Type") != "I/O" or (
-            pin_name(name)[0] in ['a'] and
-            pin_name(name)[1] in ['9', '10', '11', '12']))):
+        if variant is not None and (
+            pin.get("Type") != "I/O" or (pin_name(name)[0] in ["a"] and pin_name(name)[1] in ["9", "10", "11", "12"])
+        ):
             pinv["variant"] = "remap" if "PINREMAP" in variant else "remap-default"
         pinout.append(pinv)
 
@@ -265,7 +293,7 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
         minst = [m for m in modules if af.startswith(m[1] + "_")]
         # print(af, mdriv, minst)
         if len(minst) > 1:
-            LOGGER.warning("Ambiguos driver: {} {}".format(af, minst))
+            LOGGER.warning(f"Ambiguos driver: {af} {minst}")
             exit(1)
 
         minst = minst[0] if len(minst) else None
@@ -273,15 +301,16 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
 
         driver = minst[0] if minst else (mdriv[0] if mdriv else None)
         if not driver:
-            LOGGER.debug("Unknown driver: {}".format(af))
+            LOGGER.debug(f"Unknown driver: {af}")
         instance = None
         if minst and driver:
             pinst = minst[1].replace(driver, "")
-            if len(pinst): instance = pinst;
+            if len(pinst):
+                instance = pinst
         if minst or mdriv:
             name = af.replace((minst[1] if minst else mdriv[0]) + "_", "")
             if not len(name):
-                LOGGER.error("Unknown name: {} {}".format(af, minst, mdriv))
+                LOGGER.error(f"Unknown name: {af} {minst}")
                 exit(1)
         else:
             name = af
@@ -289,15 +318,14 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
         return (driver, instance, name)
 
     def split_multi_af(af):
-        af = af.replace("ir_", "irtim_") \
-               .replace("crs_", "rcc_crs_") \
-               .replace("timx_", "tim_")
-        if af == "cec": af = "hdmi_cec_cec";
+        af = af.replace("ir_", "irtim_").replace("crs_", "rcc_crs_").replace("timx_", "tim_")
+        if af == "cec":
+            af = "hdmi_cec_cec"
 
         driver, instance, names = split_af(af)
         rafs = []
         for name in names.split("-"):
-            rafs.append( (driver, instance, name) )
+            rafs.append((driver, instance, name))
         return rafs
 
     if dmaFile is not None:
@@ -313,10 +341,12 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
             instance = parent.split("_")[0][3:]
             parent = parent.split("_")[1]
 
-            request = dmaFile.query('//RefMode[@Name="{}"]'.format(name))[0]
+            request = dmaFile.query(f'//RefMode[@Name="{name}"]')[0]
+
             def rv(param, default=[]):
-                vls = request.xpath('./Parameter[@Name="{}"]/PossibleValue/text()'.format(param))
-                if not len(vls): vls = default;
+                vls = request.xpath(f'./Parameter[@Name="{param}"]/PossibleValue/text()')
+                if not len(vls):
+                    vls = default
                 return vls
 
             name = name.lower().split(":")[0]
@@ -325,9 +355,12 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
 
             # Several corrections
             name = name.replace("spdif_rx", "spdifrx")
-            if name.startswith("dac") and "_" not in name: name = "dac_{}".format(name);
-            if any(name == n for n in ["sdio", "sdmmc2", "sdmmc1"]): continue
-            if len(name.split("_")) < 2: name = "{}_default".format(name);
+            if name.startswith("dac") and "_" not in name:
+                name = f"dac_{name}"
+            if any(name == n for n in ["sdio", "sdmmc2", "sdmmc1"]):
+                continue
+            if len(name.split("_")) < 2:
+                name = f"{name}_default"
             driver, inst, name = split_af(name)
 
             if "[" in parent:
@@ -349,58 +382,63 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
                 stream = channel
                 p["dma_naming"] = (None, "channel", "signal")
 
-            if driver is None: # peripheral is not part of this device
-                dma_dumped.append( (instance, stream, name) )
+            if driver is None:  # peripheral is not part of this device
+                dma_dumped.append((instance, stream, name))
                 continue
             mode = [v[4:].lower() for v in rv("Mode")]
-            for sname in ([None] if name == "default" else name.split("/")):
+            for sname in [None] if name == "default" else name.split("/"):
                 signal = {
                     "driver": driver,
                     "name": sname,
-                    "direction": [v[4:].replace("PERIPH", "p").replace("MEMORY", "m").replace("_TO_", "2") for v in rv("Direction")],
+                    "direction": [
+                        v[4:].replace("PERIPH", "p").replace("MEMORY", "m").replace("_TO_", "2")
+                        for v in rv("Direction")
+                    ],
                     "mode": mode,
                     "increase": "ENABLE" in rv("PeriphInc", ["DMA_PINC_ENABLE"])[0],
                 }
-                if inst: signal["instance"] = inst;
+                if inst:
+                    signal["instance"] = inst
                 remaps = stm32_data.getDmaRemap(did, instance, channel, driver, inst, sname)
-                if remaps: signal["remap"] = remaps;
+                if remaps:
+                    signal["remap"] = remaps
                 dma_streams[instance][stream][channel].append(signal)
                 # print(instance, stream, channel)
                 # print(signal)
 
         # Manually handle condition expressions from XML for
         # (STM32F030CCTx|STM32F030RCTx) and (STM32F070CBTx|STM32F070RBTx)
-        if did.family in ['f0']:
-            if (did.name == '30' and did.size == 'c'):
-                dma_streams['1'].pop('6')
-                dma_streams['1'].pop('7')
-                dma_streams.pop('2')
-            if (did.name == '70' and did.size == 'b'):
-                dma_streams['1'].pop('6')
-                dma_streams['1'].pop('7')
+        if did.family in ["f0"]:
+            if did.name == "30" and did.size == "c":
+                dma_streams["1"].pop("6")
+                dma_streams["1"].pop("7")
+                dma_streams.pop("2")
+            if did.name == "70" and did.size == "b":
+                dma_streams["1"].pop("6")
+                dma_streams["1"].pop("7")
 
         # De-duplicate DMA signal entries
-        def deduplicate_list(l):
-            return [i for n, i in enumerate(l) if i not in l[n + 1:]]
+        def deduplicate_list(dl):
+            return [i for n, i in enumerate(dl) if i not in dl[n + 1 :]]
+
         for stream in dma_streams:
             for channel in dma_streams[stream]:
                 for signal in dma_streams[stream][channel]:
-                    dma_streams[stream][channel][signal] = deduplicate_list(
-                        dma_streams[stream][channel][signal])
+                    dma_streams[stream][channel][signal] = deduplicate_list(dma_streams[stream][channel][signal])
 
         # if p["dma_naming"][1] == "request":
         #     print(did, dmaFile.filename)
         p["dma"] = dma_streams
         if len(dma_dumped):
             for instance, stream, name in sorted(dma_dumped):
-                LOGGER.debug("DMA{}#{}: dumping {}".format(instance, stream, name))
+                LOGGER.debug(f"DMA{instance}#{stream}: dumping {name}")
 
         # If DMAMUX is used, add DMAMUX to DMA peripheral channel mappings
         if p["dma_naming"] == (None, "request", "signal"):
             # There can be multiple "//RefParameter[@Name="Instance"]" nodes constrained by
             # a <Condition> child node filtering by the STM32 die id
             # Try to match a node with condition first, if nothing matches choose the default one
-            die_id = device_file.query('//Die')[0].text
+            die_id = device_file.query("//Die")[0].text
             q = '//RefParameter[@Name="Instance"]/Condition[@Expression="%s"]/../PossibleValue/@Value' % die_id
             channels = dmaFile.query(q)
             if len(channels) == 0:
@@ -413,13 +451,17 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
             for mux_ch_position, channel in enumerate(channels):
                 m = mux_channel_regex.match(channel)
                 assert m is not None
-                mux_channels.append({'position'     : mux_ch_position,
-                                     'dma-instance' : int(m.group("instance")),
-                                     'dma-channel'  : int(m.group("channel"))})
+                mux_channels.append(
+                    {
+                        "position": mux_ch_position,
+                        "dma-instance": int(m.group("instance")),
+                        "dma-channel": int(m.group("channel")),
+                    }
+                )
             p["dma_mux_channels"] = mux_channels
 
     if did.family == "f1":
-        grouped_f1_signals = gpioFile.compactQuery('//GPIO_Pin/PinSignal/@Name')
+        grouped_f1_signals = gpioFile.compactQuery("//GPIO_Pin/PinSignal/@Name")
 
     _seen_gpio = set()
     for pin in pins:
@@ -427,16 +469,20 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
         name = pin_name(rname)
 
         # the analog channels are only available in the Mcu file, not the GPIO file
-        localSignals = device_file.compactQuery('//Pin[@Name="{}"]/Signal[not(@Name="GPIO")]/@Name'.format(rname))
+        localSignals = device_file.compactQuery(f'//Pin[@Name="{rname}"]/Signal[not(@Name="GPIO")]/@Name')
         # print(name, localSignals)
         altFunctions = []
 
         if did.family == "f1":
-            altFunctions = [ (s.lower(), "-1") for s in localSignals if s not in grouped_f1_signals]
+            altFunctions = [(s.lower(), "-1") for s in localSignals if s not in grouped_f1_signals]
         else:
-            allSignals = gpioFile.compactQuery('//GPIO_Pin[@Name="{}"]/PinSignal/SpecificParameter[@Name="GPIO_AF"]/..'.format(rname))
-            signalMap = { a.get("Name"): a[0][0].text.lower().replace("gpio_af", "")[:2].replace("_", "") for a in allSignals }
-            altFunctions = [ (s.lower(), (signalMap[s] if s in signalMap else "-1")) for s in localSignals ]
+            allSignals = gpioFile.compactQuery(
+                f'//GPIO_Pin[@Name="{rname}"]/PinSignal/SpecificParameter[@Name="GPIO_AF"]/..'
+            )
+            signalMap = {
+                a.get("Name"): a[0][0].text.lower().replace("gpio_af", "")[:2].replace("_", "") for a in allSignals
+            }
+            altFunctions = [(s.lower(), (signalMap[s] if s in signalMap else "-1")) for s in localSignals]
 
         afs = []
         for af in altFunctions:
@@ -444,38 +490,40 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
                 naf = {}
                 naf["driver"], naf["instance"], naf["name"] = raf
                 naf["af"] = af[1] if int(af[1]) >= 0 else None
-                if "exti" in naf["name"]: continue;
+                if "exti" in naf["name"]:
+                    continue
                 afs.append(naf)
 
         gpio = (name[0], name[1], afs)
         if name not in _seen_gpio:
             gpios.append(gpio)
             _seen_gpio.add(name)
-        # print(gpio[0].upper(), gpio[1], afs)
-        # LOGGER.debug("{}{}: {} ->".format(gpio[0].upper(), gpio[1]))
+        # LOGGER.debug(f"{gpio[0].upper()}{gpio[1]}: {afs}")
 
     remaps = {}
     if did.family == "f1":
-        for remap in gpioFile.compactQuery('//GPIO_Pin/PinSignal/RemapBlock/@Name'):
+        for remap in gpioFile.compactQuery("//GPIO_Pin/PinSignal/RemapBlock/@Name"):
             module = remap.split("_")[0].lower()
             config = remap.split("_")[1].replace("REMAP", "").replace("IREMAP", "")
             mapping = stm32_data.getGpioRemapForModuleConfig(module, config)
 
             mpins = []
-            for pin in gpioFile.compactQuery('//GPIO_Pin/PinSignal/RemapBlock[@Name="{}"]/..'.format(remap)):
+            for pin in gpioFile.compactQuery(f'//GPIO_Pin/PinSignal/RemapBlock[@Name="{remap}"]/..'):
                 name = pin.getparent().get("Name")[:4].split("-")[0].split("/")[0].strip().lower()
                 pport, ppin = name[1:2], name[2:]
                 if not any([pp[0] == pport and pp[1] == ppin for pp in gpios]):
                     continue
                 mmm = {"port": pport, "pin": ppin}
                 driver, _, name = split_af(pin.get("Name").lower())
-                if driver is None: continue;
-                mmm["name"] = name;
+                if driver is None:
+                    continue
+                mmm["name"] = name
                 mpins.append(mmm)
 
             if module not in remaps:
                 driver, instance, _ = split_af(module + "_lol")
-                if not driver: continue;
+                if not driver:
+                    continue
                 remaps[module] = {
                     "mask": mapping["mask"],
                     "position": mapping["position"],
@@ -485,7 +533,9 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
                 }
             if len(mpins) > 0:
                 remaps[module]["groups"][mapping["mapping"]] = mpins
-                LOGGER.debug("{:<20}{}".format(module + "_" + config, ["{}{}:{}".format(b["port"], b["pin"], b["name"]) for b in mpins]))
+                LOGGER.debug(
+                    "{:<20}{}".format(module + "_" + config, [f'{b["port"]}{b["pin"]}:{b["name"]}' for b in mpins])
+                )
 
         # import json
         # print(json.dumps(remaps, indent=4))
