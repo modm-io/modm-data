@@ -1,7 +1,7 @@
 # Copyright 2023, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-### @Utils Utilities \1000
+### @Utils Utilities \1010
 
 log/%:
 	@mkdir -p $@
@@ -34,7 +34,7 @@ venv:
 	$(MAKE) pip-install-frozen
 
 .PHONY: clean-venv
-# Remove the virtual environment
+## Remove the virtual environment
 clean-venv:
 	@rm -rf .venv
 
@@ -55,13 +55,13 @@ build-homepage:
 serve-api-docs:
 	@pdoc --mermaid modm_data
 
-
+### @Tests Testing \1009
 # ================================== Testing ==================================
 ext/test/regression/:
 	@git clone --depth=1 git@github.com:modm-ext/modm-data-test-docs.git $@
 
 .PHONY: run-regression-tests
-## Convert some PDF pages and check against their known HTML.
+## @Tests Convert some PDF pages and check against their known HTML.
 run-regression-tests: ext/test/regression/
 	@test/convert_html.sh
 	@git diff --exit-code -- test/data/html

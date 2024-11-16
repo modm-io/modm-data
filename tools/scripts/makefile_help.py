@@ -14,19 +14,20 @@ def parse_makefiles(makefiles: list[str]):
 	for path in makefiles:
 		content = Path(path).read_text()
 		fcategory = "General"
-		if (cdoc := re.search(r"### *@([\w-]+) *(.*?) *\\(\d+)\n", content)):
-			fcategory = cdoc.group(1)
-			cdocs[fcategory] = (cdoc.group(2), int(cdoc.group(3) or 0))
+		for groupcontent in re.split(r"### *@", content):
+			if (cdoc := re.search(r"^([\w-]+) *(.*?) *\\(\d+)\n", groupcontent)):
+				fcategory = cdoc.group(1)
+				cdocs[fcategory] = (cdoc.group(2), int(cdoc.group(3) or 0))
 
-		rawdocs = re.findall(r"((?:##.+\n)+)(.+):", content, flags=re.MULTILINE)
-		for doc, rule in rawdocs:
-			doc = doc.replace("##", "")
-			if (category := re.search(r"@([\w-]+)", doc)):
-				doc = doc.replace(category.group(0), "")
-				category = category.group(1)
-			else:
-				category = fcategory
-			docs[category][rule] = [l.strip() for l in doc.splitlines()]
+			rawdocs = re.findall(r"((?:##.+\n)+)(.+):", groupcontent, flags=re.MULTILINE)
+			for doc, rule in rawdocs:
+				doc = doc.replace("##", "")
+				if (category := re.search(r"@([\w-]+)", doc)):
+					doc = doc.replace(category.group(0), "")
+					category = category.group(1)
+				else:
+					category = fcategory
+				docs[category][rule] = [l.strip() for l in doc.splitlines()]
 
 	return dict(docs), cdocs
 
