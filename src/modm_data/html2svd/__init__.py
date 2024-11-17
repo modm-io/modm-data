@@ -5,6 +5,4 @@
 # HTML to SVD Pipeline
 """
 
-from . import stmicro
-
 __all__ = ["stmicro"]

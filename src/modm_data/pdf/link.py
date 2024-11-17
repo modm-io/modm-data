@@ -1,17 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-"""
-# Inter-PDF References and External Links
-
-PDF contains two types of links:
-1. Internal references to other objects by identifier: `ObjLink`.
-2. External links to URLs: `WebLink`.
-
-Both types can be extracted by calling the `modm_data.pdf.page.Page.objlinks`
-and `modm_data.pdf.page.Page.weblinks` properties.
-"""
-
 import ctypes
 from functools import cached_property
 import pypdfium2 as pp
@@ -19,7 +8,11 @@ from ..utils import Rectangle
 
 
 class ObjLink:
-    """A link to a PDF object giving the bounding box and destination page."""
+    """
+    An internal reference to other objects by an identifier giving the bounding
+    box and destination page. These links can be extracted by calling the
+    `modm_data.pdf.page.Page.objlinks` property.
+    """
 
     def __init__(self, page: "modm_data.pdf.Page", link: pp.raw.FPDF_LINK):  # noqa: F821
         """
@@ -47,7 +40,11 @@ class ObjLink:
 
 
 class WebLink:
-    """A weblink object giving the bounding box and destination URL."""
+    """
+    An external reference to URLs giving the bounding box and destination URL.
+    These links can be extracted by calling the
+    `modm_data.pdf.page.Page.weblinks` property.
+    """
 
     def __init__(self, page: "modm_data.pdf.Page", index: int):  # noqa: F821
         """

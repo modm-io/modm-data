@@ -1,16 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-"""
-# PDF Documents
-
-The PDF document is the root of the entire data structure and provides access to
-PDF metadata, the table of contents, as well as individual pages.
-
-You should extend from this class for a specific vendor to provide the
-correct page class from `page()` function.
-"""
-
 import ctypes
 import logging
 import pypdfium2 as pp
@@ -39,6 +29,13 @@ class _OutlineItem(pp.PdfOutlineItem):
 
 class Document(pp.PdfDocument):
     """
+    The PDF document is the root of the entire data structure and provides
+    access to PDF metadata, the table of contents, as well as individual
+    pages.
+
+    You should extend from this class for a specific vendor to provide the
+    correct page class from `page()` function.
+
     This class is a convenience wrapper with caching around the high-level APIs
     of pypdfium.
     """

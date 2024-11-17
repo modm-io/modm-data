@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 from ..utils import VLine, HLine
+from .page import Page
 import pypdfium2 as pp
 
 
@@ -47,13 +48,26 @@ def _rect(pageobj, rotation, rect, **kw):
     pp.raw.FPDFPage_InsertObject(pageobj, obj)
 
 
-def render_page_pdf(doc, page, new_doc=None, index=0):
+def annotate_debug_info(page: Page, new_doc: pp.PdfDocument = None, index: int = 0) -> pp.PdfDocument:
+    """
+    Copies each page into a new or existing PDF document and overlays the internal information on top of the content.
+    - Renders the bounding boxes in RED and origins in BLACK of all characters.
+    - Renders the bounding boxes of web links in BLUE GREEN.
+    - Renders the bounding boxes of object links in YELLOW GREEN.
+    - Renders all graphics paths in BLUE.
+    - Renders the bounding boxes of computed graphics clusters in CYAN.
+
+    :param page: The page to be annotated.
+    :param new_doc: The PDF document to copy the page to. If not provided, a new document is created.
+    :param index: The index of the page in the new document.
+    :return: The new document with the annotated page added.
+    """
     _, height = page.width, page.height
 
     if new_doc is None:
         new_doc = pp.raw.FPDF_CreateNewDocument()
     # copy page over to new doc
-    assert pp.raw.FPDF_ImportPages(new_doc, doc, str(page.number).encode("ascii"), index)
+    assert pp.raw.FPDF_ImportPages(new_doc, page.pdf, str(page.number).encode("ascii"), index)
     new_page = pp.raw.FPDF_LoadPage(new_doc, index)
     rotation = page.rotation
 

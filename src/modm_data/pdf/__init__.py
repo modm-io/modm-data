@@ -18,17 +18,17 @@ from .character import Character
 from .link import ObjLink, WebLink
 from .path import Path
 from .image import Image
-from .render import render_page_pdf
+from .render import annotate_debug_info
 from .structure import Structure
 
 __all__ = [
+    "annotate_debug_info",
     "Document",
     "Page",
     "Character",
-    "ObjLink",
-    "WebLink",
     "Path",
     "Image",
+    "ObjLink",
+    "WebLink",
     "Structure",
-    "render_page_pdf",
 ]

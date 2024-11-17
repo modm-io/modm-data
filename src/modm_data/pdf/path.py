@@ -1,14 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-"""
-# PDF Graphics
-
-PDF uses a subset of the PostScript graphics language, which draws vector paths
-with various rendering options. We are only interested in the basic properties,
-in particular, for recognizing table cell borders.
-"""
-
 import ctypes
 from functools import cached_property
 from enum import Enum
@@ -18,6 +10,10 @@ from ..utils import Point, Rectangle, Line
 
 class Path(pp.PdfObject):
     """
+    PDF uses a subset of the PostScript graphics language, which draws vector
+    paths with various rendering options. We are only interested in the basic
+    properties, in particular, for recognizing table cell borders.
+
     This class specializes `pypdfium2.PdfObject` to add accessors for  graphics
     containing vector paths of various configurations.
 

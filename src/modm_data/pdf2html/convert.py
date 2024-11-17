@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: MPL-2.0
 
 from anytree import RenderTree
+from typing import Iterable
 
 from .html import format_document, write_html
-from .render import render_page_pdf
+from .render import annotate_debug_info
 from ..utils import pkg_apply_patch, pkg_file_exists, apply_patch
 from .ast import merge_area
 from pathlib import Path
@@ -12,17 +13,17 @@ import pypdfium2 as pp
 
 
 def convert(
-    doc,
-    page_range,
-    output_path,
-    format_chapters=False,
-    pretty=True,
-    render_html=True,
-    render_pdf=False,
-    render_all=False,
-    show_ast=False,
-    show_tree=False,
-    show_tags=False,
+    doc: pp.PdfDocument,
+    page_range: Iterable[int],
+    output_path: Path,
+    format_chapters: bool = False,
+    pretty: bool = True,
+    render_html: bool = True,
+    render_pdf: bool = False,
+    render_all: bool = False,
+    show_ast: bool = False,
+    show_tree: bool = False,
+    show_tags: bool = False,
 ) -> bool:
     document = None
     debug_doc = None
@@ -47,7 +48,7 @@ def convert(
                     document = merge_area(document, area)
 
         if render_pdf:
-            debug_doc = render_page_pdf(doc, page, debug_doc, debug_index)
+            debug_doc = annotate_debug_info(page, debug_doc, debug_index)
             debug_index += 1
 
     if render_pdf:

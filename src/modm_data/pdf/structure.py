@@ -1,19 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-"""
-# Tagged PDFs
-
-A tagged PDF/UA (Universal Accessibility) contains the structure of content as a
-tree data structure with similar semantics to HTML. Sadly, the quality of the
-tags depends heavily on the PDF creation software. See [Overview of PDF tags](
-https://accessible-pdf.info/en/basics/general/overview-of-the-pdf-tags/).
-
-An example of an accessible pdf that can be inspected via these classes:
-[Rock On, D.C. Music Festival](
-https://commonlook.com/wp-content/uploads/2020/04/accessible-pdf-example.pdf).
-"""
-
 import ctypes
 from functools import cached_property, cache
 import pypdfium2 as pp
@@ -22,8 +9,13 @@ import weakref
 
 class Structure:
     """
-    A PDF/UA ("tagged PDF") contains the structure of content as a tree data
-    structure with similar semantics to HTML.
+    A tagged PDF/UA (Universal Accessibility) contains the structure of content
+    as a tree data structure with similar semantics to HTML. Sadly, the quality
+    of the tags depends heavily on the PDF creation software. See
+    [Overview of PDF tags](https://accessible-pdf.info/en/basics/general/overview-of-the-pdf-tags/).
+
+    An example of an accessible pdf that can be inspected via these classes:
+    [Rock On, D.C. Music Festival](https://commonlook.com/wp-content/uploads/2020/04/accessible-pdf-example.pdf).
 
     This class is a convenience wrapper around [the pdfium structtree methods](
     https://pdfium.googlesource.com/pdfium/+/main/public/fpdf_structtree.h).

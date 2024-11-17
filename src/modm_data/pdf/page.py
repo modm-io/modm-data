@@ -1,12 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-"""
-# PDF Pages
-
-
-"""
-
 import ctypes
 import logging
 import weakref

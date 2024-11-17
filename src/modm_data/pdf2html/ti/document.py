@@ -3,7 +3,7 @@
 
 import logging
 from anytree import RenderTree
-from .page import Page as StmPage
+from .page import Page as TiPage
 from ...pdf import Document as PdfDocument
 from ..ast import (
     normalize_lines,
@@ -47,9 +47,9 @@ class Document(PdfDocument):
         super().__init__(path)
         self._normalize = _normalize_document
 
-    def page(self, index: int) -> StmPage:
+    def page(self, index: int) -> TiPage:
         assert index < self.page_count
-        return StmPage(self, index)
+        return TiPage(self, index)
 
     def __repr__(self) -> str:
-        return f"STMicroDoc({self.name})"
+        return f"TiDoc({self.name})"

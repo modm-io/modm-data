@@ -1,21 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-"""
-# PDF Characters
-
-Each character on the PDF page is represented by a character object, describing
-exactly where and how to render the associated glyph.
-
-While there are font flags, PDF files typically use entirely different fonts to
-render normal, bold, and italic characters.
-
-The character's loose bounding box may not always be available, since it must be
-explicitly provided by the font. The tight bounding box is only available as
-long as the glyph is renderable, so a space character may have a loose, but not
-a tight bounding box, or none at all.
-"""
-
 import math
 import ctypes
 from functools import cached_property
@@ -26,8 +11,16 @@ from ..utils import Rectangle, Point
 
 class Character:
     """
-    This class contains all information about a single character in the PDF
-    page.
+    Each character on the PDF page is represented by a character object,
+    describing exactly where and how to render the associated glyph.
+
+    While there are font flags, PDF files typically use entirely different fonts
+    to render normal, bold, and italic characters.
+
+    The character's loose bounding box may not always be available, since it
+    must be explicitly provided by the font. The tight bounding box is only
+    available as long as the glyph is renderable, so a space character may have
+    a loose, but not a tight bounding box, or none at all.
     """
 
     class RenderMode(Enum):
