@@ -1,12 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-"""
-# PDF Images
-
-Images support bitmap data.
-"""
-
 from functools import cached_property
 import pypdfium2 as pp
 from ..utils import Point, Rectangle, Line

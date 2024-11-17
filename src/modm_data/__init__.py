@@ -12,23 +12,6 @@ try:
 except PackageNotFoundError:
     __version__ = "0.0.1"
 
-
-from . import (
-    cubehal,
-    cubemx,
-    cube2owl,
-    dl,
-    header2svd,
-    html,
-    html2owl,
-    html2svd,
-    owl,
-    pdf,
-    pdf2html,
-    svd,
-    utils,
-)
-
 __all__ = [
     "cube2owl",
     "cubehal",

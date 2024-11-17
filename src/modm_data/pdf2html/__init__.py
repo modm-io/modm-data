@@ -5,25 +5,18 @@
 # PDF to HTML Pipeline
 """
 
-from . import stmicro
-from .render import render_page_pdf
+from .render import annotate_debug_info
 from .convert import convert, patch
 from .html import format_document, write_html
 
-from . import ast
-from . import cell
-from . import figure
-from . import line
-from . import page
-from . import table
-
 __all__ = [
     "stmicro",
-    "render_page_pdf",
+    "ti",
     "convert",
-    "patch",
+    "annotate_debug_info",
     "format_document",
     "write_html",
+    "patch",
     "ast",
     "cell",
     "figure",
