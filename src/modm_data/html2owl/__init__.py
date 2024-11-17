@@ -5,6 +5,4 @@
 # HTML to OWL Pipeline
 """
 
-from . import stmicro
-
 __all__ = ["stmicro"]

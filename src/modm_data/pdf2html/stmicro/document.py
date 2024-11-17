@@ -5,9 +5,15 @@ import logging
 from anytree import RenderTree
 from .page import Page as StmPage
 from ...pdf import Document as PdfDocument
-from ..ast import normalize_lines, normalize_captions, normalize_lists
-from ..ast import normalize_paragraphs, normalize_headings, normalize_registers
-from ..ast import normalize_tables
+from ..ast import (
+    normalize_lines,
+    normalize_captions,
+    normalize_lists,
+    normalize_paragraphs,
+    normalize_headings,
+    normalize_registers,
+    normalize_tables,
+)
 
 _LOGGER = logging.getLogger(__name__)
 

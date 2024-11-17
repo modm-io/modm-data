@@ -2,19 +2,25 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import pypdfium2 as pp
-from ..pdf.render import render_page_pdf as pdf_render_page_pdf
+from ..pdf.render import annotate_debug_info as pdf_annotate_debug_info
 from ..pdf.render import _vline, _hline, _line, _rect
+from .page import Page
 
 
-def render_page_pdf(doc, page, new_doc=None, index=0):
+def annotate_debug_info(page: Page, new_doc: pp.PdfDocument = None, index: int = 0) -> pp.PdfDocument:
     """
+    Copies each page into a new or existing PDF document and overlays the internal information on top of the content.
+    In addition to the information overlayed in `modm_data.pdf.annotate_debug_info`, this function:
+    - renders all content areas in ORANGE.
+    - renders all graphic cluster in content areas in GREEN.
+    - renders all tables in content areas in BLUE.
 
-
-    :param doc: PDF document
-    :param page: PDF page
-    :param new_doc: Empty PDF document to copy debug renders to
+    :param page: The page to be annotated.
+    :param new_doc: The PDF document to copy the page to. If not provided, a new document is created.
+    :param index: The index of the page in the new document.
+    :return: The new document with the annotated page added.
     """
-    new_doc = pdf_render_page_pdf(doc, page, new_doc, index)
+    new_doc = pdf_annotate_debug_info(page, new_doc, index)
     # return new_doc
     new_page = pp.raw.FPDF_LoadPage(new_doc, index)
     rotation = page.rotation
@@ -58,33 +64,45 @@ def render_page_pdf(doc, page, new_doc=None, index=0):
             for line in cell.lines:
                 for cluster in line.clusters():
                     _rect(new_page, rotation, cluster.bbox, width=0.33, stroke=0x808080)
-            if cell.b.l:
+            if cell.borders.left:
                 _vline(
-                    new_page, rotation, cell.bbox.left, cell.bbox.bottom, cell.bbox.top, width=cell.b.l, stroke=0xFF0000
+                    new_page,
+                    rotation,
+                    cell.bbox.left,
+                    cell.bbox.bottom,
+                    cell.bbox.top,
+                    width=cell.borders.left,
+                    stroke=0xFF0000,
                 )
-            if cell.b.r:
+            if cell.borders.right:
                 _vline(
                     new_page,
                     rotation,
                     cell.bbox.right,
                     cell.bbox.bottom,
                     cell.bbox.top,
-                    width=cell.b.r,
+                    width=cell.borders.right,
                     stroke=0x0000FF,
                 )
-            if cell.b.b:
+            if cell.borders.bottom:
                 _hline(
                     new_page,
                     rotation,
                     cell.bbox.bottom,
                     cell.bbox.left,
                     cell.bbox.right,
-                    width=cell.b.b,
+                    width=cell.borders.bottom,
                     stroke=0x00FF00,
                 )
-            if cell.b.t:
+            if cell.borders.top:
                 _hline(
-                    new_page, rotation, cell.bbox.top, cell.bbox.left, cell.bbox.right, width=cell.b.t, stroke=0x808080
+                    new_page,
+                    rotation,
+                    cell.bbox.top,
+                    cell.bbox.left,
+                    cell.bbox.right,
+                    width=cell.borders.top,
+                    stroke=0x808080,
                 )
 
     assert pp.raw.FPDFPage_GenerateContent(new_page)

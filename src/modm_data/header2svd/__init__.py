@@ -5,7 +5,6 @@
 # CMSIS Header to SVD Pipeline
 """
 
-from . import stmicro
 from .header import Header
 
 __all__ = [
