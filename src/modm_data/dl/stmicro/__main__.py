@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 
 import modm_data
-from modm_data.dl.stmicro import download_cubemx
+from modm_data.dl.stmicro import download_cubemx, download_cubeprog
 from modm_data.dl.stmicro import load_remote_info, store_remote_info
 from modm_data.dl.stmicro import load_local_info, store_local_info, Document
 
@@ -83,6 +83,8 @@ if __name__ == "__main__":
     cubemx_parser = subparsers.add_parser("cubemx", help="CubeMX database.")
     cubemx_parser.add_argument("--patch", action="store_true", help="Apply the patch to the database.")
 
+    subparsers.add_parser("cubeprog", help="CubeProg database.")
+
     args = parser.parse_args()
 
     match args.command:
@@ -90,5 +92,7 @@ if __name__ == "__main__":
             result = download_pdfs(args.directory, args.download, args.new)
         case "cubemx":
             result = download_cubemx(args.directory, args.download, args.patch)
+        case "cubeprog":
+            result = download_cubeprog(args.directory, args.download)
 
     exit(0 if result else 1)

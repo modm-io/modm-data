@@ -85,7 +85,7 @@ jobs:
 
 
 
-  update-cubemx:
+  update-cube:
     runs-on: ubuntu-latest
     steps:
 
@@ -110,6 +110,30 @@ jobs:
 
       # This cache repository is private since copyright prevents republishing!
       # Nicely ask @salkinium for access to this repository.
+      - name: Check out STMicro CubeProg Archive
+        uses: actions/checkout@v3
+        with:
+          repository: modm-ext/archive-stmicro-cubeprog
+          path: ext/stmicro/cubeprog
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_CUBEPROG }}
+          persist-credentials: true
+
+      - name: Update CubeProg Archive
+        run: |
+          make download-stmicro-cubeprog
+
+      - name: Git push CubeProg Archive
+        working-directory: ext/stmicro/cubeprog
+        run: |
+          git add .
+          git commit -m "Update CubeProg" || true
+          git gc
+          git count-objects -vH
+          git push origin main
+
+
+      # This cache repository is private since copyright prevents republishing!
+      # Nicely ask @salkinium for access to this repository.
       - name: Check out STMicro CubeMX Archive
         uses: actions/checkout@v3
         with:
@@ -117,7 +141,6 @@ jobs:
           path: ext/stmicro/cubemx
           ssh-key: ${{ secrets.SSH_KEY_STMICRO_CUBEMX }}
           persist-credentials: true
-
 
       - name: Update CubeMX Archive
         run: |

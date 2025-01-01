@@ -46,6 +46,11 @@ download-stmicro-pdfs:
 download-stmicro-cubemx:
 	@python3 -m modm_data.dl.stmicro --directory ext/stmicro/cubemx --download cubemx --patch
 
+.PHONY: download-stmicro-cubeprog
+## Download the CubeProg database from ST's update server.
+download-stmicro-cubeprog:
+	@python3 -m modm_data.dl.stmicro --directory ext/stmicro/cubeprog --download cubeprog
+
 
 # ========================== Private Input Sources  ===========================
 # Please ping @salkinium for access.
@@ -54,6 +59,11 @@ download-stmicro-cubemx:
 #       Please download the database via 'make download-stmicro-cubemx'!
 ext/stmicro/cubemx/:
 	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-cubemx.git $@
+
+# Note: The STMicro CubeProg database archive repo is private and used for our CI.
+#       Please download the database via 'make download-stmicro-cubeprog'!
+ext/stmicro/cubeprog/:
+	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-cubeprog.git $@
 
 # Note: The STMicro HTML archive repo is private and used for our CI.
 #       Please convert the HTMLs via 'make convert-stmicro-html'.
@@ -66,12 +76,13 @@ ext/stmicro/pdf/:
 	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-pdf.git $@
 
 .PHONY: clone-sources-stmicro-private
-clone-sources-stmicro-private: clone-sources-stmicro ext/stmicro/cubemx/ \
+clone-sources-stmicro-private: clone-sources-stmicro ext/stmicro/cubemx/ ext/stmicro/cubeprog/ \
 							   ext/stmicro/pdf/ ext/stmicro/html-archive/
 
 .PHONY: update-sources-stmicro-private
 update-sources-stmicro-private: update-sources-stmicro
 	@(cd ext/stmicro/cubemx && git fetch && git reset --hard origin/main) &
+	@(cd ext/stmicro/cubeprog && git fetch && git reset --hard origin/main) &
 	@(cd ext/stmicro/html-archive && git fetch && git reset --hard origin/main) &
 	@(cd ext/stmicro/pdf && git fetch && git reset --hard origin/main) &
 	@wait
