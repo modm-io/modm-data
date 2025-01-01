@@ -17,7 +17,8 @@ help:
 # ============================= Python Management =============================
 .PHONY: pip-upgrade-freeze
 # Update the tools/requirements.txt file for maintenance.
-pip-upgrade-freeze:
+pip-upgrade-freeze: clean-venv
+	@python3 -m venv .venv
 	@.venv/bin/pip install --upgrade --upgrade-strategy=eager -e ".[all]"
 	@.venv/bin/pip freeze --exclude modm_data > tools/requirements.txt
 
