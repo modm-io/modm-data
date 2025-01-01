@@ -32,12 +32,14 @@ jobs:
           make run-regression-tests
 
       - name: Run Ruff Formatter
+        if: always()
         uses: chartboost/ruff-action@v1
         with:
           src: "./src"
           args: "format --check"
 
       - name: Run Ruff Linter
+        if: always()
         uses: chartboost/ruff-action@v1
         with:
           src: "./src"
