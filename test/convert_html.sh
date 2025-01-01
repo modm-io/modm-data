@@ -1,3 +1,5 @@
+rm -rf test/data/html/stmicro
+
 python3 -m modm_data.pdf2html.stmicro --html --range 21:23 \
 	--document ext/test/regression/stmicro/DS10329-v4.pdf --output test/data/html/stmicro/DS10329-v4.html &
 
