@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure Git
         run: |
@@ -29,7 +29,7 @@ jobs:
           pip3 install -r tools/requirements.txt ".[docs]"
 
       - name: Clone modm-ext/data.modm.io repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: modm-ext/data.modm.io
           ssh-key: ${{secrets.SSH_KEY_DATA_MODM_IO}}
