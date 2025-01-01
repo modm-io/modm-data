@@ -90,7 +90,7 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          pip3 install -U --upgrade-strategy=eager pypdfium2==3.3.0 anytree numpy lxml
+          pip3 install -r tools/requirements.txt .
 
 
       # This cache repository is private since copyright prevents republishing!

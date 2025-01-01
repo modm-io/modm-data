@@ -26,7 +26,7 @@ jobs:
 
       - name: Install modm-data with docs dependencies
         run: |
-          pip3 install ".[docs]"
+          pip3 install -r tools/requirements.txt ".[docs]"
 
       - name: Clone modm-ext/data.modm.io repository
         uses: actions/checkout@v3
