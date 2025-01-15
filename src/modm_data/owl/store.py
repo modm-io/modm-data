@@ -5,36 +5,6 @@ from ..utils import ext_path
 import owlready2 as owl
 
 
-XSLT_SORT = r"""
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
-                xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-                xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-                xmlns:owl="http://www.w3.org/2002/07/owl#">
-
-  <xsl:template match="/">
-    <xsl:apply-templates/>
-  </xsl:template>
-
-  <xsl:template match="owl:Ontology">
-    <xsl:copy>
-      <!-- Sort the attributes by name. -->
-      <xsl:for-each select="Package">
-        <xsl:sort select="@rdf:resource(.)"/>
-        <xsl:copy/>
-      </xsl:for-each>
-      <xsl:apply-templates/>
-    </xsl:copy>
-  </xsl:template>
-
-  <xsl:template match="text()|comment()|processing-instruction()">
-    <xsl:copy/>
-  </xsl:template>
-
-</xsl:stylesheet>
-"""
-
-
 class Store:
     def __init__(self, vendor, device):
         self.base_url = "https://data.modm.io/kg"
@@ -61,8 +31,8 @@ class Store:
         self._path.mkdir(exist_ok=True, parents=True)
         if name is None:
             name = "ontology"
-        file = str(self._path / f"{name}.owl")
-        self.ontology.save(file=file)
+        file = self._path / f"{name}.owl"
+        self.ontology.save(file=str(file))
 
         # dom = ET.parse(file)
         # xslt = ET.XML(XSLT_SORT)

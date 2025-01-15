@@ -9,9 +9,8 @@ from multiprocessing.pool import ThreadPool
 
 from modm_data.cubemx import devices_from_prefix, devices_from_partname
 from modm_data.header2svd.stmicro import Header
-from modm_data.html.stmicro import datasheet_for_device, reference_manual_for_device
 from modm_data.owl.stmicro import create_ontology
-from modm_data.py2owl.stmicro import owl_from_did, owl_from_cubemx, owl_from_header, owl_from_doc
+from modm_data.owl.stmicro import owl_from_did, owl_from_cubemx, owl_from_header
 
 
 def main():
@@ -43,14 +42,14 @@ def main():
         for device in devices_from_partname(partname):
             did = device["id"]
             # Only change the documentation object if necessary to preserve caching
-            if ds != (nds := datasheet_for_device(did)):
-                ds = nds
-            if rm != (nrm := reference_manual_for_device(did)):
-                rm = nrm
-            print(did, ds, rm)
-            if ds is None or rm is None:
-                print(f"Ignoring {did} due to lack of documents")
-                continue
+            # if ds != (nds := datasheet_for_device(did)):
+            #     ds = nds
+            # if rm != (nrm := reference_manual_for_device(did)):
+            #     rm = nrm
+            # print(did, ds, rm)
+            # if ds is None or rm is None:
+            #     print(f"Ignoring {did} due to lack of documents")
+            #     continue
 
             cmsis_header = Header(did)
             onto = create_ontology(did)
@@ -58,8 +57,8 @@ def main():
             owl_from_did(onto)
             owl_from_cubemx(onto, device)
             owl_from_header(onto, cmsis_header)
-            owl_from_doc(onto, ds)
-            owl_from_doc(onto, rm)
+            # owl_from_doc(onto, ds)
+            # owl_from_doc(onto, rm)
 
             onto.store.save(did.string)
 

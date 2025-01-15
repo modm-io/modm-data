@@ -5,6 +5,10 @@ import re
 from ...html.stmicro import find_device_filter
 
 
+def _esc(name):
+    return re.sub(r"[ \[\]\-/\(\)]", "_", name)
+
+
 def owl_from_datasheet(onto, ds):
     pass
 
@@ -78,7 +82,7 @@ def owl_from_cubemx(onto, data):
     # Add pinout for package
     io_pins = {}
     for pin in data["pinout"]:
-        opin = onto.Pin("Pin_" + pin["name"])
+        opin = onto.Pin("Pin_" + _esc(pin["name"]))
         opin.hasName = pin["name"]
         opin.hasPinType = pin["type"]
         if pin["type"] == "I/O" and (number := re.search(r"P\w(\d+)", pin["name"])):
