@@ -66,7 +66,7 @@ serve-api-docs:
 ### @Tests Testing \1009
 # ================================== Testing ==================================
 ext/test/regression/:
-	@git clone --depth=1 git@github.com:modm-ext/modm-data-test-docs.git $@
+	@git clone --depth=1 https://github.com/modm-ext/modm-data-test-docs.git $@
 
 .PHONY: run-regression-tests
 ## @Tests Convert some PDF pages and check against their known HTML.

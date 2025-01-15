@@ -5,19 +5,19 @@
 
 # =============================== Input Sources ===============================
 ext/stmicro/cubehal/:
-	@git clone --depth=1 git@github.com:modm-ext/stm32-cube-hal-drivers.git $@
+	@git clone --depth=1 https://github.com/modm-ext/stm32-cube-hal-drivers.git $@
 
 ext/stmicro/header/:
-	@git clone --depth=1 git@github.com:modm-io/cmsis-header-stm32.git $@
+	@git clone --depth=1 https://github.com/modm-io/cmsis-header-stm32.git $@
 
 ext/stmicro/svd/:
-	@git clone --depth=1 git@github.com:modm-io/cmsis-svd-stm32.git $@
+	@git clone --depth=1 https://github.com/modm-io/cmsis-svd-stm32.git $@
 
 ext/stmicro/owl-archive/:
-	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-owl.git $@
+	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-owl.git $@
 
 ext/stmicro/svd-archive/:
-	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-svd.git $@
+	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-svd.git $@
 
 .PHONY: clone-sources-stmicro
 ## Clone all STMicro related repositories into /ext/stmicro.
@@ -58,22 +58,22 @@ download-stmicro-cubeprog:
 # Note: The STMicro CubeMX database archive repo is private and used for our CI.
 #       Please download the database via 'make download-stmicro-cubemx'!
 ext/stmicro/cubemx/:
-	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-cubemx.git $@
+	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-cubemx.git $@
 
 # Note: The STMicro CubeProg database archive repo is private and used for our CI.
 #       Please download the database via 'make download-stmicro-cubeprog'!
 ext/stmicro/cubeprog/:
-	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-cubeprog.git $@
+	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-cubeprog.git $@
 
 # Note: The STMicro HTML archive repo is private and used for our CI.
 #       Please convert the HTMLs via 'make convert-stmicro-html'.
 ext/stmicro/html-archive/:
-	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-html.git $@
+	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-html.git $@
 
 # Note: The STMicro PDF archive repo is private and used for our CI.
 #       Please download the PDFs via 'make download-stmicro-pdfs'.
 ext/stmicro/pdf/:
-	@git clone --depth=1 git@github.com:modm-ext/archive-stmicro-pdf.git $@
+	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-pdf.git $@
 
 .PHONY: clone-sources-stmicro-private
 clone-sources-stmicro-private: clone-sources-stmicro ext/stmicro/cubemx/ ext/stmicro/cubeprog/ \
