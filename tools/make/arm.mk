@@ -5,7 +5,7 @@
 
 # =============================== Input Sources ===============================
 ext/arm/cmsis/:
-	@git clone --depth=1 git@github.com:modm-ext/cmsis-5-partial.git $@
+	@git clone --depth=1 git@github.com:modm-ext/cmsis-core-partial.git $@
 
 .PHONY: clone-sources-arm
 ## Clone all ARM related repositories into /ext/arm.
