@@ -9,6 +9,7 @@ from ..owl import DeviceIdentifier
 _CUBE_PATH = ext_path("stmicro/cubehal")
 _DMAMUX_PATTERN = re.compile(r"^\s*#define\s+(?P<name>(LL_DMAMUX_REQ_\w+))\s+(?P<id>(0x[0-9A-Fa-f]+))U")
 _REQUEST_PATTERN = re.compile(r"^\s*#define\s+(?P<name>(DMA_REQUEST_\w+))\s+(?P<id>([0-9]+))U")
+_BDMA_REQUEST_PATTERN = re.compile(r"^\s*#define\s+(?P<name>(BDMA_REQUEST_\w+))\s+(?P<id>([0-9]+))U")
 
 
 def read_request_map(did: DeviceIdentifier) -> dict[str, int]:
@@ -21,24 +22,31 @@ def read_request_map(did: DeviceIdentifier) -> dict[str, int]:
     dma_header = _get_hal_dma_header_path(did.family)
     dmamux_header = _get_ll_dmamux_header_path(did.family)
     request_map = None
-    if did.family in ["g4", "h7", "l5"]:
-        request_map = _read_requests(dma_header)
-    elif did.family in ["g0", "wb", "wl"]:
+    if did.family in ["c0", "g4", "h7", "l5"]:
+        request_map = _read_requests(dma_header, _REQUEST_PATTERN)
+    elif did.family in ["g0", "u0", "wb", "wl"]:
         request_map = _read_requests_from_ll_dmamux(dma_header, dmamux_header)
     elif did.family == "l4" and did.name[0] in ["p", "q", "r", "s"]:
         request_map = _read_requests_l4(did.name in ["p5", "q5"])
     else:
-        raise RuntimeError(f"No DMAMUX request data available for {did}")
-    _fix_request_data(request_map)
+        raise RuntimeError("No DMAMUX request data available for {}".format(did))
+    _fix_request_data(request_map, "DMA")
     return request_map
 
 
-def _fix_request_data(request_map):
+def read_bdma_request_map(did):
+    dma_header = _get_hal_dma_header_path(did.family)
+    request_map = _read_requests(dma_header, _BDMA_REQUEST_PATTERN)
+    _fix_request_data(request_map, "BDMA")
+    return request_map
+
+
+def _fix_request_data(request_map, prefix):
     fix_requests = {}
     dac_pattern = re.compile(r"(?P<dac>(DAC[0-9]))_CHANNEL(?P<ch>[0-9])")
     for name, number in request_map.items():
         if name.startswith("GENERATOR"):
-            fix_requests["DMA_" + name] = number
+            fix_requests[prefix + "_" + name] = number
         elif name == "FMAC_READ":
             fix_requests["FMAC_RD"] = number
         elif name == "FMAC_WRITE":
@@ -64,7 +72,7 @@ def _fix_request_data(request_map):
         else:
             m = dac_pattern.match(name)
             if m:
-                fix_requests[f'{m.group("dac")}_CH{m.group("ch")}'] = number
+                fix_requests["{}_CH{}".format(m.group("dac"), m.group("ch"))] = number
 
     request_map.update(fix_requests)
 
@@ -82,11 +90,12 @@ def _get_ll_dmamux_header_path(family):
 
 
 # For G4, H7 and L5
-def _read_requests(hal_dma_file):
-    requests_map = _read_map(hal_dma_file, _REQUEST_PATTERN)
+def _read_requests(hal_dma_file, request_pattern):
+    requests_map = _read_map(hal_dma_file, request_pattern)
     out_map = {}
     for r in requests_map.keys():
-        out_map[r.replace("DMA_REQUEST_", "", 1)] = int(requests_map[r])
+        prefix = "BDMA" if "BDMA" in r else "DMA"
+        out_map[r.replace(prefix + "_REQUEST_", "", 1)] = int(requests_map[r])
     return out_map
 
 
