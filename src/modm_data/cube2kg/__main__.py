@@ -9,8 +9,7 @@ from multiprocessing.pool import ThreadPool
 
 from modm_data.cubemx import devices_from_prefix, devices_from_partname
 from modm_data.header2svd.stmicro import Header
-from modm_data.owl.stmicro import create_ontology
-from modm_data.owl.stmicro import owl_from_did, owl_from_cubemx, owl_from_header
+from modm_data.kg.stmicro import kg_create, kg_from_cubemx, kg_from_header
 
 
 def main():
@@ -25,9 +24,9 @@ def main():
         # cluster the parallel jobs only around family+name
         partnames = sorted(list(set(p[:9] for p in partnames)))
 
-        Path("log/stmicro/owl").mkdir(exist_ok=True, parents=True)
+        Path("log/stmicro/kg").mkdir(exist_ok=True, parents=True)
         calls = [
-            f"python3 -m modm_data.cube2owl --prefix {partname} > log/stmicro/owl/cubemx_{partname}.txt 2>&1"
+            f"python3 -m modm_data.cube2kg --prefix {partname} > log/stmicro/kg/cube2kg_{partname}.txt 2>&1"
             for partname in partnames
         ]
         with ThreadPool() as pool:
@@ -38,29 +37,16 @@ def main():
         return all(r.returncode == 0 for r in retvals)
 
     for partname in devices_from_prefix(args.prefix.lower()):
-        ds, rm = None, None
         for device in devices_from_partname(partname):
             did = device["id"]
-            # Only change the documentation object if necessary to preserve caching
-            # if ds != (nds := datasheet_for_device(did)):
-            #     ds = nds
-            # if rm != (nrm := reference_manual_for_device(did)):
-            #     rm = nrm
-            # print(did, ds, rm)
-            # if ds is None or rm is None:
-            #     print(f"Ignoring {did} due to lack of documents")
-            #     continue
+
+            db = kg_create(did)
+            kg_from_cubemx(db, device)
 
             cmsis_header = Header(did)
-            onto = create_ontology(did)
+            kg_from_header(db, cmsis_header)
 
-            owl_from_did(onto)
-            owl_from_cubemx(onto, device)
-            owl_from_header(onto, cmsis_header)
-            # owl_from_doc(onto, ds)
-            # owl_from_doc(onto, rm)
-
-            onto.store.save(did.string)
+            db.save()
 
     return True
 

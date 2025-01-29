@@ -7,8 +7,8 @@ import re
 import logging
 from collections import defaultdict
 
-from ..owl.stmicro import did_from_string
-from ..owl import DeviceIdentifier
+from ..kg.stmicro import did_from_string
+from ..kg import DeviceIdentifier
 from ..utils import ext_path, XmlReader
 from . import stm32_data
 from ..cubehal import read_request_map as dmamux_request_map, read_header
@@ -120,12 +120,6 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
     #     max_frequency /= 2.0
     # p["max_frequency"] = int(max_frequency * 1e6)
 
-    # Information from the CMSIS headers
-    # stm_header = Header(did)
-    # if not stm_header.is_valid:
-    #     LOGGER.error("CMSIS Header invalid for %s", did.string)
-    #     return None
-
     # flash and ram sizes
     # The <ram> and <flash> can occur multiple times.
     # they are "ordered" in the same way as the `(S-I-Z-E)` ids in the device combo name
@@ -157,7 +151,7 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
             access = "rw"
         if "flash" in mem_name:
             access = "rx"
-        memories.append({"name": mem_name, "access": access, "size": str(mem_size), "start": f"0x{mem_start:02X}"})
+        memories.append({"name": mem_name, "access": access, "size": mem_size, "start": mem_start})
 
     p["memories"] = memories
 
@@ -178,6 +172,7 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
     modules = []
     dmaFile = None
     bdmaFile = None
+    hasFlashModule = False
     for ip in device_file.query("//IP"):
         # These IPs are all software modules, NOT hardware modules. Their version string is weird too.
         software_ips = {
@@ -210,6 +205,8 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
 
         rversion = ip.get("Version")
         module = (ip.get("Name"), ip.get("InstanceName"), clean_up_version(rversion))
+        if "flash" in module[0].lower():
+            hasFlashModule = True
 
         if module[0] == "DMA":
             # lets load additional information about the DMA
@@ -229,17 +226,16 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
 
         modules.append(tuple([m.lower() for m in module]))
 
-    modules.append(("flash", "flash", "v1.0"))
+    if not hasFlashModule:
+        modules.append(("flash", "flash", "v1.0"))
     modules = [m + peripherals.getPeripheralData(did, m) for m in modules]
 
     p["modules"] = modules
     LOGGER.debug("Available Modules are:\n" + _modulesToString(modules))
     # print("\n".join(str(m) for m in modules))
 
-    # p["stm_header"] = stm_header
-    # p["interrupts"] = stm_header.interrupt_table
     # Flash latency table
-    # p["flash_latency"] = stm32_data.getFlashLatencyForDevice(did)
+    p["flash_latency"] = stm32_data.getFlashLatencyForDevice(did)
 
     # lets load additional information about the GPIO IP
     ip_file = device_file.query('//IP[@Name="GPIO"]')[0].get("Version")
@@ -258,8 +254,6 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
     pins = sorted(pins, key=raw_pin_sort)
     # Remove package remaps from GPIO data (but not from package)
     pins.sort(key=lambda p: "PINREMAP" not in p.get("Variant", ""))
-
-    gpios = []
 
     def pin_name(name):
         name = name[:4]
@@ -304,7 +298,7 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
         minst = [m for m in modules if af.startswith(m[1] + "_")]
         # print(af, mdriv, minst)
         if len(minst) > 1:
-            LOGGER.warning(f"Ambiguos driver: {af} {minst}")
+            LOGGER.warning(f"Ambiguous driver: {af} {minst}")
             exit(1)
 
         minst = minst[0] if len(minst) else None
@@ -538,6 +532,8 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
         grouped_f1_signals = gpioFile.compactQuery("//GPIO_Pin/PinSignal/@Name")
 
     _seen_gpio = set()
+    gpios = []
+    signals = set()
     for pin in pins:
         rname = pin.get("Name")
         name = pin_name(rname)
@@ -564,9 +560,8 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
                 naf = {}
                 naf["driver"], naf["instance"], naf["name"] = raf
                 naf["af"] = af[1] if int(af[1]) >= 0 else None
-                if "exti" in naf["name"]:
-                    continue
                 afs.append(naf)
+                signals.add(naf["name"])
 
         gpio = (name[0], name[1], afs)
         if name not in _seen_gpio:
@@ -592,18 +587,16 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
                 if driver is None:
                     continue
                 mmm["name"] = name
+                signals.add(name)
                 mpins.append(mmm)
 
             if module not in remaps:
-                driver, instance, _ = split_af(module + "_lol")
-                if not driver:
+                if not split_af(module + "_lol")[0]:
                     continue
                 remaps[module] = {
                     "mask": mapping["mask"],
                     "position": mapping["position"],
                     "groups": {},
-                    "driver": driver,
-                    "instance": instance,
                 }
             if len(mpins) > 0:
                 remaps[module]["groups"][mapping["mapping"]] = mpins
@@ -616,6 +609,7 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
 
     p["remaps"] = remaps
     p["gpios"] = gpios
+    p["signals"] = signals
 
     return p
 

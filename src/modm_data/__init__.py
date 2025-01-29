@@ -21,7 +21,7 @@ __all__ = [
     "html",
     "html2owl",
     "html2svd",
-    "owl",
+    "kg",
     "pdf",
     "pdf2html",
     "svd",

@@ -10,71 +10,10 @@ from collections import defaultdict
 from ..header import Header as CmsisHeader
 from ...utils import ext_path, cache_path
 import modm_data.svd as svd
+from ...cubehal.header import _get_define_for_device
 
 
 LOGGER = logging.getLogger(__file__)
-HEADER_TEMPLATE = r"""
-#include <iostream>
-#include <{{header}}>
-
-template<typename T>
-void __modm_dump_f(char const *symbol, T value) {
-    std::cout << "\"" << symbol << "\": " << uint64_t(value) << "," << std::endl;
-}
-#define __modm_dump(def) __modm_dump_f(#def, (def))
-int main() {
-    std::cout << "cpp_defines = {";{% for define in defines %}
-#ifdef {{define}}
-    __modm_dump({{define}});
-#endif{% endfor %}
-    std::cout << "}";
-    return 0;
-}
-"""
-
-
-def getDefineForDevice(device_id, familyDefines):
-    # get all defines for this device name
-    devName = f"STM32{device_id.family.upper()}{device_id.name.upper()}"
-
-    # Map STM32F7x8 -> STM32F7x7
-    if device_id.family == "f7" and devName[8] == "8":
-        devName = devName[:8] + "7"
-
-    deviceDefines = sorted([define for define in familyDefines if define.startswith(devName)])
-    # if there is only one define thats the one
-    if len(deviceDefines) == 1:
-        return deviceDefines[0]
-
-    # sort with respecting variants
-    minlen = min(len(d) for d in deviceDefines)
-    deviceDefines.sort(key=lambda d: (d[:minlen], d[minlen:]))
-
-    # now we match for the size-id (and variant-id if applicable).
-    if device_id.family == "h7":
-        devNameMatch = devName + "xx"
-    else:
-        devNameMatch = devName + f"x{device_id.size.upper()}"
-    if device_id.family == "l1":
-        # Map STM32L1xxQC and STM32L1xxZC -> STM32L162QCxA variants
-        if device_id.pin in ["q", "z"] and device_id.size == "c":
-            devNameMatch += "A"
-        else:
-            devNameMatch += device_id.variant.upper()
-    elif device_id.family == "h7":
-        if device_id.variant:
-            devNameMatch += device_id.variant.upper()
-    for define in deviceDefines:
-        if devNameMatch <= define:
-            return define
-
-    # now we match for the pin-id.
-    devNameMatch = devName + f"{device_id.pin.upper()}x"
-    for define in deviceDefines:
-        if devNameMatch <= define:
-            return define
-
-    return None
 
 
 class Header(CmsisHeader):
@@ -97,7 +36,7 @@ class Header(CmsisHeader):
         self.family_header_file = f"{self.family_folder}.h"
 
         self.family_defines = self._get_family_defines()
-        self.define = getDefineForDevice(self.did, self.family_defines)
+        self.define = _get_define_for_device(self.did, self.family_defines)
         assert self.define is not None
         self.is_valid = self.define is not None
         if not self.is_valid:

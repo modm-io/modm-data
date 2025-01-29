@@ -7,8 +7,8 @@ from collections import defaultdict
 
 from .helper import split_device_filter, split_package
 from ...html.text import ReDict, listify as html_listify, replace as html_replace
-from ...owl import DeviceIdentifier
-from ...owl.stmicro import did_from_string
+from ...kg import DeviceIdentifier
+from ...kg.stmicro import did_from_string
 from ..document import Document
 
 

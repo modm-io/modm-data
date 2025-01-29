@@ -7,5 +7,4 @@ from .identifier import DeviceIdentifier
 __all__ = [
     "stmicro",
     "Store",
-    "DeviceIdentifier",
 ]
