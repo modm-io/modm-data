@@ -5,10 +5,12 @@ import re
 import subprocess
 import logging
 import shutil
+import pickle
 
 from pathlib import Path
 from jinja2 import Environment
-from cxxheaderparser.simple import parse_string as cxxheader_parse_string
+import cxxheaderparser.simple
+import cxxheaderparser.types
 
 from ..utils import ext_path
 
@@ -106,7 +108,7 @@ def _get_define_for_device(did, familyDefines):
 def _read_cpp_header(
     core: str, device: str, includes: list[Path], headers: list[Path], options: str = None
 ) -> dict[str, str]:
-    cmd = f"arm-none-eabi-gcc -E -mcpu={core} -D {device} {options or ""}"
+    cmd = f"arm-none-eabi-gcc -E -mcpu=cortex-m{core} -D {device} {options or ""}"
     for p in includes:
         cmd += f" -I {p}"
     for h in headers:
@@ -169,27 +171,10 @@ def _copy_headers(outdir, files):
             outfile.write_text(content)
 
 
-def read_header(did, core):
-    """
-    Finds all register and bit names in the CMSIS header file.
-
-    :returns: a RegisterMap object that allows regex-ing for register names.
-    """
-    core = core.replace("+", "plus").replace("f", "").replace("d", "")
-    family = f"stm32{did.family}xx"
+def _read_header(device_define):
+    family = f"{device_define[:7].lower()}xx"
     header_inc = _HEADER_PATH / family / "Include"
     cube_inc = _CUBE_PATH / family / "Inc"
-
-    family_header = (header_inc / (family + ".h")).read_text(encoding="utf-8", errors="replace")
-    match = re.findall(r"if defined\((STM32[A-Z][\w\d]+)\)", family_header)
-    assert match, f"No CPP define match found for '{did.string}'!"
-    device_define = _get_define_for_device(did, match)
-    assert device_define, f"No device define found for '{did.string}'!"
-
-    # ARM CMSIS header files
-    core_header = f"core_cm{core[8:]}.h"
-    core_defines = _read_defines(core, device_define, [_CMSIS_PATH], [_CMSIS_PATH / core_header])
-    # pprint.pprint(core_defines)
 
     (header_cache := (_CACHE_PATH / family)).mkdir(parents=True, exist_ok=True)
     includedirs = [_CMSIS_PATH, header_cache]
@@ -203,16 +188,17 @@ def read_header(did, core):
     _copy_headers(header_cache, cube_inc.glob("*.h"))
 
     device_header = header_cache / f"{device_define.lower()}.h"
+    core_header, core = re.search(r'#include "(core_cm(.+?).h)"', device_header.read_text()).groups()
     header_defines = _read_defines(core, device_define, includedirs, [device_header])
-    # pprint.pprint(header_defines)
+
+    # ARM CMSIS header files
+    core_defines = _read_defines(core, device_define, [_CMSIS_PATH], [_CMSIS_PATH / core_header])
 
     ll_headers = list(header_cache.glob("*_ll_*.h"))
     ll_defines = _read_defines(core, device_define, includedirs, ll_headers)
-    # pprint.pprint(ll_defines)
 
     cube_headers = list(header_cache.glob("*_hal_*.h"))
     all_defines = _read_defines(core, device_define, includedirs, cube_headers)
-    # pprint.pprint(all_defines)
 
     value_defines = {
         k: v for k, v in all_defines.items() if v and "*" not in v and "(" not in k and not k.startswith("__")
@@ -222,8 +208,53 @@ def read_header(did, core):
     device_header_content = _read_cpp_header(
         core, device_define, includedirs, [device_header], "-P -D __inline= -D __extension__= -D __restrict="
     )
-    cxxheader = cxxheader_parse_string(device_header_content)
+    cxxheader = cxxheaderparser.simple.parse_string(device_header_content)
 
-    vectors = [(int(i.value.format().replace(" ", "")), i.name[:-5]) for i in cxxheader.namespace.enums[0].values]
-    import pprint
-    pprint.pprint(vectors)
+    peripherals = {}
+    clanons = {c.class_decl.typename.segments[0].id: c for c in cxxheader.namespace.classes
+               if isinstance(c.class_decl.typename.segments[0], cxxheaderparser.types.AnonymousName)}
+    for typedef in cxxheader.namespace.typedefs:
+        if typedef.name.endswith("_TypeDef"):
+            fields = []
+            tclass = clanons[typedef.type.typename.segments[0].id]
+            for field in tclass.fields:
+                if isinstance(field.type, cxxheaderparser.types.Array):
+                    fields.append((field.name, field.type.array_of.typename.segments[0].name, int(field.type.size.tokens[0].value.format())))
+                else:
+                    fields.append((field.name, field.type.typename.segments[0].name, None))
+            peripherals[typedef.name] = fields
+
+    irq_vectors = [(int(i.value.format()), i.name[:-5]) for i in cxxheader.namespace.enums[0].values]
+
+    return {
+        "device_define": device_define,
+        "core": core_defines,
+        "header": header_defines,
+        "ll": ll_defines,
+        "cube": all_defines,
+        "defines": value_defines,
+        "irqs": irq_vectors,
+        "peripherals": peripherals,
+    }
+
+
+def read_header(did):
+    """
+    Finds all register and bit names in the CMSIS header file.
+
+    :returns: a RegisterMap object that allows regex-ing for register names.
+    """
+    family = f"stm32{did.family}xx"
+    family_header = (_HEADER_PATH / family / "Include" / (family + ".h")).read_text(encoding="utf-8", errors="replace")
+    match = re.findall(r"if defined\((STM32[A-Z][\w\d]+)\)", family_header)
+    assert match, f"No CPP define match found for '{did.string}'!"
+    device_define = _get_define_for_device(did, match)
+    assert device_define, f"No device define found for '{did.string}'!"
+
+    if (pkl := _CACHE_PATH / family / f"{device_define}.pkl").exists():
+        return pickle.loads(pkl.read_bytes())
+        pass
+
+    values = _read_header(device_define)
+    pkl.write_bytes(pickle.dumps(values, protocol=pickle.HIGHEST_PROTOCOL))
+    return values

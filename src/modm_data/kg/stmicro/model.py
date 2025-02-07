@@ -121,13 +121,13 @@ def kg_from_cubemx(db, data):
 
 def kg_from_header(db, header):
     # Add interrupt vector table
-    for interrupt in sorted(header.interrupt_table, key=lambda i: i["position"]):
+    for position, name in sorted(header["irqs"]):
         db.execute(f"""
             CREATE (:InterruptVector {{
-                name: '{interrupt["name"]}',
-                position: {interrupt["position"]}
+                name: '{name}',
+                position: {position}
             }});
-            MATCH (p:Peripheral), (i:InterruptVector {{name: '{interrupt["name"]}'}})
-            WHERE '{interrupt["name"]}' CONTAINS p.name
+            MATCH (p:Peripheral), (i:InterruptVector {{name: '{name}'}})
+            WHERE '{name}' CONTAINS p.name
             CREATE (p)-[:hasInterruptVector]->(i);
         """)

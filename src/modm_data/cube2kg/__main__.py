@@ -8,7 +8,8 @@ from pathlib import Path
 from multiprocessing.pool import ThreadPool
 
 from modm_data.cubemx import devices_from_prefix, devices_from_partname
-from modm_data.header2svd.stmicro import Header
+from modm_data.cubehal import read_header
+from modm_data.header2svd.stmicro import memory_map_from_header
 from modm_data.kg.stmicro import kg_create, kg_from_cubemx, kg_from_header
 
 
@@ -40,13 +41,14 @@ def main():
         for device in devices_from_partname(partname):
             did = device["id"]
 
-            db = kg_create(did)
-            kg_from_cubemx(db, device)
+            # db = kg_create(did)
+            # kg_from_cubemx(db, device)
 
-            cmsis_header = Header(did)
-            kg_from_header(db, cmsis_header)
+            header = read_header(did)
+            memory_map_from_header(header)
+            # kg_from_header(db, header)
 
-            db.save()
+            # db.save()
 
     return True
 

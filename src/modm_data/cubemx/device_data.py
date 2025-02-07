@@ -111,8 +111,6 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
         did.set("core", core[7:9])
     p = {"id": did, "core": core}
 
-    read_header(did, core)
-
     # Maximum operating frequency
     # max_frequency = float(device_file.query("//Frequency")[0].text)
     # # H7 dual-core devices run the M4 core at half the frequency as the M7 core

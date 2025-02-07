@@ -7,16 +7,66 @@ import subprocess
 
 from collections import defaultdict
 
-from ..header import Header as CmsisHeader
 from ...utils import ext_path, cache_path
 import modm_data.svd as svd
 from ...cubehal.header import _get_define_for_device
 
 
-LOGGER = logging.getLogger(__file__)
+_LOGGER = logging.getLogger(__file__)
+_SIZES = {
+    "uint32_t": 4,
+    "uint16_t": 2,
+    "uint8_t": 1,
+}
+_PER_MAP = {
+    "DMA_Stream": "DMA_Sx.+",
+}
+_REG_MAP = {
+    "DMA_SxNDTR": "DMA_SxNDT()",
+
+    "DBGMCU_APB1FZ": "DBGMCU_APB1_FZ_(.+)",
+    "DBGMCU_APB2FZ": "DBGMCU_APB2_FZ_(.+)",
+
+    r"GPIO_AF\d+R": r"GPIO_AFR[HL]_(.+)",
+    r"FSMC_BTC\d+R": r"FSMC_BCR\d+_(.+)",
+}
 
 
-class Header(CmsisHeader):
+def memory_map_from_header(data):
+    import pprint
+
+    registers = {k[:-4] for k in data["defines"] if k.endswith("_Msk")}
+    for pname, pfields in data["peripherals"].items():
+        print()
+        print(pname)
+        if not (prefix := _PER_MAP.get(pname[:-8])):
+            prefix = f"{pname.split("_")[0]}_.+"
+        relevant = {k for k in registers if re.match(prefix, k)}
+        for (fname, ftype, flen) in pfields:
+            if "RESERVED" in fname: continue
+            fprefix = r"(?:\d+R|R\d+)".join(fname.rsplit("R", 1)) if flen else fname
+            fprefix = f"{prefix[:-2]}{fprefix}_(.+)"
+            fprefix = _REG_MAP.get(fprefix[:-5], fprefix)
+            # print(fname, fprefix)
+            matched = {k: m.group(1) for k in relevant if (m := re.match(fprefix, k))}
+            if not matched:
+                matched = {k: "" for k in relevant if k == fprefix[:-5]}
+            if not matched:
+                if fname[-1] == "R":
+                    fprefix = f"{prefix[:-2]}{fname[:-1]}_(.+)"
+                matched = {k: m.group(1) for k in relevant if (m := re.match(fprefix, k))}
+            relevant = {k for k in relevant if k not in matched}
+
+            print(ftype, fname, flen)
+            pprint.pprint(matched)
+        print(relevant)
+
+    # pprint.pprint(registers)
+
+
+
+
+class Header:
     _HEADER_PATH = ext_path("stmicro/header")
     _CACHE_PATH = cache_path("cmsis/stm32")
     _CACHE_FAMILY = defaultdict(dict)
@@ -135,7 +185,7 @@ class Header(CmsisHeader):
             # generate the cpp file from the template
             LOGGER.info(f"Generating {destination.name} ...")
             substitutions = {"header": self.header_file, "defines": sorted(defines)}
-            content = Environment().from_string(HEADER_TEMPLATE).render(substitutions)
+            content = Environment().from_string("HEADER_TEMPLATE").render(substitutions)
             # write the cpp file into the cache
             destination.parent.mkdir(exist_ok=True, parents=True)
             destination.write_text(content)
