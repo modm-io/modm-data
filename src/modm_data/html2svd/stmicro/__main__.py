@@ -31,7 +31,7 @@ def main():
 
         Path("log/stmicro/svd").mkdir(exist_ok=True, parents=True)
         calls = [
-            f"python3 -m modm_data.html2svd.stmicro --stm32 {doc.path} " f"> log/stmicro/svd/html_{doc.name}.txt 2>&1"
+            f"python3 -m modm_data.html2svd.stmicro --stm32 {doc.path} > log/stmicro/svd/html_{doc.name}.txt 2>&1"
             for doc in docs
         ]
         with ThreadPool() as pool:

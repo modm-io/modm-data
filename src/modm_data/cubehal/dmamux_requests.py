@@ -64,7 +64,7 @@ def _fix_request_data(request_map):
         else:
             m = dac_pattern.match(name)
             if m:
-                fix_requests[f'{m.group("dac")}_CH{m.group("ch")}'] = number
+                fix_requests[f"{m.group('dac')}_CH{m.group('ch')}"] = number
 
     request_map.update(fix_requests)
 

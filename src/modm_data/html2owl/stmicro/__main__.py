@@ -28,7 +28,7 @@ def main():
             elif isinstance(doc, ReferenceManual):
                 docs.append(doc)
 
-        calls = [f"python3 -m modm_data.html2owl.stmicro " f"--document {doc.path}" for doc in docs]
+        calls = [f"python3 -m modm_data.html2owl.stmicro --document {doc.path}" for doc in docs]
         with ThreadPool() as pool:
             retvals = list(tqdm.tqdm(pool.imap(lambda c: subprocess.run(c, shell=True), calls), total=len(calls)))
         for retval, call in zip(retvals, calls):

@@ -534,7 +534,7 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
             if len(mpins) > 0:
                 remaps[module]["groups"][mapping["mapping"]] = mpins
                 LOGGER.debug(
-                    "{:<20}{}".format(module + "_" + config, [f'{b["port"]}{b["pin"]}:{b["name"]}' for b in mpins])
+                    "{:<20}{}".format(module + "_" + config, [f"{b['port']}{b['pin']}:{b['name']}" for b in mpins])
                 )
 
         # import json
