@@ -120,7 +120,7 @@ jobs:
 
       - name: Archive ${{ matrix.name }} Logs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: log-stmicro-${{ matrix.job }}
           path: log/stmicro/
