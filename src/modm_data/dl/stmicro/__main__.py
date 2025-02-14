@@ -6,7 +6,7 @@ import tempfile
 import argparse
 from pathlib import Path
 
-import modm_data
+import modm_data.pdf
 from modm_data.dl.stmicro import download_cubemx, download_cubeprog
 from modm_data.dl.stmicro import load_remote_info, store_remote_info
 from modm_data.dl.stmicro import load_local_info, store_local_info, Document
