@@ -1,0 +1,88 @@
+name: Test Generate Knowledge Graphs
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  test-kg-stmicro:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        family_group:
+          - name: 'L1_4_U0'
+            families: [STM32L1, STM32L4, STM32U0]
+          - name: 'F0_4_H5_WL'
+            families: [STM32F0, STM32F4, STM32H5, STM32WL]
+          - name: 'G4_F7'
+            families: [STM32G4, STM32F7]
+          - name: 'G0_L0_U5'
+            families: [STM32G0, STM32L0, STM32U5]
+          - name: 'C0_F1_2_3_L5_U3_WB'
+            families: [STM32C0, STM32F1, STM32F2, STM32F3, STM32L5, STM32U3, STM32WB]
+          - name: 'H7'
+            families: [STM32H7]
+
+    name: Update KG ${{ matrix.family_group.name }}
+
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Python Dependencies
+        run: |
+          pip3 install -r tools/requirements.txt -e .
+
+      - name: Clone STMicro CubeMX Archive
+        uses: actions/checkout@v4
+        with:
+          repository: modm-ext/archive-stmicro-cubemx
+          path: ext/stmicro/cubemx
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_CUBEMX }}
+
+      - name: Clone STMicro Sources
+        run: |
+          make ext/arm/cmsis/ ext/stmicro/cubehal/ ext/stmicro/header/
+
+      - name: Generate Database for ${{ matrix.family_group.name }}
+        run: |
+          FAMILY_LIST='${{ toJson(matrix.family_group.families) }}'
+          OVERALL_STATUS=0
+          set +e
+
+          for FAMILY in $(echo "$FAMILY_LIST" | jq -r '.[]')
+          do
+            echo "::group::Generating database for $FAMILY"
+
+            python3 -m modm_data.cube2kg --family $FAMILY
+            if [ $? -ne 0 ]; then
+                echo "::error::Database generation for $FAMILY FAILED."
+                OVERALL_STATUS=1
+            fi
+
+            echo "::endgroup::"
+          done
+
+          exit $OVERALL_STATUS
+
+      - name: Upload KG Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.family_group.name }}
+          path: log/stmicro/kg
+          retention-days: 7
+
+      - name: Upload KGs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kg-${{ matrix.family_group.name }}
+          path: ext/stmicro/kg-archive
+          retention-days: 7
