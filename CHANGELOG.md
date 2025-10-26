@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.2
+
+- Update the regression tests and enforce it via CI.
+- Factor out common pdf2html code from the STM32 specialization.
+- Enforce code style using Ruff in the CI.
+- Update dependencies and frozen requirements.txt.
+- Add downloader code for CubeProg database.
+- Import latest changes from modm-devices for new STM32 devices.
+- Replace OWLready with Kuzu KG implementation for storing all data.
+- Publish KG database as artifact to GitHub releases.
+
+
 ## 0.0.1
 
 Import from [the JSys paper artifact](https://github.com/salkinium/pdf-data-extraction-jsys-artifact)
