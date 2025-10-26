@@ -118,6 +118,8 @@ jobs:
             cp -r "$DIR" kg-archive/
           done
 
+          zip -r kg-archive.zip kg-archive/
+
       - name: Upload Final Knowledge Graphs
         uses: actions/upload-artifact@v4
         with:
@@ -130,7 +132,4 @@ jobs:
         if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
         with:
           files: |
-            kg-archive/
-            CHANGELOG.md
-            README.md
-            LICENSE
+            kg-archive.zip
