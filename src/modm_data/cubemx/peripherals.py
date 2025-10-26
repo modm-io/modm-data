@@ -6,6 +6,12 @@ stm_peripherals = {
         {
             "instances": "*",
             "groups": [
+                {
+                    "hardware": "stm32-c0",
+                    "features": ["oversampler", "calfact", "prescaler"],
+                    "protocols": ["analog-in"],
+                    "devices": [{"family": ["c0"]}],
+                },
                 {"hardware": "stm32-f0", "features": [], "protocols": ["analog-in"], "devices": [{"family": ["f0"]}]},
                 {
                     "hardware": "stm32-l0",
@@ -54,7 +60,7 @@ stm_peripherals = {
                     "hardware": "stm32",
                     "features": ["filter-14"],
                     "protocols": ["can-v2.0a", "can-v2.0b"],
-                    "devices": [{"family": ["f0", "g0", "f1"]}],
+                    "devices": [{"family": ["c0", "f0", "g0", "f1"]}],
                 },
                 {
                     # 28 shared filters
@@ -112,7 +118,7 @@ stm_peripherals = {
                     "features": [],
                     "protocols": ["mem2mem", "mem2per", "per2per"],
                     "devices": [
-                        {"family": ["g0", "g4", "l5", "wb", "wl"]},
+                        {"family": ["c0", "g0", "g4", "l5", "wb", "wl"]},
                         {
                             "family": ["l4"],
                             "name": ["p5", "p7", "p9", "q5", "q7", "q9", "r5", "r7", "r9", "s5", "s7", "s9"],
@@ -123,7 +129,7 @@ stm_peripherals = {
                     "hardware": "stm32-mux-stream",
                     "features": [],
                     "protocols": ["mem2mem", "mem2per", "per2per"],
-                    "devices": [{"family": ["h7"]}],
+                    "devices": [{"family": ["h5", "h7"]}],
                 },
                 {
                     "hardware": "stm32-stream-channel",
@@ -150,6 +156,19 @@ stm_peripherals = {
             ],
         }
     ],
+    "bdma": [
+        {
+            "instances": "*",
+            "groups": [
+                {
+                    "hardware": "stm32h7",
+                    "features": [],
+                    "protocols": ["mem2mem", "mem2per", "per2per"],
+                    "devices": [{"family": ["h5", "h7"]}],
+                }
+            ],
+        }
+    ],
     "iwdg": [
         {
             "instances": "*",
@@ -172,9 +191,14 @@ stm_peripherals = {
                     "hardware": "stm32",
                     "features": ["data-size", "nss-pulse", "fifo"],
                     "protocols": [],
-                    "devices": [{"family": ["f0", "g0", "f3", "f7", "l4", "l5", "g4", "wb"]}],
+                    "devices": [{"family": ["c0", "f0", "g0", "f3", "f7", "l4", "l5", "g4", "wb"]}],
                 },
-                {"hardware": "stm32-extended", "features": [], "protocols": [], "devices": [{"family": ["h7", "u5"]}]},
+                {
+                    "hardware": "stm32-extended",
+                    "features": [],
+                    "protocols": [],
+                    "devices": [{"family": ["h5", "h7", "u5"]}],
+                },
                 {"hardware": "stm32", "features": [], "protocols": [], "devices": "*"},
             ],
         }
@@ -197,15 +221,15 @@ stm_peripherals = {
             "groups": [{"hardware": "stm32-advanced", "features": [], "protocols": [], "devices": "*"}],
         },
         {
-            "instances": ["2", "3", "4", "5"],
+            "instances": ["2", "3", "4", "5", "19", "23", "24"],
             "groups": [{"hardware": "stm32-general-purpose", "features": [], "protocols": [], "devices": "*"}],
         },
         {
-            "instances": ["9", "10", "11", "12", "13", "14", "15", "16", "17"],
+            "instances": ["9", "10", "11", "12", "13", "14", "15", "16", "17", "21", "22"],
             "groups": [{"hardware": "stm32-general-purpose", "features": [], "protocols": [], "devices": "*"}],
         },
         {
-            "instances": ["6", "7"],
+            "instances": ["6", "7", "18"],
             "groups": [{"hardware": "stm32-basic", "features": [], "protocols": [], "devices": "*"}],
         },
     ],
@@ -236,7 +260,7 @@ stm_peripherals = {
                     "hardware": "stm32",
                     "features": ["exti", "cfgr2", "itline"],
                     "protocols": [],
-                    "devices": [{"family": ["f0"], "name": ["91", "98"]}, {"family": ["g0"]}],
+                    "devices": [{"family": ["f0"], "name": ["91", "98"]}, {"family": ["c0", "g0"]}],
                 },
                 {"hardware": "stm32", "features": ["exti", "cfgr2"], "protocols": [], "devices": [{"family": ["f0"]}]},
                 {"hardware": "stm32", "features": ["exti"], "protocols": [], "devices": "*"},
@@ -289,14 +313,14 @@ stm_peripherals = {
                     "hardware": "stm32-extended",
                     "features": ["dnf", "fmp"],
                     "protocols": ["i2c-v3.0"],
-                    "devices": [{"family": ["f0", "g0", "l0"]}],
+                    "devices": [{"family": ["f0", "g0", "l0", "u0"]}],
                 },
                 {
                     # This hardware supports FM+ (1 Mhz) and SMBus
                     "hardware": "stm32-extended",
                     "features": ["dnf", "fmp"],
                     "protocols": ["i2c-v3.0", "smb-v2.0", "pmb-v1.1"],
-                    "devices": [{"family": ["f3", "f7", "l4", "l5", "h7", "g4", "u5", "wb"]}],
+                    "devices": [{"family": ["c0", "f3", "f7", "l4", "l5", "h5", "h7", "g4", "u5", "wb"]}],
                 },
             ],
         },
@@ -309,7 +333,9 @@ stm_peripherals = {
                     "hardware": "stm32-extended",
                     "features": ["dnf", "fmp"],
                     "protocols": ["i2c-v3.0", "smb-v2.0", "pmb-v1.1"],
-                    "devices": [{"family": ["f0", "g0", "f3", "f7", "l0", "l4", "l5", "h7", "g4", "u5", "wb"]}],
+                    "devices": [
+                        {"family": ["c0", "f0", "g0", "f3", "f7", "l0", "l4", "l5", "h5", "h7", "g4", "u0", "u5", "wb"]}
+                    ],
                 }
             ],
         },
@@ -333,7 +359,7 @@ stm_peripherals = {
                             "family": ["l4"],
                             "name": ["p5", "p7", "p9", "q5", "q7", "q9", "r5", "r7", "r9", "s5", "s7", "s9"],
                         },
-                        {"family": ["g0", "g4", "wb", "h7", "l5", "u5"]},
+                        {"family": ["c0", "g0", "g4", "wb", "h7", "l5", "u5"]},
                     ],
                 },
                 {
@@ -371,7 +397,7 @@ stm_peripherals = {
                             "family": ["l4"],
                             "name": ["p5", "p7", "p9", "q5", "q7", "q9", "r5", "r7", "r9", "s5", "s7", "s9"],
                         },
-                        {"family": ["g0", "g4", "wb", "h7", "l5", "u5"]},
+                        {"family": ["c0", "g0", "g4", "wb", "h5", "h7", "l5", "u5"]},
                     ],
                 },
                 {

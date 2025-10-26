@@ -10,6 +10,6 @@ The STM32CubeHAL source code provides useful information:
 - Determine the map of register bit field values to names.
 """
 
-from .dmamux_requests import read_request_map
+from .dmamux_requests import read_request_map, read_bdma_request_map
 
-__all__ = ["read_request_map"]
+__all__ = ["read_request_map", "read_bdma_request_map"]

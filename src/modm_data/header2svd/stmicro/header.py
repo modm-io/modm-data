@@ -34,8 +34,11 @@ int main() {
 
 
 def getDefineForDevice(device_id, familyDefines):
+    if len(familyDefines) == 1:
+        return familyDefines[0]
+
     # get all defines for this device name
-    devName = f"STM32{device_id.family.upper()}{device_id.name.upper()}"
+    devName = "STM32{}{}".format(device_id.family.upper(), device_id.name.upper())
 
     # Map STM32F7x8 -> STM32F7x7
     if device_id.family == "f7" and devName[8] == "8":
@@ -46,30 +49,14 @@ def getDefineForDevice(device_id, familyDefines):
     if len(deviceDefines) == 1:
         return deviceDefines[0]
 
-    # sort with respecting variants
-    minlen = min(len(d) for d in deviceDefines)
-    deviceDefines.sort(key=lambda d: (d[:minlen], d[minlen:]))
-
-    # now we match for the size-id (and variant-id if applicable).
-    if device_id.family == "h7":
-        devNameMatch = devName + "xx"
-    else:
-        devNameMatch = devName + f"x{device_id.size.upper()}"
-    if device_id.family == "l1":
-        # Map STM32L1xxQC and STM32L1xxZC -> STM32L162QCxA variants
-        if device_id.pin in ["q", "z"] and device_id.size == "c":
-            devNameMatch += "A"
-        else:
-            devNameMatch += device_id.variant.upper()
-    elif device_id.family == "h7":
-        if device_id.variant:
-            devNameMatch += device_id.variant.upper()
+    # now we match for the size-id.
+    devNameMatch = devName + "x{}".format(device_id.size.upper())
     for define in deviceDefines:
         if devNameMatch <= define:
             return define
 
     # now we match for the pin-id.
-    devNameMatch = devName + f"{device_id.pin.upper()}x"
+    devNameMatch = devName + "{}x".format(device_id.pin.upper())
     for define in deviceDefines:
         if devNameMatch <= define:
             return define
@@ -92,9 +79,21 @@ class Header(CmsisHeader):
 
     def __init__(self, did):
         self.did = did
-        self.family_folder = f"stm32{self.did.family}xx"
+        self.family_folder = "stm32{}xx".format(self.did.family)
+        if self.did.string[5:8] in ["h7r", "h7s"]:
+            self.family_folder = "stm32h7rsxx"
+        elif self.did.string[5:8] == "wb0":
+            self.family_folder = "stm32wb0xx"
+        elif self.did.string[5:8] == "wba":
+            self.family_folder = "stm32wbaxx"
+        elif self.did.string[5:8] == "wl3":
+            self.family_folder = "stm32wl3xx"
         self.cmsis_folder = Header._HEADER_PATH / self.family_folder / "Include"
         self.family_header_file = f"{self.family_folder}.h"
+        if self.did.string[5:8] == "wb0":
+            self.family_header_file = "stm32wb0x.h"
+        elif self.did.string[5:8] == "wl3":
+            self.family_header_file = "stm32wl3x.h"
 
         self.family_defines = self._get_family_defines()
         self.define = getDefineForDevice(self.did, self.family_defines)

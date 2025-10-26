@@ -6,8 +6,12 @@ import logging
 LOGGER = logging.getLogger("dfg.stm.data")
 
 ignored_devices = [
-    "STM32U59",
-    "STM32U5A",
+    "STM32G411",
+    "STM32G414",
+    "STM32WL5M",
+    "STM32WB1M",
+    "STM32WB5M",
+    "STM32WBA",
 ]
 
 
@@ -75,6 +79,68 @@ def getGpioRemapForModuleConfig(module, config):
     return mmm
 
 
+stm32_max_frequency = {
+    "c0": 48,
+    "f0": 48,
+    "f1": [
+        {"name": ["00"], "f": 24},
+        {"name": ["01"], "f": 36},
+        {"name": ["02"], "f": 48},
+        72,
+    ],
+    "f2": 120,
+    "f3": 72,
+    "f4": [
+        {"name": ["01"], "f": 84},
+        {"name": ["10", "11", "12", "13", "23"], "f": 100},
+        {"name": ["05", "07", "15", "17"], "f": 168},
+        180,
+    ],
+    "f7": 216,
+    "g0": 64,
+    "g4": 170,
+    "h5": 250,
+    "h7": [
+        {"name": ["a3", "b0", "b3"], "f": 280},
+        {"name": ["23", "25", "30", "33", "35"], "f": 550},
+        {"name": ["r3", "s3", "r7", "s7"], "f": 600},
+        480,
+    ],
+    "l0": 32,
+    "l1": 32,
+    "l4": [
+        {"name": ["s5", "s7", "s9", "q5", "p5", "r5", "r7", "r9"], "f": 120},
+        80,
+    ],
+    "l5": 110,
+    "u0": 56,
+    "u3": 96,
+    "u5": 160,
+    "wb": 64,
+    "wl": 48,
+}
+
+
+def getMaxFrequencyForDevice(did):
+    freq = stm32_max_frequency.get(did.family)
+    assert freq, f"No max frequency defined for family {did.family}"
+    if isinstance(freq, int):
+        return freq
+
+    # Convert MHz to Hz and filter out string keys
+    def lconv(lt):
+        if isinstance(lt, int):
+            return lt
+        return lt["f"]
+
+    for lt in freq:
+        if isinstance(lt, int):
+            return lt
+        # check if all conditions match
+        if all(did[k] in v for k, v in lt.items() if not isinstance(v, int)):
+            return lconv(lt)  # return filtered table
+
+
 stm32_flash_latency = {
     "f0": {1800: [24, 48]},
     "f1": [{"name": ["00"], 1800: [24]}, {1800: [24, 48, 72]}],
@@ -138,8 +204,7 @@ stm32_flash_latency = {
     "l4": [
         {  # L4+ devices
             "name": ["r5", "r7", "r9", "s5", "s7", "s9", "p5", "q5"],
-            1280: [20, 40, 60, 80, 100, 120],
-            1200: [20, 40, 60, 80],
+            1200: [20, 40, 60, 80, 120],
             1000: [8, 16, 26],
         },
         {  # L4 devices
@@ -152,8 +217,17 @@ stm32_flash_latency = {
         1200: [20, 40, 60, 80],  # Vcore range 1
         1000: [8, 16, 26],  # Vcore range 2
     },
+    "c0": {
+        1200: [24, 48],
+    },
     "g0": {1200: [24, 48, 64], 1000: [8, 16]},
     "g4": {1280: [20, 40, 60, 80, 100, 120, 140, 160, 170], 1000: [8, 16, 26]},
+    "h5": {
+        1260: [42, 84, 126, 168, 210, 250],
+        1150: [34, 68, 102, 136, 170, 200],
+        1050: [30, 60, 90, 120, 150],
+        950: [20, 40, 60, 80, 100],
+    },
     "h7": [
         {
             "name": ["23", "25", "30", "33", "35"],
@@ -178,6 +252,8 @@ stm32_flash_latency = {
     ],
     "wb": {1200: [18, 36, 54, 64], 1000: [6, 12, 16]},
     "wl": {1200: [18, 36, 48], 1000: [6, 12, 16]},
+    "u0": {1200: [24, 48, 56], 1000: [8, 16, 16]},
+    "u3": {900: [32, 64, 96], 750: [16, 32, 48]},
     "u5": {
         1200: [32, 64, 96, 128, 160],
         1100: [30, 60, 90, 110],
@@ -369,6 +445,15 @@ stm32_memory = {
             }
         ],
     },
+    "c0": {
+        "start": {"flash": 0x08000000, "sram": 0x20000000},
+        "model": [
+            {"name": ["11", "31", "71"], "memories": {"flash": 0, "sram1": 0}},
+            {"name": ["51"], "memories": {"flash": 0, "sram1": 12 * 1024}},
+            {"name": ["91"], "memories": {"flash": 0, "sram1": 36 * 1024}},
+            {"name": ["92"], "memories": {"flash": 0, "sram1": 30 * 1024}},
+        ],
+    },
     "g0": {
         "start": {"flash": 0x08000000, "sram": 0x20000000},
         "model": [
@@ -477,6 +562,32 @@ stm32_memory = {
             },
         ],
     },
+    "h5": {
+        "start": {"flash": 0x08000000, "itcm": 0x00000000, "sram": 0x20000000, "backup": 0x40036400},
+        "model": [
+            {"name": ["03"], "memories": {"flash": 0, "sram1": 0, "sram2": 16 * 1024, "backup": 2 * 1024}},
+            {
+                "name": ["23", "33"],
+                "memories": {
+                    "flash": 0,
+                    "sram1": 128 * 1024,
+                    "sram2": 80 * 1024,
+                    "sram3": 64 * 1024,
+                    "backup": 2 * 1024,
+                },
+            },
+            {
+                "name": ["62", "63", "73"],
+                "memories": {
+                    "flash": 0,
+                    "sram1": 256 * 1024,
+                    "sram2": 64 * 1024,
+                    "sram3": 320 * 1024,
+                    "backup": 4 * 1024,
+                },
+            },
+        ],
+    },
     "h7": {
         "start": {
             "flash": 0x08000000,
@@ -571,6 +682,21 @@ stm32_memory = {
                     "d3_sram": 32 * 1024,
                 },
             },
+            {
+                "name": ["r3", "r7", "s3", "s7"],
+                "memories": {
+                    "flash": 0,
+                    "itcm": 64 * 1024,
+                    "dtcm": 64 * 1024,
+                    "backup": 4 * 1024,
+                    "d1_sram1": 128 * 1024,
+                    "d1_sram2": 128 * 1024,
+                    "d1_sram3": 128 * 1024,
+                    "d1_sram4": 72 * 1024,
+                    "d2_sram1": 16 * 1024,
+                    "d2_sram2": 16 * 1024,
+                },
+            },
         ],
     },
     "l0": {
@@ -654,24 +780,74 @@ stm32_memory = {
     "wb": {
         "start": {"flash": 0x08000000, "sram": 0x20000000},
         "model": [
+            {"name": ["05"], "memories": {"flash": 0, "sram0": 12 * 1024, "sram1": 0}},
+            {
+                "name": ["06", "07", "09"],
+                "memories": {
+                    "flash": 0,
+                    "sram0": 16 * 1024,
+                    "sram1": 16 * 1024,
+                    "sram2": 16 * 1024,
+                    "sram3": 16 * 1024,
+                },
+            },
             {"name": ["10", "15", "1m"], "memories": {"flash": 0, "sram1": 0, "sram2": 36 * 1024}},
             {"name": ["30", "35", "50", "55", "5m"], "memories": {"flash": 0, "sram1": 0, "sram2": 64 * 1024}},
         ],
     },
     "wl": {
         "start": {"flash": 0x08000000, "sram": 0x20000000},
-        "model": [{"name": ["54", "55", "e4", "e5"], "memories": {"flash": 0, "sram1": 0, "sram2": 32 * 1024}}],
+        "model": [
+            {"name": ["30", "31"], "memories": {"flash": 0, "sram0": 0}},
+            {"name": ["33"], "memories": {"flash": 0, "sram0": 16 * 1024, "sram1": 0}},
+            {"name": ["54", "55", "e4", "e5"], "memories": {"flash": 0, "sram1": 32 * 1024, "sram2": 0}},
+        ],
+    },
+    "u0": {
+        "start": {
+            "flash": 0x08000000,
+            "sram2": 0x10000000,
+            "sram1": 0x20000000,
+        },
+        "model": [
+            {"name": ["31", "73", "83"], "memories": {"flash": 0, "sram1": 2 * 1024, "sram2": 1 * 1024}},
+        ],
+    },
+    "u3": {
+        "start": {
+            "flash": 0x08000000,
+            "sram": 0x20000000,
+        },
+        "model": [
+            {"name": ["75", "85"], "memories": {"flash": 0, "sram1": 0, "sram2": 64 * 1024}},
+        ],
     },
     "u5": {
         "start": {
             "flash": 0x08000000,
             "sram1": 0x20000000,
-            "sram2": 0x20030000,
-            "sram3": 0x20040000,
+            "sram2": 0x200C0000,
+            "sram3": 0x200D0000,
+            "sram5": 0x201A0000,
+            "sram6": 0x20270000,
             "sram4": 0x28000000,
             "bkpsram": 0x40036400,
         },
         "model": [
+            {
+                "name": ["35", "45"],
+                "memories": {
+                    "flash": 0,
+                    "sram1": 192 * 1024,
+                    "sram2": 64 * 1024,
+                    "sram4": 16 * 1024,
+                    "bkpsram": 2 * 1024,
+                },
+                "start": {  # overwrite due to smaller sram1/3 sizes
+                    "sram2": 0x20030000,
+                    "sram3": 0x20040000,
+                },
+            },
             {
                 "name": ["75", "85"],
                 "memories": {
@@ -682,11 +858,36 @@ stm32_memory = {
                     "sram4": 16 * 1024,
                     "bkpsram": 2 * 1024,
                 },
-            }
-            # ,{
-            #     'name': ['95', '99', 'a5', 'a9'], # This devices are not published yet...
-            #     'memories': # TODO...
-            # }
+                "start": {  # overwrite due to smaller sram1/3 sizes
+                    "sram2": 0x20030000,
+                    "sram3": 0x20040000,
+                },
+            },
+            {
+                "name": ["95", "99", "a5", "a9"],
+                "memories": {
+                    "flash": 0,
+                    "sram1": 768 * 1024,
+                    "sram2": 64 * 1024,
+                    "sram3": 832 * 1024,
+                    "sram4": 16 * 1024,
+                    "sram5": 832 * 1024,
+                    "bkpsram": 2 * 1024,
+                },
+            },
+            {
+                "name": ["f5", "g5", "f7", "g7", "f9", "g9"],
+                "memories": {
+                    "flash": 0,
+                    "sram1": 768 * 1024,
+                    "sram2": 64 * 1024,
+                    "sram3": 832 * 1024,
+                    "sram4": 16 * 1024,
+                    "sram5": 832 * 1024,
+                    "sram6": 512 * 1024,
+                    "bkpsram": 2 * 1024,
+                },
+            },
         ],
     },
 }
@@ -731,6 +932,8 @@ def getMemoryForDevice(device_id, total_flash, total_ram):
     # Assemble flattened memories
     memories = []
     for name, size in mem_model.items():
+        if size <= 0:
+            continue
         sram_name = next(ram for ram in mem_start.keys() if name.startswith(ram))
         index = int(name.split("sram")[-1]) if name[-1].isdigit() else 0
         start = mem_start[sram_name]
