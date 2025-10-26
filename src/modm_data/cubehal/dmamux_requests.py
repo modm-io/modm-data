@@ -4,7 +4,7 @@
 import re
 from pathlib import Path
 from ..utils import ext_path
-from ..owl import DeviceIdentifier
+from ..kg import DeviceIdentifier
 
 _CUBE_PATH = ext_path("stmicro/cubehal")
 _DMAMUX_PATTERN = re.compile(r"^\s*#define\s+(?P<name>(LL_DMAMUX_REQ_\w+))\s+(?P<id>(0x[0-9A-Fa-f]+))U")

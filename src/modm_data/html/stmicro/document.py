@@ -8,8 +8,8 @@ from ...utils import cache_path, ext_path
 from .datasheet_stm32 import DatasheetStm32
 from .datasheet_sensor import DatasheetSensor
 from .reference import ReferenceManual
-from ...owl import DeviceIdentifier
-from ...owl.stmicro import did_from_string
+from ...kg import DeviceIdentifier
+from ...kg.stmicro import did_from_string
 
 
 MAP_DEVICE_DOC_FILE = cache_path("stmicro-did-doc.json")

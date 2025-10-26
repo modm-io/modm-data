@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def root_path(path) -> Path:
-    return Path(__file__).parents[2] / path
+    return Path(__file__).parents[3] / path
 
 
 def ext_path(path) -> Path:

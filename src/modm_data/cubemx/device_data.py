@@ -7,8 +7,8 @@ import re
 import logging
 from collections import defaultdict
 
-from ..owl.stmicro import did_from_string
-from ..owl import DeviceIdentifier
+from ..kg.stmicro import did_from_string
+from ..kg import DeviceIdentifier
 from ..utils import ext_path, XmlReader
 from . import stm32_data
 from ..cubehal import read_request_map as dmamux_request_map
