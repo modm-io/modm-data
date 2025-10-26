@@ -7,8 +7,8 @@ from pathlib import Path
 from collections import defaultdict
 
 from ...utils import root_path, cache_path
-from ...owl.stmicro import did_from_string
-from ...owl import DeviceIdentifier
+from ...kg.stmicro import did_from_string
+from ...kg import DeviceIdentifier
 from ...cubemx import cubemx_device_list
 
 

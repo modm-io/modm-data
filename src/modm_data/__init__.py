@@ -13,7 +13,6 @@ except PackageNotFoundError:
     __version__ = "0.0.1"
 
 __all__ = [
-    "cube2owl",
     "cubehal",
     "cubemx",
     "dl",

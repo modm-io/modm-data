@@ -11,7 +11,6 @@ from .html import format_document, write_html
 
 __all__ = [
     "stmicro",
-    "ti",
     "convert",
     "annotate_debug_info",
     "format_document",
