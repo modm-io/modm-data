@@ -31,17 +31,7 @@ def _family_file() -> XmlReader:
 
 # ============================= MULTIPLE DEVICES ==============================
 def _format_raw_devices(rawDevices):
-    TemperatureMap = {0: "6", 105: "7", 125: "3"}
-    devices = set()
-    for dev in rawDevices:
-        temp_max = dev.find("Temperature")
-        temp_max = "" if temp_max is None else temp_max.get("Max")
-        name = dev.get("RefName")
-        temp_max = int(float(temp_max)) if len(temp_max) else min(TemperatureMap)
-        for temp, value in TemperatureMap.items():
-            if temp_max >= temp:
-                devices.add(name[:12] + value + name[13:])
-    return sorted(list(devices))
+    return list(sorted(set(d.get("RefName") for d in rawDevices)))
 
 
 def devices_from_family(family: str) -> list[str]:
@@ -87,9 +77,7 @@ def devices_from_partname(partname: str) -> list[dict[str]]:
     :param partname: A full STM32 device name.
     :return: a list of dictionaries containing a device specific data structure.
     """
-    deviceNames = _family_file().query(
-        f'//Family/SubFamily/Mcu[starts-with(@RefName,"{partname[:12]}x{partname[13:]}")]'
-    )
+    deviceNames = _family_file().query(f'//Family/SubFamily/Mcu[starts-with(@RefName,"{partname}")]')
     comboDeviceName = sorted([d.get("Name") for d in deviceNames])[0]
     device_file = XmlReader(os.path.join(_MCU_PATH, comboDeviceName + ".xml"))
     did = did_from_string(partname.lower())
