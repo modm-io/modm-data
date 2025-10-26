@@ -1,10 +1,11 @@
-name: Build and deploy docs
+name: Build docs
 
 on:
   push:
     branches:
       - main
       - main-**
+  pull_request:
 
 jobs:
   build-upload-docs:
@@ -12,12 +13,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
-      - name: Configure Git
-        run: |
-          git config --global user.email "bot@modm.io"
-          git config --global user.name "modm update bot"
-
 
       - name: Setup Python 3.12
         uses: actions/setup-python@v4
@@ -28,19 +23,26 @@ jobs:
         run: |
           pip3 install -r tools/requirements.txt ".[docs]"
 
+
       - name: Clone modm-ext/data.modm.io repository
+        if: startsWith(github.ref, 'refs/heads/main')
         uses: actions/checkout@v4
         with:
           repository: modm-ext/data.modm.io
           ssh-key: ${{secrets.SSH_KEY_DATA_MODM_IO}}
           path: docs/data.modm.io
 
+
       - name: Build Homepage
         run: |
           make build-homepage
 
+
       - name: Push New Docs to Github
+        if: startsWith(github.ref, 'refs/heads/main')
         run: |
+          git config --global user.email "bot@modm.io"
+          git config --global user.name "modm update bot"
           cd docs/data.modm.io
           git add -A
           git diff-index --quiet HEAD || git commit -m "Update"
