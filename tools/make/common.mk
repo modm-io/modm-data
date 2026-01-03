@@ -13,6 +13,9 @@ log/%:
 help:
 	@python3 tools/scripts/makefile_help.py ${MAKEFILE_LIST}
 
+.PHONY: update-ext/%
+update-ext/%:
+	@(cd $(@:update-%=%) && git fetch && git reset --hard origin/main)
 
 # ============================= Python Management =============================
 .PHONY: pip-upgrade-freeze

@@ -52,7 +52,7 @@ jobs:
 
       - name: Clone STMicro Sources
         run: |
-          make ext/arm/cmsis/ ext/stmicro/cubehal/ ext/stmicro/header/
+          make clone-sources-stmicro
 
       - name: Generate Database for ${{ matrix.family_group.name }}
         run: |

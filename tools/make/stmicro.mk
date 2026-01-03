@@ -19,19 +19,46 @@ ext/stmicro/owl-archive/:
 ext/stmicro/svd-archive/:
 	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-svd.git $@
 
+ext/stmicro/STM32F1xx_DFP:
+	@$(eval PACKURL=$(shell curl -s "https://www.keil.arm.com/packs/?q=$(@:ext/stmicro/%=%)" | grep -oE "https://www.keil.com/pack/.*?\.pack" | head -n 1))
+	@curl -Ls "${PACKURL}" -o $@.zip
+	@unzip -q $@.zip -d $@
+	@rm $@.zip
+
+ext/stmicro/STM32%_DFP:
+	@git clone --depth=1 https://github.com/Open-CMSIS-Pack/$(@:ext/stmicro/%=%).git $@
+
 .PHONY: clone-sources-stmicro
 ## Clone all STMicro related repositories into /ext/stmicro.
-clone-sources-stmicro: clone-sources-arm ext/stmicro/cubehal/ ext/stmicro/header/ \
-					   ext/stmicro/svd/ ext/stmicro/owl-archive/ ext/stmicro/svd-archive/
+clone-sources-stmicro: clone-sources-arm ext/stmicro/cubehal/ ext/stmicro/header/ ext/stmicro/svd/ \
+					   ext/stmicro/STM32C0xx_DFP ext/stmicro/STM32F0xx_DFP ext/stmicro/STM32F1xx_DFP \
+					   ext/stmicro/STM32F2xx_DFP ext/stmicro/STM32F3xx_DFP ext/stmicro/STM32F4xx_DFP \
+					   ext/stmicro/STM32F7xx_DFP ext/stmicro/STM32G0xx_DFP ext/stmicro/STM32G4xx_DFP \
+					   ext/stmicro/STM32H5xx_DFP ext/stmicro/STM32H7RSxx_DFP ext/stmicro/STM32H7xx_DFP \
+					   ext/stmicro/STM32L0xx_DFP ext/stmicro/STM32L1xx_DFP ext/stmicro/STM32L4xx_DFP \
+					   ext/stmicro/STM32L5xx_DFP ext/stmicro/STM32N6xx_DFP ext/stmicro/STM32U0xx_DFP \
+					   ext/stmicro/STM32U3xx_DFP ext/stmicro/STM32U5xx_DFP ext/stmicro/STM32WB0x_DFP \
+					   ext/stmicro/STM32WBAxx_DFP ext/stmicro/STM32WBxx_DFP ext/stmicro/STM32WL3x_DFP \
+					   ext/stmicro/STM32WLxx_DFP
 
 .PHONY: update-sources-stmicro
 ## Update all STMicro related repositories to the latest version.
-update-sources-stmicro: update-sources-arm
-	@(cd ext/stmicro/cubehal && git fetch && git reset --hard origin/main) &
+update-sources-stmicro: update-sources-arm update-ext/stmicro/cubehal update-ext/stmicro/svd \
+						update-ext/stmicro/STM32C0xx_DFP update-ext/stmicro/STM32F0xx_DFP \
+						update-ext/stmicro/STM32F2xx_DFP update-ext/stmicro/STM32F3xx_DFP \
+						update-ext/stmicro/STM32F4xx_DFP update-ext/stmicro/STM32F7xx_DFP \
+						update-ext/stmicro/STM32G0xx_DFP update-ext/stmicro/STM32G4xx_DFP \
+						update-ext/stmicro/STM32H5xx_DFP update-ext/stmicro/STM32H7RSxx_DFP \
+						update-ext/stmicro/STM32H7xx_DFP update-ext/stmicro/STM32L0xx_DFP \
+						update-ext/stmicro/STM32L1xx_DFP update-ext/stmicro/STM32L4xx_DFP \
+						update-ext/stmicro/STM32L5xx_DFP update-ext/stmicro/STM32N6xx_DFP \
+						update-ext/stmicro/STM32U0xx_DFP update-ext/stmicro/STM32U3xx_DFP \
+						update-ext/stmicro/STM32U5xx_DFP update-ext/stmicro/STM32WB0x_DFP \
+						update-ext/stmicro/STM32WBAxx_DFP update-ext/stmicro/STM32WBxx_DFP \
+						update-ext/stmicro/STM32WL3x_DFP update-ext/stmicro/STM32WLxx_DFP
 	@(cd ext/stmicro/header && git fetch && git reset --hard origin/master) &
-	@(cd ext/stmicro/svd && git fetch && git reset --hard origin/main) &
-	@(cd ext/stmicro/owl-archive && git fetch && git reset --hard origin/main) &
 	@(cd ext/stmicro/svd-archive && git fetch && git reset --hard origin/master) &
+	@(rm -r ext/stmicro/STM32F1xx_DFP && $(MAKE) ext/stmicro/STM32F1xx_DFP) &
 	@wait
 
 

@@ -13,7 +13,5 @@ clone-sources-arm: ext/arm/cmsis/
 
 .PHONY: update-sources-arm
 ## Update all ARM related repositories to the latest version.
-update-sources-arm:
-	@(cd ext/arm/cmsis && git fetch && git reset --hard origin/master) &
-	@wait
+update-sources-arm: update-ext/arm/cmsis
 
