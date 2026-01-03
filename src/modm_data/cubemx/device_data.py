@@ -14,11 +14,13 @@ from . import stm32_data
 from ..cubehal import read_request_map as dmamux_request_map
 from ..cubehal import read_bdma_request_map as dmamux_bdma_request_map
 from . import peripherals
+from ..header2svd.stmicro import Header
 
 LOGGER = logging.getLogger(__file__)
 
 
-_MCU_PATH = ext_path("stmicro/cubemx/mcu")
+_EXT_PATH = ext_path("stmicro/")
+_MCU_PATH = _EXT_PATH / "cubemx/mcu"
 _FAMILY_FILE = None
 
 
@@ -84,66 +86,95 @@ def devices_from_partname(partname: str) -> list[dict[str]]:
     LOGGER.info(f"Parsing '{did.string}'")
 
     # information about the core and architecture
-    cores = [c.text.lower().replace("arm ", "") for c in device_file.query("//Core")]
+    cores = [c.text.lower().replace("arm ", "").replace("+", "plus") for c in device_file.query("//Core")]
     if len(cores) > 1:
         did.naming_schema += "@{core}"
-    devices = [_properties_from_id(comboDeviceName, device_file, did.copy(), c) for c in cores]
+    devices = [_properties_from_id(partname, comboDeviceName, device_file, did.copy(), c) for c in cores]
     return [d for d in devices if d is not None]
 
 
-def _properties_from_id(comboDeviceName, device_file, did, core):
-    if core.endswith("m4") or core.endswith("m7") or core.endswith("m33"):
-        core += "f"
-    if did.family in ["h7"] or (did.family in ["f7"] and (did.name[0] in ("6", "7"))):
-        core += "d"
+def _properties_from_id(partname, comboDeviceName, device_file, did, core):
     if "@" in did.naming_schema:
         did.set("core", core[7:9])
-    p = {"id": did, "core": core}
+    p = {"id": did, "die": device_file.query("//Die/text()")[0]}
+
+    dfp_folder = "STM32{}xx_DFP".format(did.family.upper())
+    if did.string[5:8] in ["h7r", "h7s"]:
+        dfp_folder = "STM32H7RSxx_DFP"
+    elif did.string[5:8] == "wb0":
+        dfp_folder = "STM32WB0x_DFP"
+    elif did.string[5:8] == "wba":
+        dfp_folder = "STM32WBAxx_DFP"
+    elif did.string[5:8] == "wl3":
+        dfp_folder = "STM32WL3x_DFP"
+
+    # Find OpenCMSIS pack file
+    dfp_file = XmlReader(os.path.join(_EXT_PATH, dfp_folder, f"Keil.{dfp_folder}.pdsc"))
+
+    # Find the correct DFP start node
+    dfp_node = dfp_file.query(f'//variant[starts-with(@Dvariant,"{partname}")]')
+    if not dfp_node:
+        dfp_node = dfp_file.query(f'//device[starts-with(@Dname,"{partname}")]')
+        if not dfp_node:
+            dfp_node = dfp_file.query(f'//device[starts-with(@Dname,"{partname[:11]}")]')
+
+    if not dfp_node:
+        LOGGER.error(f"No DFP device entry found for {did.string}: {partname}")
+        return None
+
+    def dfp_findall(key, attribs=None):
+        values = []
+        node = dfp_node[0]
+        while node.tag != "devices":
+            values += node.findall(key)
+            node = node.getparent()
+        if core := did.get("core"):
+            values = [v for v in values if core.upper() in v.get("Pname", core.upper())]
+        if attribs is not None:
+            values = {a: v.get(a) for v in values for a in attribs if v.get(a)}
+        return values
+
+    # Find the correct CMSIS header
+    dfp_compile = dfp_findall("compile")[0].get("define")
+    p["cmsis_header"] = cmsis_header = dfp_folder[:-4].lower()
+    # https://github.com/Open-CMSIS-Pack/STM32H7xx_DFP/pull/7
+    if did.string == "stm32h730ibt6q":
+        dfp_compile = "STM32H730xxQ"
+    stm_header = Header(did, cmsis_header, dfp_compile)
+    if not stm_header.is_valid:
+        LOGGER.error("CMSIS Header invalid for %s", did.string)
+        return None
+    p["define"] = stm_header.define
+
+    # Find out about the CPU
+    p["core"] = core
+    processor = dfp_findall("processor", ["DcoreVersion", "Dclock", "Dfpu"])
+    if (fpu := processor.get("Dfpu")) in ("1", "SP_FPU"):
+        p["fpu"] = "fpv4-sp-d16" if "m4" in core else "fpv5-sp-d16"
+    elif fpu == "DP_FPU":
+        p["fpu"] = "fpv5-d16"
+    if rev := processor.get("DcoreVersion"):
+        p["revision"] = rev.lower()
 
     # Maximum operating frequency
-    if max_frequency := device_file.query("//Frequency"):
-        max_frequency = float(max_frequency[0].text)
-    else:
-        max_frequency = stm32_data.getMaxFrequencyForDevice(did)
-    # H7 dual-core devices run the M4 core at half the frequency as the M7 core
-    if did.get("core", "") == "m4":
-        max_frequency /= 2.0
-    p["max_frequency"] = int(max_frequency * 1e6)
+    if max_frequency := processor.get("Dclock"):
+        max_frequency = int(max_frequency)
+    elif max_frequency := device_file.query("//Frequency"):
+        LOGGER.warning(f"Fallback to //Frequency for max frequency for {did.string}!")
+        max_frequency = int(float(max_frequency[0].text) * 1e6)
+    p["max_frequency"] = max_frequency
 
-    # flash and ram sizes
-    # The <ram> and <flash> can occur multiple times.
-    # they are "ordered" in the same way as the `(S-I-Z-E)` ids in the device combo name
-    # we must first find out which index the current did.size has inside `(S-I-Z-E)`
-    sizeIndexFlash = 0
-    sizeIndexRam = 0
-
-    match = re.search(r"\(.(-.)*\)", comboDeviceName)
-    if match:
-        sizeArray = match.group(0)[1:-1].lower().split("-")
-        sizeIndexFlash = sizeArray.index(did.size)
-        sizeIndexRam = sizeIndexFlash
-
-    rams = sorted([int(r.text) for r in device_file.query("//Ram")])
-    if sizeIndexRam >= len(rams):
-        sizeIndexRam = len(rams) - 1
-
-    flashs = sorted([int(f.text) for f in device_file.query("//Flash")])
-    if sizeIndexFlash >= len(flashs):
-        sizeIndexFlash = len(flashs) - 1
-
-    p["ram"] = rams[sizeIndexRam] * 1024
-    p["flash"] = flashs[sizeIndexFlash] * 1024
-
-    memories = []
-    for mem_name, mem_start, mem_size in stm32_data.getMemoryForDevice(did, p["flash"], p["ram"]):
-        access = "rwx"
-        if did.family == "f4" and mem_name == "ccm":
-            access = "rw"
-        if "flash" in mem_name:
-            access = "rx"
-        memories.append({"name": mem_name, "access": access, "size": mem_size, "start": mem_start})
-
-    p["memories"] = memories
+    # Find all internal memories
+    memories = {
+        m.get("name", m.get("id")).lower(): {
+            "access": m.get("access", "rwx"),
+            "start": int(m.get("start"), 0),
+            "size": int(m.get("size"), 0),
+            "alias": m.get("alias", "").lower(),
+        }
+        for m in (dfp_findall("memory") + dfp_findall("algorithm"))
+    }
+    p["memories"] = stm32_data.fixMemoryForDevice(did, memories, stm_header)
 
     # packaging
     package = device_file.query("//@Package")[0]
@@ -216,6 +247,11 @@ def _properties_from_id(comboDeviceName, device_file, did, core):
             module = ("TIM",) + module[1:]
         elif module[0] == "MDF" and module[1].startswith("ADF"):
             module = ("ADF",) + module[1:]
+        elif module[0] == "USB_DRD_FS":
+            module = (
+                "USB",
+                "USB",
+            ) + module[2:]
 
         modules.append(tuple([m.lower() for m in module]))
 

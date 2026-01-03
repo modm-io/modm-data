@@ -40,9 +40,9 @@ def getDefineForDevice(device_id, familyDefines):
     # get all defines for this device name
     devName = "STM32{}{}".format(device_id.family.upper(), device_id.name.upper())
 
-    # Map STM32F7x8 -> STM32F7x7
-    if device_id.family == "f7" and devName[8] == "8":
-        devName = devName[:8] + "7"
+    # Map STM32WL33 -> STM32WL3X
+    if device_id.family == "wl" and devName[7:9] in ["30", "31", "33"]:
+        devName = devName[:-1] + "X"
 
     deviceDefines = sorted([define for define in familyDefines if define.startswith(devName)])
     # if there is only one define thats the one
@@ -67,6 +67,7 @@ def getDefineForDevice(device_id, familyDefines):
 class Header(CmsisHeader):
     _HEADER_PATH = ext_path("stmicro/header")
     _CACHE_PATH = cache_path("cmsis/stm32")
+    _CACHE_HEADER = defaultdict(dict)
     _CACHE_FAMILY = defaultdict(dict)
     _BUILTINS = {
         "const uint32_t": 4,
@@ -77,33 +78,23 @@ class Header(CmsisHeader):
         "uint8_t": 1,
     }
 
-    def __init__(self, did):
+    def __init__(self, did, family_header_file, define):
         self.did = did
-        self.family_folder = "stm32{}xx".format(self.did.family)
-        if self.did.string[5:8] in ["h7r", "h7s"]:
-            self.family_folder = "stm32h7rsxx"
-        elif self.did.string[5:8] == "wb0":
-            self.family_folder = "stm32wb0xx"
-        elif self.did.string[5:8] == "wba":
-            self.family_folder = "stm32wbaxx"
-        elif self.did.string[5:8] == "wl3":
-            self.family_folder = "stm32wl3xx"
+        self.family_folder = family_header_file
+        if "xx" not in self.family_folder:
+            self.family_folder += "x"
         self.cmsis_folder = Header._HEADER_PATH / self.family_folder / "Include"
-        self.family_header_file = f"{self.family_folder}.h"
-        if self.did.string[5:8] == "wb0":
-            self.family_header_file = "stm32wb0x.h"
-        elif self.did.string[5:8] == "wl3":
-            self.family_header_file = "stm32wl3x.h"
+        self.family_header_file = "{}.h".format(family_header_file)
 
         self.family_defines = self._get_family_defines()
-        self.define = getDefineForDevice(self.did, self.family_defines)
-        assert self.define is not None
+        self.define = define[:9].upper() + define[9:]
+        if self.define not in self.family_defines:
+            self.define = getDefineForDevice(self.did, self.family_defines)
         self.is_valid = self.define is not None
         if not self.is_valid:
             return
 
-        self.header_file = f"{self.define.lower()}.h"
-        self.device_map = None
+        self.header_file = "{}.h".format(self.define.lower())
         substitutions = {
             # r"/\* +?(Legacy defines|Legacy aliases|Old .*? legacy purpose|Aliases for .*?) +?\*/.*?\n\n": "",
             r"/\* +?Legacy (aliases|defines|registers naming) +?\*/.*?\n\n": "",
@@ -131,6 +122,17 @@ class Header(CmsisHeader):
         return self._cache[self._memory_map_key]
 
     @property
+    def get_memory_sizes(self):
+        if "memsizes" not in Header._CACHE_HEADER[self.header_file]:
+            sizes = {
+                m.group(1): int(m.group(2), 0)
+                for d in self.header.defines
+                if (m := re.match(r"(\w+)_SIZE +\((0x.+?)UL\)", d))
+            }
+            Header._CACHE_HEADER[self.header_file]["memsizes"] = sizes
+        return Header._CACHE_HEADER[self.header_file]["memsizes"]
+
+    @property
     def interrupt_table(self):
         if "vectors" not in self._cache:
             interrupt_enum = [i["values"] for i in self.header.enums if i["name"] == "IRQn_Type"][0]
@@ -142,15 +144,11 @@ class Header(CmsisHeader):
 
     def _get_family_defines(self):
         if self.did.family not in Header._CACHE_FAMILY:
+            content = (self.cmsis_folder / self.family_header_file).read_text(encoding="utf-8", errors="replace")
             defines = []
-            match = re.findall(
-                r"if defined\((?P<define>STM32[A-Z].....)\)",
-                (self.cmsis_folder / self.family_header_file).read_text(encoding="utf-8", errors="replace"),
-            )
-            if match:
-                defines = match
-            else:
-                LOGGER.error(f"Cannot find family defines for {self.did.string}!")
+            for include in re.findall(r'#include +"(stm32.*?(?<!_hal))\.h"', content):
+                define = re.search(rf"defined *\( *({include}) *\)", content, flags=re.IGNORECASE)
+                defines.append(define.group(1))
             Header._CACHE_FAMILY[self.did.family]["family_defines"] = defines
         return Header._CACHE_FAMILY[self.did.family]["family_defines"]
 
