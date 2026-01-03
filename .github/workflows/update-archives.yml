@@ -9,6 +9,11 @@ jobs:
   update-pdfs:
     runs-on: ubuntu-latest
     steps:
+      - name: Free up Disk Space
+        run: |
+          df -h
+          sudo rm -rf /usr/lib/jvm /usr/share/dotnet /usr/local/lib/android /opt/microsoft /opt/google
+          df -h
 
       - name: Check out Repository
         uses: actions/checkout@v4
