@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.3
+
+- Import STM32 Open-CMSIS-Pack DFP data sources.
+- Use DFP sources for memory map and CPU frequency.
+- Import latest changes from modm-devices for new STM32 devices.
+- Update dependencies and frozen requirements.txt.
+
+
 ## 0.0.2
 
 - Update the regression tests and enforce it via CI.
