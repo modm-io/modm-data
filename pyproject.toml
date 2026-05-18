@@ -46,7 +46,8 @@ dynamic = ["version"]
 docs = [
     "pdoc>=14,<15",
     "mkdocs>=1.5,<2",
-    "mkdocs-material>=9.5,<10"
+    "mkdocs-material>=9.5,<10",
+    "modm-pinout @ git+https://github.com/modm-io/modm-pinout.git@main",
 ]
 all = ["modm_data[docs]"]
 

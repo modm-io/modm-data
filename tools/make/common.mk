@@ -58,6 +58,7 @@ build-homepage:
 	@mkdir -p docs/data.modm.io/docs/
 	@python3 tools/scripts/synchronize_docs.py
 	@pdoc --mermaid -o docs/src/api -t docs/pdoc modm_data
+	@modm_pinout --all -o docs/src/pinout/
 	@(cd docs && mkdocs build)
 
 

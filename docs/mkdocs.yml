@@ -88,3 +88,4 @@ nav:
       #- HTML to OWL: pipeline/html2owl.md
       - Header to SVD: pipeline/header2svd.md
   - API Reference: api/modm_data.html
+  - Pinouts: pinout/index.html
