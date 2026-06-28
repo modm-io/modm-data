@@ -124,12 +124,19 @@ def load_remote_info(base_dir: Path, use_cached: bool = False) -> list[dict]:
         for urls in _json_urls.values():
             for url in urls:
                 docs.extend(json.loads(download_data(url))["rows"])
-    return docs
+    missing = [d for d in docs if "title" not in d or "version" not in d]
+    if missing:
+        LOGGER.warning(
+            "Some documents are missing title or version information and will be ignored: %s",
+            str(missing),
+        )
+    return [d for d in docs if "title" in d and "version" in d]
 
 
 def store_remote_info(base_dir: Path, docs: list[dict]):
     info = base_dir / _remote_info
     info.parent.mkdir(parents=True, exist_ok=True)
+    exit(1)
     info.write_text(json.dumps(sorted(docs, key=lambda d: (d["title"], d["version"])), indent=4, sort_keys=True))
 
 
