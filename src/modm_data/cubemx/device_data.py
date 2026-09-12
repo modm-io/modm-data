@@ -170,6 +170,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
             "alias": m.get("alias", "").lower(),
         }
         for m in (dfp_findall("memory") + dfp_findall("algorithm"))
+        if "gfx" not in m.get("name", m.get("id")).lower()
     }
     p["memories"] = stm32_data.fixMemoryForDevice(did, memories, stm_header)
 
@@ -218,6 +219,8 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
             "BOOTPATH",
             "MEMORYMAP",
             "OPENAMP",
+            "USB_OTG_FS1",
+            "USB_OTG_HS1",
         }
         if any(ip.get("Name").upper().startswith(p) for p in software_ips):
             continue

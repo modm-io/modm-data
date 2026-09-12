@@ -6,8 +6,6 @@ import logging
 LOGGER = logging.getLogger("dfg.stm.data")
 
 ignored_devices = [
-    "STM32G411",
-    "STM32G414",
     "STM32WL5M",
     "STM32WB1M",
     "STM32WB5M",
@@ -448,7 +446,12 @@ def fixMemoryForDevice(did, memories: dict[str, dict], header) -> list[dict]:
         mems[name] = data
 
     # Correct memories for specific devices
-    if did.family == "f2":
+    if did.string.startswith("stm32l083"):
+        # https://github.com/Open-CMSIS-Pack/STM32L0xx_DFP/pull/2 was reverted by
+        # https://github.com/Open-CMSIS-Pack/STM32L0xx_DFP/commit/310d314924af14886dc0ac82b315b6129a017a9c
+        mems["sram"]["size"] = 0x00005000
+
+    elif did.family == "f2":
         # Split SRAM1 into SRAM1/2
         mems["sram1"] = mems.pop("sram")
         _add_ram(mems, "sram2", 16 * 1024, target="sram1")
@@ -499,13 +502,9 @@ def fixMemoryForDevice(did, memories: dict[str, dict], header) -> list[dict]:
             mems["sram1"] = mems.pop("sram")
             _add_ram(mems, "sram2", sram2, target="sram1")
 
-    elif did.family == "h5":
-        # Fix missing Backup and SRAM2/3
+    elif did.family == "h5" and did.name in ["03"]:
+        # Fix missing Backup
         sizes = header.get_memory_sizes
-        if sram3 := sizes.get("SRAM3"):
-            _add_ram(mems, "sram3", sram3, target="sram1")
-        if sram2 := sizes.get("SRAM2"):
-            _add_ram(mems, "sram2", sram2, target="sram1")
         mems["backup"] = {"start": 0x40036400, "size": sizes["BKPSRAM"], "access": "rwx"}
 
     elif did.family == "h7":

@@ -143,14 +143,14 @@ class Header(CmsisHeader):
         return self._cache["vectors"]
 
     def _get_family_defines(self):
-        if self.did.family not in Header._CACHE_FAMILY:
+        if self.family_folder not in Header._CACHE_FAMILY:
             content = (self.cmsis_folder / self.family_header_file).read_text(encoding="utf-8", errors="replace")
             defines = []
             for include in re.findall(r'#include +"(stm32.*?(?<!_hal))\.h"', content):
                 define = re.search(rf"defined *\( *({include}) *\)", content, flags=re.IGNORECASE)
                 defines.append(define.group(1))
-            Header._CACHE_FAMILY[self.did.family]["family_defines"] = defines
-        return Header._CACHE_FAMILY[self.did.family]["family_defines"]
+            Header._CACHE_FAMILY[self.family_folder]["family_defines"] = defines
+        return Header._CACHE_FAMILY[self.family_folder]["family_defines"]
 
     def _get_filtered_defines(self):
         defines = {}
