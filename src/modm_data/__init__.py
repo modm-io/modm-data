@@ -13,6 +13,7 @@ except PackageNotFoundError:
     __version__ = "0.0.1"
 
 __all__ = [
+    "atdf",
     "cubehal",
     "cubemx",
     "dl",
@@ -21,8 +22,10 @@ __all__ = [
     "html2owl",
     "html2svd",
     "kg",
+    "nrfx",
     "pdf",
     "pdf2html",
+    "picosdk",
     "svd",
     "utils",
 ]
