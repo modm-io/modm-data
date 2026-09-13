@@ -290,7 +290,8 @@ def device_from_ordercode(path: Path, ordercode: str) -> dict | None:
                 "module": s.getparent().getparent().getparent().get("name").lower(),
                 "instance": s.getparent().getparent().get("name").lower(),
             }
-            tmp.update({k: v.lower() for k, v in s.items()})
+            # Some ATDF files contain trailing whitespace, for example, group="SCL "
+            tmp.update({k: v.strip().lower() for k, v in s.items()})
             if tmp["group"] in ["p", "pin"] or tmp["group"].startswith("port"):
                 gpios.append(tmp)
             else:

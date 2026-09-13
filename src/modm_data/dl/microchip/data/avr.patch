@@ -50,45 +50,6 @@ index e922770..ee61bd8 100644
              </signals>
            </instance>
          </module>
-diff --git a/attiny/ATtiny261.atdf b/attiny/ATtiny261.atdf
-index 7785ebb..70c8ac3 100644
---- a/attiny/ATtiny261.atdf
-+++ b/attiny/ATtiny261.atdf
-@@ -103,7 +103,7 @@
-             <signals>
-               <signal field="USIPOS" function="USI" group="SDA" pad="PB0"/>
-               <signal field="USIPOS" function="USI" group="SCL" pad="PB2"/>
--              <signal field="USIPOS" function="USI_ALT" group="SCL " pad="PA2"/>
-+              <signal field="USIPOS" function="USI_ALT" group="SCL" pad="PA2"/>
-               <signal field="USIPOS" function="USI_ALT" group="SDA" pad="PA0"/>
-               <signal field="USIPOS" function="USI" group="DI" pad="PB0"/>
-               <signal field="USIPOS" function="USI" group="DO" pad="PB1"/>
-diff --git a/attiny/ATtiny461.atdf b/attiny/ATtiny461.atdf
-index d053b0d..06d4211 100644
---- a/attiny/ATtiny461.atdf
-+++ b/attiny/ATtiny461.atdf
-@@ -103,7 +103,7 @@
-             <signals>
-              <signal field="USIPOS" function="USI" group="SDA" pad="PB0"/>
-               <signal field="USIPOS" function="USI" group="SCL" pad="PB2"/>
--              <signal field="USIPOS" function="USI_ALT" group="SCL " pad="PA2"/>
-+              <signal field="USIPOS" function="USI_ALT" group="SCL" pad="PA2"/>
-               <signal field="USIPOS" function="USI_ALT" group="SDA" pad="PA0"/>
-               <signal field="USIPOS" function="USI" group="DI" pad="PB0"/>
-               <signal field="USIPOS" function="USI" group="DO" pad="PB1"/>
-diff --git a/attiny/ATtiny861.atdf b/attiny/ATtiny861.atdf
-index 02a8cc3..4cbd66d 100644
---- a/attiny/ATtiny861.atdf
-+++ b/attiny/ATtiny861.atdf
-@@ -103,7 +103,7 @@
-             <signals>
-               <signal field="USIPOS" function="USI" group="SDA" pad="PB0"/>
-               <signal field="USIPOS" function="USI" group="SCL" pad="PB2"/>
--              <signal field="USIPOS" function="USI_ALT" group="SCL " pad="PA2"/>
-+              <signal field="USIPOS" function="USI_ALT" group="SCL" pad="PA2"/>
-               <signal field="USIPOS" function="USI_ALT" group="SDA" pad="PA0"/>
-               <signal field="USIPOS" function="USI" group="DI" pad="PB0"/>
-               <signal field="USIPOS" function="USI" group="DO" pad="PB1"/>
 diff --git a/atmega/ATmega128RFA1.atdf b/atmega/ATmega128RFA1.atdf
 index 7cfe8a8..6e23298 100644
 --- a/atmega/ATmega128RFA1.atdf
