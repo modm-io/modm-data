@@ -67,6 +67,10 @@ flowchart LR
     J -->|dl| H
     J -->|dl| I
     J[STMicro] -->|dl| D
+    L(Microchip ATDF) -->|atdf| C
+    M(nrfx MDK) -->|nrfx| C
+    N(Pico SDK SVD) -->|picosdk| C
+    O[Microchip] -->|dl| L
 ```
 <!--/pipelines-->
 
@@ -97,6 +101,11 @@ licenses whenever possible:
 - [STM32 CMSIS-SVD files](https://github.com/modm-io/cmsis-svd-stm32): Apache-2.0.
 - STMicro CubeMX database: ST SLA.
 - STMicro PDF technical documentation: ST SLA.
+- [Microchip SAM device packs](https://packs.download.microchip.com): Apache-2.0.
+- [Microchip AVR device packs](https://packs.download.microchip.com): No license specified.
+- [Nordic nrfx MDK](https://github.com/NordicSemiconductor/nrfx): BSD-3-Clause.
+- Nordic product specification pin assignments: Only the pinout data is stored.
+- [Raspberry Pi Pico SDK SVD files](https://github.com/raspberrypi/pico-sdk): BSD-3-Clause.
 
 You can download all input sources via `make input-sources`. Please note that it
 may take a while to download ~10GB of data, mostly PDF technical documentation.

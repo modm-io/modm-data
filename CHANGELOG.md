@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Move the data extraction pipelines of all vendors from modm-devices.
+- Add Microchip AVR and SAM device pack downloader and ATDF parser.
+- Add Nordic nRF5x device data from the nrfx MDK and stored product specification pinouts.
+- Add Raspberry Pi RP2040 and RP2350 device data from the Pico SDK SVD files.
+
 ## 0.0.3
 
 - Import STM32 Open-CMSIS-Pack DFP data sources.
