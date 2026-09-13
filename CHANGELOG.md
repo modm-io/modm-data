@@ -8,6 +8,8 @@
 - Add Raspberry Pi RP2040 and RP2350 device data from the Pico SDK SVD files.
 - Fix STM32 Flash sizes of STM32L471ZGJx, STM32L476ZGTxP, STM32L496AEIx, STM32F730x8, and STM32F750x8.
 - Fix missing STM32 alternate function numbers for remapped pins and differently named signals.
+- Fix STM32 signal names for Ethernet CRS_DV, WL debug signals, and signals without peripheral prefix.
+- Assign STM32 DMA requests to the peripheral instance and ignore more CubeMX software modules.
 
 ## 0.0.3
 

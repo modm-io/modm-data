@@ -243,8 +243,25 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
             "OPENAMP",
             "USB_OTG_FS1",
             "USB_OTG_HS1",
+            "ADV_TRACE",
+            "COMMON_BLE",
+            "COMMON_WPAN",
+            "KMS",
+            "LORAWAN",
+            "MISC",
+            "SEQUENCER",
+            "SIGFOX",
+            "STM32_BLE",
+            "STM32_WPAN",
+            "SUBGHZ_PHY",
+            "TIMER",
+            "TINY_LPM",
+            "WMBUS",
         }
         if any(ip.get("Name").upper().startswith(p) for p in software_ips):
+            continue
+        # Some STM32U5 files list the CRC a second time with a CRS instance
+        if ip.get("Name") == "CRC" and ip.get("InstanceName") != "CRC":
             continue
 
         rversion = ip.get("Version")
@@ -274,6 +291,9 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
                 "USB",
                 "USB",
             ) + module[2:]
+        elif module[0] == "SPDIFRX":
+            # Only one instance exists, which is named without instance in headers and manuals
+            module = ("SPDIFRX", "SPDIFRX") + module[2:]
 
         modules.append(tuple([m.lower() for m in module]))
 
@@ -342,48 +362,6 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
     p["pinout"] = pinout
     p["package"] = device_file.query("/Mcu/@Package")[0]
 
-    def split_af(af):
-        # entry 0 contains names without instance
-        # entry 1 contains names with instance
-        mdriv = [m for m in modules if af.startswith(m[0] + "_")]
-        minst = [m for m in modules if af.startswith(m[1] + "_")]
-        # print(af, mdriv, minst)
-        if len(minst) > 1:
-            LOGGER.warning(f"Ambiguous driver: {af} {minst}")
-            exit(1)
-
-        minst = minst[0] if len(minst) else None
-        mdriv = mdriv[0] if len(mdriv) else None
-
-        driver = minst[0] if minst else (mdriv[0] if mdriv else None)
-        if not driver:
-            LOGGER.debug(f"Unknown driver: {af}")
-        instance = None
-        if minst and driver:
-            pinst = minst[1].replace(driver, "")
-            if len(pinst):
-                instance = pinst
-        if minst or mdriv:
-            name = af.replace((minst[1] if minst else mdriv[0]) + "_", "")
-            if not len(name):
-                LOGGER.error(f"Unknown name: {af} {minst}")
-                exit(1)
-        else:
-            name = af
-
-        return (driver, instance, name)
-
-    def split_multi_af(af):
-        af = af.replace("ir_", "irtim_").replace("crs_", "rcc_crs_").replace("timx_", "tim_")
-        if af == "cec":
-            af = "hdmi_cec_cec"
-
-        driver, instance, names = split_af(af)
-        rafs = []
-        for name in names.split("-"):
-            rafs.append((driver, instance, name))
-        return rafs
-
     if dmaFile is not None:
         dma_dumped = []
         dma_streams = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
@@ -417,7 +395,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
                 continue
             if len(name.split("_")) < 2:
                 name = f"{name}_default"
-            driver, inst, name = split_af(name)
+            driver, inst, name = split_dma_signal(name, modules)
 
             if "[" in parent:
                 if dma_request_map is None:
@@ -532,7 +510,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
                 name = "dac_{}".format(name)
             if len(name.split("_")) < 2:
                 name = "{}_default".format(name)
-            driver, inst, name = split_af(name)
+            driver, inst, name = split_dma_signal(name, modules)
 
             if bdma_request_map is None:
                 bdma_request_map = dmamux_bdma_request_map(did)
@@ -623,7 +601,11 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
 
         afs = []
         for af in altFunctions:
-            for raf in split_multi_af(af[0]):
+            for raf in split_signals(af[0], modules):
+                # Some pins still list signals of peripherals that are not part of this device
+                if raf[0] is None:
+                    LOGGER.debug(f"Ignoring signal without peripheral: {rname} {af[0]}")
+                    continue
                 naf = {}
                 naf["driver"], naf["instance"], naf["name"] = raf
                 naf["af"] = af[1] if int(af[1]) >= 0 else None
@@ -650,7 +632,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
                 if not any([pp[0] == pport and pp[1] == ppin for pp in gpios]):
                     continue
                 mmm = {"port": pport, "pin": ppin}
-                driver, _, name = split_af(pin.get("Name").lower())
+                driver, _, name = split_signal(pin.get("Name").lower(), modules)
                 if driver is None:
                     continue
                 mmm["name"] = name
@@ -658,7 +640,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
                 mpins.append(mmm)
 
             if module not in remaps:
-                driver, instance, _ = split_af(module + "_lol")
+                driver, instance, _ = split_signal(module + "_lol", modules)
                 if not driver:
                     continue
                 remaps[module] = {
@@ -682,6 +664,90 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
     p["signals"] = signals
 
     return p
+
+
+def split_signal(signal: str, modules: list[tuple]) -> tuple[str, str, str]:
+    """
+    Splits a lower case CubeMX signal name into driver, instance, and name using
+    the names and instance names of the device modules.
+
+    :return: A tuple of (driver, instance, name), driver and instance may be None.
+    """
+    # entry 0 contains names without instance
+    # entry 1 contains names with instance
+    minst = [m for m in modules if signal.startswith(m[1] + "_")]
+    mdriv = [m for m in modules if signal.startswith(m[0] + "_")]
+    if len(minst) > 1:
+        LOGGER.warning(f"Ambiguous driver: {signal} {minst}")
+        exit(1)
+
+    if minst:
+        driver, prefix = minst[0][:2]
+        instance = prefix.replace(driver, "")
+    elif mdriv:
+        driver = prefix = mdriv[0][0]
+        instance = None
+    else:
+        LOGGER.debug(f"Unknown driver: {signal}")
+        return (None, None, signal)
+
+    name = signal[len(prefix) + 1 :]
+    if not len(name):
+        LOGGER.error(f"Unknown name: {signal} {minst}")
+        exit(1)
+    return (driver, instance or None, name)
+
+
+def split_dma_signal(signal: str, modules: list[tuple]) -> tuple[str, str, str]:
+    """
+    Splits a DMA request name like `split_signal()`. DMA requests often omit the
+    instance of peripherals that only have one instance, for example, `lpuart_tx`,
+    so the instance is taken from the device modules. The requests of the DMA
+    controller itself, for example, `dma_generator0`, are not assigned to a DMA
+    instance, since they belong to the DMA multiplexer.
+
+    :return: A tuple of (driver, instance, name), driver and instance may be None.
+    """
+    driver, instance, name = split_signal(signal, modules)
+    if driver is not None and instance is None and driver not in ("dma", "bdma"):
+        instances = {m[1].replace(driver, "") for m in modules if m[0] == driver}
+        if len(instances) == 1:
+            instance = instances.pop() or None
+    return (driver, instance, name)
+
+
+# CubeMX signal names that are not prefixed with the name of their peripheral module.
+# The peripheral is prepended so that the signal names stay close to the raw names.
+_SIGNAL_PERIPHERALS = (
+    (re.compile(r"cec"), r"hdmi_cec_cec"),
+    (re.compile(r"ir_(.+)"), r"irtim_\1"),
+    (re.compile(r"timx_(.+)"), r"tim_\1"),
+    (re.compile(r"spdifrx1_(.+)"), r"spdifrx_\1"),
+    (re.compile(r"crs1?_sync|i2s_ckin|audioclk"), r"rcc_\g<0>"),
+    (re.compile(r"boot0"), r"boot_\g<0>"),
+    (re.compile(r"vddtcxo"), r"subghz_\g<0>"),
+)
+# Pins shared by JTAG and SWD list both signals, for example, `sys_jtms-swdio`
+_JTAG_SWD_SIGNALS = re.compile(r"(jt[a-z]+)-([a-z]*sw[a-z]+)")
+
+
+def split_signals(signal: str, modules: list[tuple]) -> list[tuple[str, str, str]]:
+    """
+    Splits a lower case CubeMX signal name that may contain multiple signals
+    separated by `-`, for example, `sys_jtms-swdio`. Other names containing `-`
+    describe a single signal, for example, `debug_rf-busy` becomes `rf_busy`.
+
+    :return: A list of (driver, instance, name) tuples.
+    """
+    for pattern, replacement in _SIGNAL_PERIPHERALS:
+        if pattern.fullmatch(signal):
+            signal = pattern.sub(replacement, signal)
+            break
+
+    driver, instance, name = split_signal(signal, modules)
+    if match := _JTAG_SWD_SIGNALS.fullmatch(name):
+        return [(driver, instance, n) for n in match.groups()]
+    return [(driver, instance, name.replace("-", "_"))]
 
 
 def _modulesToString(modules):

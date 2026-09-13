@@ -31,6 +31,11 @@ jobs:
         run: |
           make run-regression-tests
 
+      - name: Run Unit Tests
+        if: always()
+        run: |
+          python3 -m unittest discover -s test -p "*_test.py"
+
       - name: Run Ruff Formatter
         if: always()
         uses: chartboost/ruff-action@v1
