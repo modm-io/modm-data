@@ -4,6 +4,7 @@
 from .store import download_data, download_file
 
 __all__ = [
+    "microchip",
     "stmicro",
     "download_data",
     "download_file",

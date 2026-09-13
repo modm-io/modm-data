@@ -57,6 +57,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 modm_data = ["*.md", "*/*.md", "*/*/*.md", "*/*/*/*.md"]
 "modm_data.dl.stmicro.data" = ["*"]
+"modm_data.dl.microchip.data" = ["*"]
 "modm_data.pdf2html.stmicro.data" = ["*"]
 
 # [tool.setuptools]
