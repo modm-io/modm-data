@@ -597,13 +597,29 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         if did.family == "f1":
             altFunctions = [(s.lower(), "-1") for s in localSignals if s not in grouped_f1_signals]
         else:
-            allSignals = gpioFile.compactQuery(
-                f'//GPIO_Pin[@Name="{rname}"]/PinSignal/SpecificParameter[@Name="GPIO_AF"]/..'
-            )
-            signalMap = {
-                a.get("Name"): a[0][0].text.lower().replace("gpio_af", "")[:2].replace("_", "") for a in allSignals
-            }
-            altFunctions = [(s.lower(), (signalMap[s] if s in signalMap else "-1")) for s in localSignals]
+            signalMap = {}
+            # Pins with remap or special function names, like "PA9 [PA11]" or "PB7-BOOT0 (PB7)",
+            # may not have any AF data in the GPIO file, so fall back to the plain pin name.
+            for gpio_name in dict.fromkeys((re.match(r"P[A-Z]\d+", rname).group(0), rname)):
+                allSignals = gpioFile.compactQuery(
+                    f'//GPIO_Pin[@Name="{gpio_name}"]/PinSignal/SpecificParameter[@Name="GPIO_AF"]/..'
+                )
+                signalMap |= {
+                    a.get("Name"): a[0][0].text.lower().replace("gpio_af", "")[:2].replace("_", "") for a in allSignals
+                }
+
+            def signal_af(signal):
+                # The GPIO file sometimes uses different signal names than the MCU file
+                aliases = (
+                    signal,
+                    signal.removeprefix("USB_"),
+                    signal.removeprefix("SYS_"),
+                    signal.replace("ETH_", "ETH_MII_"),
+                    signal + "_OUT",
+                )
+                return next((signalMap[a] for a in aliases if a in signalMap), "-1")
+
+            altFunctions = [(s.lower(), signal_af(s)) for s in localSignals]
 
         afs = []
         for af in altFunctions:
