@@ -493,6 +493,9 @@ def fixMemoryForDevice(did, memories: dict[str, dict], header) -> list[dict]:
     elif did.family == "f7":
         # Fix missing alias, ITCM_FLASH is faster
         mems["flash"]["alias"] = "itcm_flash"
+        if did.name in ["30", "50"]:
+            # The DFP lists 1MB of Flash for the value line devices with 64kB
+            mems["flash"]["size"] = mems["itcm_flash"]["size"] = 64 * 1024
 
     elif did.family == "g4":
         # Fix missing CCM and SRAM2
@@ -501,6 +504,13 @@ def fixMemoryForDevice(did, memories: dict[str, dict], header) -> list[dict]:
         if sram2 := sizes.get("SRAM2"):
             mems["sram1"] = mems.pop("sram")
             _add_ram(mems, "sram2", sram2, target="sram1")
+
+    elif did.family == "l4":
+        # The DFP lists the wrong Flash size for some packages
+        if did.string.startswith(("stm32l471zgj", "stm32l476zgt")):
+            mems["flash"]["size"] = 1024 * 1024
+        elif did.string.startswith("stm32l496aei"):
+            mems["flash"]["size"] = 512 * 1024
 
     elif did.family == "h5" and did.name in ["03"]:
         # Fix missing Backup

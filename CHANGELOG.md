@@ -6,6 +6,7 @@
 - Add Microchip AVR and SAM device pack downloader and ATDF parser.
 - Add Nordic nRF5x device data from the nrfx MDK and stored product specification pinouts.
 - Add Raspberry Pi RP2040 and RP2350 device data from the Pico SDK SVD files.
+- Fix STM32 Flash sizes of STM32L471ZGJx, STM32L476ZGTxP, STM32L496AEIx, STM32F730x8, and STM32F750x8.
 
 ## 0.0.3
 
