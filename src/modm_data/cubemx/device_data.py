@@ -59,6 +59,27 @@ def devices_from_prefix(prefix: str) -> list[str]:
     return list(sorted(devices))
 
 
+_TEMPERATURE_CODES = {0: "6", 85: "6", 105: "7", 125: "3"}
+
+
+def temperature_codes(partname: str) -> list[str]:
+    """
+    CubeMX uses `x` as placeholder for the temperature range in the device name.
+    This function computes the temperature codes from the maximum operating
+    temperature, since every higher range also supports all the lower ranges.
+
+    :param partname: A STM32 device name with temperature placeholder.
+    :return: A sorted list of temperature codes, for example, `["3", "6", "7"]`.
+    """
+    codes = set()
+    for device in _family_file().query(f'//Family/SubFamily/Mcu[@RefName="{partname}"]'):
+        temp_max = device.find("Temperature")
+        temp_max = "" if temp_max is None else temp_max.get("Max")
+        temp_max = int(float(temp_max)) if len(temp_max) else min(_TEMPERATURE_CODES)
+        codes.update(code for temp, code in _TEMPERATURE_CODES.items() if temp_max >= temp)
+    return sorted(codes)
+
+
 def cubemx_device_list() -> list[DeviceIdentifier]:
     """
     :return: A list of all STM32 device identifiers.
@@ -142,6 +163,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         LOGGER.error("CMSIS Header invalid for %s", did.string)
         return None
     p["define"] = stm_header.define
+    p["interrupts"] = stm_header.interrupt_table
 
     # Find out about the CPU
     p["core"] = core
@@ -620,12 +642,15 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
                 mpins.append(mmm)
 
             if module not in remaps:
-                if not split_af(module + "_lol")[0]:
+                driver, instance, _ = split_af(module + "_lol")
+                if not driver:
                     continue
                 remaps[module] = {
                     "mask": mapping["mask"],
                     "position": mapping["position"],
                     "groups": {},
+                    "driver": driver,
+                    "instance": instance,
                 }
             if len(mpins) > 0:
                 remaps[module]["groups"][mapping["mapping"]] = mpins

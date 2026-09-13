@@ -5,11 +5,18 @@
 # STMicro STM32CubeMX Database
 """
 
-from .device_data import devices_from_family, devices_from_prefix, devices_from_partname, cubemx_device_list
+from .device_data import (
+    devices_from_family,
+    devices_from_prefix,
+    devices_from_partname,
+    cubemx_device_list,
+    temperature_codes,
+)
 
 __all__ = [
     "devices_from_family",
     "devices_from_prefix",
     "devices_from_partname",
     "cubemx_device_list",
+    "temperature_codes",
 ]
