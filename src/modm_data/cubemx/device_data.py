@@ -15,6 +15,7 @@ from ..cubehal import read_request_map as dmamux_request_map
 from ..cubehal import read_bdma_request_map as dmamux_bdma_request_map
 from ..cubehal.remaps import read_afio_remap_macros
 from . import peripherals
+from .dma_remap import dma_remaps
 from ..header2svd.stmicro import Header
 
 LOGGER = logging.getLogger(__file__)
@@ -367,12 +368,14 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         dma_dumped = []
         dma_streams = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         dma_request_map = None
+        dma_remap = dma_remaps(did, dmaFile, stm_header)
         for sig in dmaFile.query('//ModeLogicOperator[@Name="XOR"]/Mode'):
             name = rname = sig.get("Name")
             if did.family == "wl" and rname in ["SAI1_A", "SAI1_B", "QUADSPI"]:
                 continue  # CubeMX data is wrong, WL devices don't have these peripherals
 
             parent = sig.getparent().getparent().get("Name")
+            dma_signal_remaps = dma_remap.get((parent, rname), [])
             instance = parent.split("_")[0][3:]
             parent = parent.split("_")[1]
 
@@ -434,12 +437,22 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
                 }
                 if inst:
                     signal["instance"] = inst
-                remaps = stm32_data.getDmaRemap(did, instance, channel, driver, inst, sname)
-                if remaps:
-                    signal["remap"] = remaps
+                if dma_signal_remaps:
+                    signal["remap"] = [{"position": p, "mask": m, "id": v} for p, m, v in dma_signal_remaps]
                 dma_streams[instance][stream][channel].append(signal)
-                # print(instance, stream, channel)
-                # print(signal)
+
+        # The channels without remap require the remap fields of the same signal on other channels to be reset
+        remap_fields = defaultdict(set)
+        dma_signals = [s for ss in dma_streams.values() for chs in ss.values() for c in chs.values() for s in c]
+        for signal in dma_signals:
+            key = (signal["driver"], signal.get("instance"), signal["name"])
+            remap_fields[key].update((r["position"], r["mask"]) for r in signal.get("remap", []))
+        for signal in dma_signals:
+            key = (signal["driver"], signal.get("instance"), signal["name"])
+            positions = {r["position"] for r in signal.get("remap", [])}
+            defaults = [{"position": p, "mask": m, "id": 0} for p, m in remap_fields[key] if p not in positions]
+            if remap := sorted(signal.get("remap", []) + defaults, key=lambda r: r["position"]):
+                signal["remap"] = remap
 
         # Manually handle condition expressions from XML for
         # (STM32F030CCTx|STM32F030RCTx) and (STM32F070CBTx|STM32F070RBTx)
