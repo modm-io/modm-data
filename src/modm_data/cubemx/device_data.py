@@ -16,6 +16,7 @@ from ..cubehal import read_bdma_request_map as dmamux_bdma_request_map
 from ..cubehal.remaps import read_afio_remap_macros
 from . import peripherals
 from .dma_remap import dma_remaps
+from .memories import memories as device_memories
 from ..header2svd.stmicro import Header
 
 LOGGER = logging.getLogger(__file__)
@@ -196,7 +197,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         for m in (dfp_findall("memory") + dfp_findall("algorithm"))
         if "gfx" not in m.get("name", m.get("id")).lower()
     }
-    p["memories"] = stm32_data.fixMemoryForDevice(did, memories, stm_header)
+    p["memories"] = device_memories(did, memories, stm_header, p["die"])
 
     # packaging
     package = device_file.query("//@Package")[0]

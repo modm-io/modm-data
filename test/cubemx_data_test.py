@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from modm_data.cubemx.memories import _split, _split_sram
 from modm_data.header2svd.header import Header
 
 HEADER = r"""
@@ -73,6 +74,40 @@ class HeaderTest(unittest.TestCase):
             self.assertEqual(header.typedefs["I2C_TypeDef"], ("CR1", "CR2", "OAR1", "TIMINGR", "ISR"))
             self.assertEqual(header.peripherals["UART4"], "USART_TypeDef")
             self.assertNotIn("I2C1_BASE", header.peripherals)
+
+
+class MemoryTest(unittest.TestCase):
+    def test_split(self):
+        mems = {"d2_sram1": {"access": "rwx", "start": 0x30000000, "size": 0x48000}}
+        _split(mems, "d2_sram1", [("d2_sram1", 0x30000000, 0x20000), ("d2_sram2", 0x30020000, 0x20000)])
+        self.assertEqual(len(mems), 1)
+        _split(
+            mems,
+            "d2_sram1",
+            [("d2_sram2", 0x30020000, 0x20000), ("d2_sram3", 0x30040000, 0x8000), ("d2_sram1", 0x30000000, 0x20000)],
+        )
+        self.assertEqual(
+            {n: (m["start"], m["size"]) for n, m in mems.items()},
+            {
+                "d2_sram1": (0x30000000, 0x20000),
+                "d2_sram2": (0x30020000, 0x20000),
+                "d2_sram3": (0x30040000, 0x8000),
+            },
+        )
+
+    def test_split_sram(self):
+        defines = {"SRAM1_BASE": 0x20000000, "SRAM2_BASE": 0x2001C000, "SRAM3_BASE": 0x20020000}
+        mems = {"sram": {"access": "rwx", "start": 0x20000000, "size": 192 * 1024}}
+        _split_sram(mems, defines.get)
+        self.assertEqual({n: m["size"] // 1024 for n, m in mems.items()}, {"sram1": 112, "sram2": 16, "sram3": 64})
+        # The SRAM2 does not exist on devices with less SRAM
+        mems = {"sram": {"access": "rwx", "start": 0x20000000, "size": 64 * 1024}}
+        _split_sram(mems, defines.get)
+        self.assertEqual({n: m["size"] // 1024 for n, m in mems.items()}, {"sram": 64})
+        # The size is limited by the header
+        mems = {"sram": {"access": "rwx", "start": 0x20000000, "size": 128 * 1024}}
+        _split_sram(mems, {"SRAM1_BASE": 0x20000000, "SRAM1_SIZE_MAX": 40 * 1024}.get)
+        self.assertEqual({n: m["size"] // 1024 for n, m in mems.items()}, {"sram": 40})
 
 
 if __name__ == "__main__":
