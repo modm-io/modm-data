@@ -155,7 +155,8 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         if core := did.get("core"):
             values = [v for v in values if core.upper() in v.get("Pname", core.upper())]
         if attribs is not None:
-            values = {a: v.get(a) for v in values for a in attribs if v.get(a)}
+            # The attributes of the inner nodes take precedence over the outer nodes
+            values = {a: v.get(a) for v in reversed(values) for a in attribs if v.get(a)}
         return values
 
     # Find the correct CMSIS header
@@ -178,12 +179,18 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
     if rev := processor.get("DcoreVersion"):
         p["revision"] = rev.lower()
 
-    # Maximum operating frequency
+    # Maximum operating frequency, which is too low in the DFP or CubeMX data of some devices,
+    # for example, the DFP lists STM32G441/G473/G484 with 150 MHz and STM32L4P5/Q5 with 80 MHz,
+    # and both list some STM32H7R/S packages with 550 MHz. Only the DFP contains the maximum
+    # frequency of each core of multi-core devices.
+    frequencies = [int(float(f.text) * 1e6) for f in device_file.query("//Frequency")]
     if max_frequency := processor.get("Dclock"):
         max_frequency = int(max_frequency)
-    elif max_frequency := device_file.query("//Frequency"):
+        if not did.get("core"):
+            max_frequency = max([max_frequency] + frequencies)
+    elif frequencies:
         LOGGER.warning(f"Fallback to //Frequency for max frequency for {did.string}!")
-        max_frequency = int(float(max_frequency[0].text) * 1e6)
+        max_frequency = frequencies[0]
     p["max_frequency"] = max_frequency
 
     # Find all internal memories
