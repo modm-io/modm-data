@@ -16,7 +16,7 @@ def _add_element(node, tag, text=None):
 def _format_device(xmlnode, treenode):
     _add_element(xmlnode, "name", str(treenode.name).upper().replace("X", "x"))
     _add_element(xmlnode, "version", "1.0")
-    descr = ",".join(d.string.upper() for d in (treenode.compatible or []))
+    descr = ",".join((d if isinstance(d, str) else d.string).upper() for d in (treenode.compatible or []))
     _add_element(xmlnode, "description", descr)
     _add_element(xmlnode, "addressUnitBits", "8")
     _add_element(xmlnode, "width", "32")
@@ -28,7 +28,11 @@ def _format_device(xmlnode, treenode):
 
 def _format_peripheral(xmlnode, treenode):
     peripheral = _add_element(xmlnode, "peripheral")
+    if derived_from := getattr(treenode, "derived_from", None):
+        peripheral.set("derivedFrom", derived_from)
     _add_element(peripheral, "name", treenode.name)
+    if alternate := getattr(treenode, "alternate", None):
+        _add_element(peripheral, "alternatePeripheral", alternate)
     _add_element(peripheral, "baseAddress", hex(treenode.address))
     if treenode.children:
         return _add_element(peripheral, "registers")
@@ -38,7 +42,14 @@ def _format_peripheral(xmlnode, treenode):
 
 def _format_register(xmlnode, treenode):
     register = _add_element(xmlnode, "register")
-    _add_element(register, "name", treenode.name)
+    if dim := getattr(treenode, "dim", None):
+        _add_element(register, "dim", dim)
+        _add_element(register, "dimIncrement", hex(treenode.width))
+        _add_element(register, "name", f"{treenode.name}[%s]")
+    else:
+        _add_element(register, "name", treenode.name)
+    if alternate := getattr(treenode, "alternate", None):
+        _add_element(register, "alternateRegister", alternate)
     _add_element(register, "addressOffset", hex(treenode.offset))
     _add_element(register, "size", hex(treenode.width * 8))
     if treenode.children:
