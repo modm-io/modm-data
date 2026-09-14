@@ -198,24 +198,19 @@ clean-stmicro-html-svd:
 
 # ========================= Converting Header to SVD ==========================
 .PHONY: convert-stmicro-header-svd-%
-## Convert a C header file from the CMSIS header archive into a memory map in
-## the SVD archive. The log will be placed in log/stmicro/svd/header_%.txt.
-convert-stmicro-header-svd-%: log/stmicro/svd/ ext/stmicro/header/ ext/arm/cmsis/
-	@-python3 -m modm_data.header2svd.stmicro $(@:convert-stmicro-header-svd-%=%) > \
-			$(@:convert-stmicro-header-svd-%=log/stmicro/svd/header_%.txt) 2>&1
+## Convert the CMSIS device headers matching the pattern into SVD files and
+## compare them with the ST SVD files. The report will be placed in
+## log/stmicro/svd/header_%.txt.
+convert-stmicro-header-svd-%: log/stmicro/svd/ ext/stmicro/header/ ext/stmicro/svd/ ext/arm/cmsis/
+	@-python3 -m modm_data.header2svd.stmicro --compare --header $(@:convert-stmicro-header-svd-%=%)
 
-# We are ignoring L5 U5 WB WL due to ARMv8-M S/NS aliasing and issues in headers
 .PHONY: convert-stmicro-header-svd
-## Convert all STMicro CMSIS header files into SVD files.
-convert-stmicro-header-svd: log/stmicro/svd/ ext/stmicro/header/ ext/arm/cmsis/
+## Convert all STMicro CMSIS device headers into SVD files.
+convert-stmicro-header-svd: log/stmicro/svd/ ext/stmicro/header/ ext/stmicro/svd/ ext/arm/cmsis/
 	@echo "Converting all CMSIS Headers to SVD."
-	@-python3 -m modm_data.header2svd.stmicro \
-		--all stm32f0 --all stm32f1 --all stm32f2 \
-		--all stm32f3 --all stm32f4 --all stm32f7 \
-		--all stm32g0 --all stm32g4 --all stm32h7 \
-		--all stm32l0 --all stm32l1 --all stm32l4
+	@-python3 -m modm_data.header2svd.stmicro --all --compare
 
 .PHONY: clean-stmicro-header-svd
-## Remove all STMicro SVD files in the archive.
+## Remove all STMicro SVD files converted from the CMSIS headers.
 clean-stmicro-header-svd:
-	@rm -f $(wildcard ext/stmicro/svd-archive/header_*.svd)
+	@rm -f $(wildcard ext/stmicro/svd/header_*.svd)

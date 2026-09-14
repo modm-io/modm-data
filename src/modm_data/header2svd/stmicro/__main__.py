@@ -3,75 +3,85 @@
 
 import re
 import tqdm
+import logging
 import argparse
-import subprocess
 from pathlib import Path
 from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
-import modm_data
-from modm_data.header2svd.stmicro import Header, normalize_memory_map
-from modm_data.svd import format_svd, write_svd
-from modm_data.owl.stmicro import did_from_string
+from modm_data.header2svd.stmicro import device_headers, memory_map_from_header, compare_svd, svd_for_header
+from modm_data.svd import format_svd, write_svd, read_svd
 from modm_data.utils import ext_path
-from anytree import RenderTree
+
+
+def _format_report(report, differences) -> str:
+    assigned = 100 * (1 - len(report.unassigned) / max(report.defines, 1))
+    lines = [f"{report.header}: {assigned:.1f}% of {report.defines} bit field macros assigned", ""]
+    groups = defaultdict(list)
+    for name in report.unassigned:
+        groups["_".join(name.split("_")[:2])].append(name.split("_", 2)[-1])
+    lines.append(f"Unassigned bit field macros: {len(report.unassigned)}")
+    lines += [f"  {group}: {' '.join(fields)}" for group, fields in sorted(groups.items())]
+    lines += ["", f"Registers without bit fields: {len(report.empty)}"]
+    lines += [f"  {name}" for name in report.empty]
+    lines += ["", f"Overlapping bit fields: {len(report.overlapping)}"]
+    lines += [f"  {register}.{removed} overlaps {remaining}" for register, removed, remaining in report.overlapping]
+    if differences is not None:
+        lines += ["", f"Differences to ST SVD: {len(differences)}"]
+        lines += [f"  {line}" for line in differences]
+    return "\n".join(lines) + "\n"
+
+
+def _convert(job):
+    header, core, compare = job
+    device, report = memory_map_from_header(header, core)
+    output_path = ext_path(f"stmicro/svd/header_{device.name}.svd")
+    write_svd(format_svd(device), str(output_path))
+    differences = None
+    if compare and (svd_path := svd_for_header(header)) is not None:
+        differences = compare_svd(device, read_svd(svd_path))
+    log_path = Path(f"log/stmicro/svd/header_{device.name}.txt")
+    log_path.write_text(_format_report(report, differences))
+    return device.name, report.defines, len(report.unassigned)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--device", type=str, default=[], action="append")
-    parser.add_argument("--all", type=str, default=[], action="append")
+    parser.add_argument(
+        "--header",
+        type=str,
+        default=[],
+        action="append",
+        help="Regex pattern of CMSIS device header names, e.g. stm32f407xx.",
+    )
+    parser.add_argument("--all", action="store_true", default=False, help="Convert all CMSIS device headers.")
+    parser.add_argument("--compare", action="store_true", default=False, help="Compare with the ST SVD files.")
+    parser.add_argument("-v", "--verbose", action="count", default=0)
     args = parser.parse_args()
+    logging.basicConfig(level=[logging.WARNING, logging.INFO, logging.DEBUG][min(args.verbose, 2)])
 
-    if args.all:
-        devices = modm_data.cubemx.devices()
-        filtered_devices = [d for d in devices if any(re.match(pat, d.string) for pat in args.all)]
+    headers = [h for h in device_headers() if args.all or any(re.match(p, h.stem) for p in args.header)]
+    jobs = []
+    for header in headers:
+        # Dual-core devices have a memory map for each core
+        if "CORE_CM4 or CORE_CM7" in header.read_text(encoding="utf-8", errors="replace"):
+            jobs += [(header, "cm7", args.compare), (header, "cm4", args.compare)]
+        else:
+            jobs.append((header, None, args.compare))
+    if not jobs:
+        print("No matching CMSIS headers found!")
+        return False
 
-        headers = defaultdict(list)
-        for device in reversed(filtered_devices):
-            header = Header(device)
-            headers[header.filename].append(device.string)
-        header_devices = list(headers.values())
-        Path("log/stmicro/svd").mkdir(exist_ok=True, parents=True)
+    Path("log/stmicro/svd").mkdir(exist_ok=True, parents=True)
+    with ThreadPool() as pool:
+        results = list(tqdm.tqdm(pool.imap_unordered(_convert, jobs), total=len(jobs), disable=len(jobs) < 5))
 
-        calls = []
-        for devices in header_devices:
-            call = (
-                f"python3 -m modm_data.header2svd.stmicro "
-                f"--device {' --device '.join(devices)} "
-                f"> log/stmicro/svd/header_{list(sorted(devices))[0]}.txt 2>&1"
-            )
-            calls.append(call)
-            # print(call)
-
-        with ThreadPool() as pool:
-            retvals = list(tqdm.tqdm(pool.imap(lambda c: subprocess.run(c, shell=True), calls), total=len(calls)))
-        for retval, call in zip(retvals, calls):
-            if retval.returncode != 0:
-                print(call)
-        return all(r.returncode == 0 for r in retvals)
-
-    mmaps = defaultdict(list)
-    headers = {}
-    # create one or multiple mmaps from device set
-    for device in args.device:
-        device = did_from_string(device)
-        header = Header(device)
-        print(device.string, header.filename)
-        mmaptree = header.memory_map_tree  # create cache entry
-        mmaps[header._memory_map_key].append(device)
-        headers[header._memory_map_key] = header
-
-    # Create one SVD file for each memory map
-    for key, devices in mmaps.items():
-        header = headers[key]
-        mmaptree = header._cache[key]
-        mmaptree.compatible = list(sorted(devices, key=lambda d: d.string))
-        mmaptree = normalize_memory_map(mmaptree)
-        print(RenderTree(mmaptree, maxlevel=2))
-        svd = format_svd(mmaptree)
-        output_path = ext_path(f"stmicro/svd/header_{mmaptree.compatible[0].string}.svd")
-        write_svd(svd, str(output_path))
+    defines = sum(r[1] for r in results)
+    unassigned = sum(r[2] for r in results)
+    for name, count, missing in sorted(results):
+        print(f"{name:20} {100 * (1 - missing / max(count, 1)):5.1f}% of {count} bit field macros assigned")
+    if len(results) > 1:
+        print(f"{'Total':20} {100 * (1 - unassigned / max(defines, 1)):5.1f}% of {defines} bit field macros assigned")
     return True
 
 

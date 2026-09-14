@@ -1,16 +1,30 @@
 # CMSIS Header to SVD Pipeline
 
+The CMSIS device headers are compiled with `arm-none-eabi-gcc` to extract the
+numeric values of all macros and the layout of all peripheral structures. The
+bit field macros are then matched to the structure members to reconstruct the
+memory map of each device header, see `modm_data.header2svd.stmicro.memory_map`.
+
+The CMSIS headers are more accurate than the ST SVD files, since they are
+compiled and used by the HAL. The ST SVD files are therefore only used to find
+discrepancies, which need to be checked with the reference manual.
+
 ## Selective Conversion
 
-The resulting SVD files are found in `ext/stmicro/svd`.
-Only takes a few minutes.
+The resulting SVD files are found in `ext/stmicro/svd/header_*.svd` and the
+reports in `log/stmicro/svd/header_*.txt`. The extracted header data is cached
+in `ext/cache/cmsis/header2svd`.
 
 ```bash
-# Convert a group of devices into SVD files
-python3 -m modm_data.header2svd.stmicro --device stm32f030c6t6 --device stm32f030f4p6 --device stm32f030k6t6
-# Convert all CMSIS headers into SVD files
-python3 -m modm_data.header2svd.stmicro --all
+# Convert all headers matching the pattern into SVD files
+python3 -m modm_data.header2svd.stmicro --header stm32f4
+# Convert all CMSIS headers and compare them with the ST SVD files
+python3 -m modm_data.header2svd.stmicro --all --compare
 ```
+
+The report lists the bit field macros that could not be assigned to a register,
+the registers without bit fields, the overlapping bit fields that were removed
+and the differences to the ST SVD file.
 
 ## Automatic Conversion
 
@@ -20,5 +34,5 @@ To perform the steps automatically, you may also use `make`:
 # Using make
 make convert-stmicro-header-svd
 # Remove all svd files
-make clean-stmicro-svd
+make clean-stmicro-header-svd
 ```
