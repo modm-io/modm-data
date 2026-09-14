@@ -309,7 +309,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
 
     if not hasFlashModule:
         modules.append(("flash", "flash", "v1.0"))
-    modules = [m + peripherals.getPeripheralData(did, m) for m in modules]
+    modules = [m + peripherals.getPeripheralData(did, m, stm_header) for m in modules]
 
     p["modules"] = modules
     LOGGER.debug("Available Modules are:\n" + _modulesToString(modules))
@@ -794,7 +794,7 @@ def _modulesToString(modules):
     string = ""
     mods = sorted(modules)
     char = mods[0][0][0:1]
-    for _, instance, _, _, _, _ in mods:
+    for _, instance, _, _, _ in mods:
         if not instance.startswith(char):
             string += "\n"
         string += instance + " \t"

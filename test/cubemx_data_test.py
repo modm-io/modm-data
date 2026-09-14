@@ -6,7 +6,9 @@ import unittest
 from pathlib import Path
 
 from modm_data.cubemx.memories import _split, _split_sram
+from modm_data.cubemx.peripherals import getPeripheralData
 from modm_data.header2svd.header import Header
+from modm_data.kg.stmicro import did_from_string
 
 HEADER = r"""
 #define PERIPH_BASE           (0x40000000UL) /*!< Peripheral base address */
@@ -74,6 +76,24 @@ class HeaderTest(unittest.TestCase):
             self.assertEqual(header.typedefs["I2C_TypeDef"], ("CR1", "CR2", "OAR1", "TIMINGR", "ISR"))
             self.assertEqual(header.peripherals["UART4"], "USART_TypeDef")
             self.assertNotIn("I2C1_BASE", header.peripherals)
+
+
+class PeripheralTest(unittest.TestCase):
+    def test_peripherals(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            filename = Path(tmp) / "header.h"
+            filename.write_text(HEADER)
+            header = Header(filename)
+            did = did_from_string("stm32f407vgt6")
+            self.assertEqual(
+                getPeripheralData(did, ("i2c", "i2c1", "v1.1"), header), ("stm32-extended", ["dnf", "fmp"])
+            )
+            self.assertEqual(getPeripheralData(did, ("i2c", "i2c2", "v1.1"), header), ("stm32-extended", ["dnf"]))
+            self.assertEqual(getPeripheralData(did, ("uart", "uart4", "v1.0"), header), ("stm32", ["over8", "wakeup"]))
+            self.assertEqual(getPeripheralData(did, ("dma", "dma1", "v2.0"), header), ("stm32-stream-channel", []))
+            self.assertEqual(getPeripheralData(did, ("tim", "tim8", "v2.x"), header), ("stm32-advanced", []))
+            self.assertEqual(getPeripheralData(did, ("tim", "tim16", "v2.x"), header), ("stm32-general-purpose", []))
+            self.assertEqual(getPeripheralData(did, ("rtc", "rtc", "v2.0"), header), ("stm32-v2.0", []))
 
 
 class MemoryTest(unittest.TestCase):
