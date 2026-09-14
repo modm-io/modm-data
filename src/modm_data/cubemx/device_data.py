@@ -13,6 +13,7 @@ from ..utils import ext_path, XmlReader
 from . import stm32_data
 from ..cubehal import read_request_map as dmamux_request_map
 from ..cubehal import read_bdma_request_map as dmamux_bdma_request_map
+from ..cubehal.remaps import read_afio_remap_macros
 from . import peripherals
 from ..header2svd.stmicro import Header
 
@@ -620,10 +621,31 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
 
     remaps = {}
     if did.family == "f1":
-        for remap in gpioFile.compactQuery("//GPIO_Pin/PinSignal/RemapBlock/@Name"):
+        # The remap blocks reference the HAL macro, which uses the CMSIS defines of the remap bits
+        afio_macros = read_afio_remap_macros()
+        blocks = {}
+        for block in gpioFile.query("//GPIO_Pin/PinSignal/RemapBlock"):
+            macro = block.xpath("./SpecificParameter/PossibleValue/text()")
+            blocks.setdefault(block.get("Name"), macro[0] if macro else None)
+        fields, values = {}, {}
+        for remap, macro in blocks.items():
             module = remap.split("_")[0].lower()
-            config = remap.split("_")[1].replace("REMAP", "").replace("IREMAP", "")
-            mapping = stm32_data.getGpioRemapForModuleConfig(module, config)
+            values[remap] = 0  # The default remap uses the reset value
+            if macro is None:
+                continue
+            register, value, mask = afio_macros[macro]
+            if (mask := stm_header.define_value(mask)) is None:
+                LOGGER.debug(f"AFIO remap {remap} is not available for {did.string}")
+                continue
+            position = (mask & -mask).bit_length() - 1
+            fields[module] = (position + (32 if register == "MAPR2" else 0), mask >> position)
+            values[remap] = (stm_header.define_value(value) >> position) if value else 0
+
+        for remap in blocks:
+            module = remap.split("_")[0].lower()
+            if module not in fields:
+                continue
+            config = remap.split("_")[1]
 
             mpins = []
             for pin in gpioFile.compactQuery(f'//GPIO_Pin/PinSignal/RemapBlock[@Name="{remap}"]/..'):
@@ -644,20 +666,17 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
                 if not driver:
                     continue
                 remaps[module] = {
-                    "mask": mapping["mask"],
-                    "position": mapping["position"],
+                    "position": fields[module][0],
+                    "mask": fields[module][1],
                     "groups": {},
                     "driver": driver,
                     "instance": instance,
                 }
             if len(mpins) > 0:
-                remaps[module]["groups"][mapping["mapping"]] = mpins
+                remaps[module]["groups"][values[remap]] = mpins
                 LOGGER.debug(
                     "{:<20}{}".format(module + "_" + config, [f"{b['port']}{b['pin']}:{b['name']}" for b in mpins])
                 )
-
-        # import json
-        # print(json.dumps(remaps, indent=4))
 
     p["remaps"] = remaps
     p["gpios"] = gpios
