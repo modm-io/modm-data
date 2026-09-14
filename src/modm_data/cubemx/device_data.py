@@ -5,7 +5,9 @@
 import os
 import re
 import logging
+from functools import cache
 from collections import defaultdict
+from lxml import etree
 
 from ..kg.stmicro import did_from_string
 from ..kg import DeviceIdentifier
@@ -91,6 +93,29 @@ def cubemx_device_list() -> list[DeviceIdentifier]:
 
 
 # ============================= INDIVIDUAL DEVICE =============================
+# Software IPs that CubeMX does not classify as middleware or utility, and the
+# second configuration of the USB OTG peripherals, which is not a separate peripheral
+_SOFTWARE_IPS = ("CORTEX_M", "NVIC", "BOOTPATH", "MEMORYMAP", "LINKEDLIST", "LPBAM", "USB_OTG_FS1", "USB_OTG_HS1")
+
+
+@cache
+def _is_software_ip(name: str, version: str) -> bool:
+    """
+    CubeMX classifies each IP in its modes file by type (peripheral, service,
+    middleware, LPBAM) and optionally by group (for example, Utilities). The
+    service IPs are mostly peripherals, however, also contain some software IPs.
+
+    :return: True if the IP is a software module instead of a hardware peripheral.
+    """
+    if name.upper().startswith(_SOFTWARE_IPS):
+        return True
+    filename = _MCU_PATH / "IP" / f"{name}-{version}_Modes.xml"
+    if not filename.exists():
+        return False
+    _, root = next(etree.iterparse(filename, events=("start",), recover=True))
+    return root.get("IPType", "").lower() in ("middleware", "lpbam") or root.get("IpGroup") == "Utilities"
+
+
 def devices_from_partname(partname: str) -> list[dict[str]]:
     """
     Find the STM32 device name in the STM32CubeMX database and convert the data
@@ -225,50 +250,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
     bdmaFile = None
     hasFlashModule = False
     for ip in device_file.query("//IP"):
-        # These IPs are all software modules, NOT hardware modules. Their version string is weird too.
-        software_ips = {
-            "GFXSIMULATOR",
-            "GRAPHICS",
-            "FATFS",
-            "TOUCHSENSING",
-            "PDM2PCM",
-            "MBEDTLS",
-            "FREERTOS",
-            "CORTEX_M",
-            "NVIC",
-            "USB_DEVICE",
-            "USB_HOST",
-            "LWIP",
-            "LIBJPEG",
-            "GUI_INTERFACE",
-            "TRACER",
-            "FILEX",
-            "LEVELX",
-            "THREADX",
-            "USBX",
-            "LINKEDLIST",
-            "NETXDUO",
-            "BOOTPATH",
-            "MEMORYMAP",
-            "OPENAMP",
-            "USB_OTG_FS1",
-            "USB_OTG_HS1",
-            "ADV_TRACE",
-            "COMMON_BLE",
-            "COMMON_WPAN",
-            "KMS",
-            "LORAWAN",
-            "MISC",
-            "SEQUENCER",
-            "SIGFOX",
-            "STM32_BLE",
-            "STM32_WPAN",
-            "SUBGHZ_PHY",
-            "TIMER",
-            "TINY_LPM",
-            "WMBUS",
-        }
-        if any(ip.get("Name").upper().startswith(p) for p in software_ips):
+        if _is_software_ip(ip.get("Name"), ip.get("Version")):
             continue
         # Some STM32U5 files list the CRC a second time with a CRS instance
         if ip.get("Name") == "CRC" and ip.get("InstanceName") != "CRC":
