@@ -291,6 +291,18 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
 
     if not hasFlashModule:
         modules.append(("flash", "flash", "v1.0"))
+
+    # CubeMX lists some peripherals that do not exist, for example, TIM5 on the STM32G471,
+    # so numbered instances must also be defined in the CMSIS header.
+    def defined_in_header(name, instance):
+        if name in ("dma", "i2s") or not re.fullmatch(rf"{name}\d+", instance):
+            return True  # DMA channels and I2S instances use different names
+        names = [instance.upper()] + ([name.upper()] if instance.endswith(name + "1") else [])
+        return any(p == n or p.startswith(n + "_") for p in stm_header.peripherals for n in names)
+
+    for module in [m for m in modules if not defined_in_header(m[0], m[1])]:
+        LOGGER.info(f"Removing {module[1]} for {did.string}, since it is not defined in the CMSIS header")
+        modules.remove(module)
     modules = [m + peripherals.getPeripheralData(did, m, stm_header) for m in modules]
 
     p["modules"] = modules
