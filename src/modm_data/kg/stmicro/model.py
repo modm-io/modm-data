@@ -38,7 +38,7 @@ def kg_from_cubemx(db, data):
         """)
 
     # Add the peripherals and their type
-    for pbase, name, version, ptype, features, stype in sorted(data["modules"]):
+    for pbase, name, version, ptype, features in sorted(data["modules"]):
         instance = "NULL"
         if pbase != name:
             try:
