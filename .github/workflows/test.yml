@@ -40,6 +40,7 @@ jobs:
         if: always()
         uses: chartboost/ruff-action@v1
         with:
+          version: "0.14.10"
           src: "./src"
           args: "format --check"
 
@@ -47,5 +48,6 @@ jobs:
         if: always()
         uses: chartboost/ruff-action@v1
         with:
+          version: "0.14.10"
           src: "./src"
           args: "check"
