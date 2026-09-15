@@ -1,0 +1,67 @@
+name: Generate SVD Files
+
+on:
+  workflow_dispatch:
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  generate-svd-stmicro:
+    name: Generate STM32 SVD Files
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Python Dependencies
+        run: |
+          pip3 install -r tools/requirements.txt -e .
+
+      - name: Install ARM Toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi
+
+      - name: Clone STMicro Sources
+        run: |
+          make clone-sources-arm ext/stmicro/header/ ext/stmicro/cubehal/
+
+      - name: Generate SVD Files
+        run: |
+          python3 -m modm_data.header2svd.stmicro --all --output svd-archive/
+
+      - name: Upload SVD Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svd-logs
+          path: log/stmicro/svd
+          retention-days: 1
+
+      - name: Upload SVD Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: svd-archive
+          path: svd-archive/
+          retention-days: 7
+
+      - name: Zip SVD Files
+        if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+        run: |
+          zip -r svd-archive.zip svd-archive/
+
+      - name: Upload to Github Release
+        uses: softprops/action-gh-release@v2
+        if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+        with:
+          files: |
+            svd-archive.zip
