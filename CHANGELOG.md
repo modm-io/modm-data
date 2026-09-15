@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.4
 
 - Move the data extraction pipelines of all vendors from modm-devices.
 - Add Microchip AVR and SAM device pack downloader and ATDF parser.
@@ -10,6 +10,8 @@
 - Fix missing STM32 alternate function numbers for remapped pins and differently named signals.
 - Fix STM32 signal names for Ethernet CRS_DV, WL debug signals, and signals without peripheral prefix.
 - Assign STM32 DMA requests to the peripheral instance and ignore more CubeMX software modules.
+- Reconstruct the STM32 SVD files from the compiled CMSIS headers and the CubeHAL sources.
+- Publish the STM32 SVD files with the SVD Explorer on the homepage and attach them to releases.
 
 ## 0.0.3
 
