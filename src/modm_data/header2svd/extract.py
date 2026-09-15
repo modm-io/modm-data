@@ -26,6 +26,8 @@ import subprocess
 from pathlib import Path
 from dataclasses import dataclass, field
 
+from functools import cache
+
 import cxxheaderparser.simple
 import cxxheaderparser.types as ctypes
 
@@ -35,7 +37,7 @@ LOGGER = logging.getLogger(__name__)
 
 _CMSIS_PATH = ext_path("arm/cmsis/CMSIS/Core/Include")
 _CACHE_PATH = cache_path("cmsis/header2svd")
-_VERSION = 1
+_VERSION = 2
 
 
 @dataclass
@@ -74,6 +76,16 @@ class HeaderData:
     local_macros: dict[str, int] = field(default_factory=dict)
     """The position of all macro definitions in the header file itself,
     which excludes the macros defined in the included headers."""
+    interrupts: dict[str, int] = field(default_factory=dict)
+    """The interrupt numbers by name without the `_IRQn` suffix."""
+    instance_macros: dict[str, set[str]] = field(default_factory=dict)
+    """The identifiers checked by the `IS_*_INSTANCE(INSTANCE)` macros, including nested macros."""
+    type_descriptions: dict[str, str] = field(default_factory=dict)
+    """The descriptions of the structure typedefs."""
+    member_descriptions: dict[tuple[str, str], str] = field(default_factory=dict)
+    """The descriptions of the structure members by (typedef, member)."""
+    macro_descriptions: dict[str, str] = field(default_factory=dict)
+    """The descriptions of the macros and interrupts."""
 
 
 def _cpu(content: str) -> str:
@@ -116,7 +128,7 @@ def _anonymous_classes(classes) -> dict:
     }
 
 
-def _structs(header: Path, defines: list[str]) -> tuple[dict[str, list[Member]], dict[str, str], dict]:
+def _structs(header: Path, defines: list[str]) -> tuple[dict[str, list[Member]], dict[str, str], dict, dict]:
     output = _preprocess(header, defines)
     # Only parse the content of the device header itself, not the system headers
     lines, keep = [], False
@@ -180,21 +192,80 @@ def _structs(header: Path, defines: list[str]) -> tuple[dict[str, list[Member]],
         if cls is not None and cls.class_decl.classkey == "struct":
             structs[typedef.name] = members(cls, typedef.name)
     aliases = {name: target for name, target in aliases.items() if target in structs}
-    return structs, aliases, nested
+
+    interrupts = {}
+    for enum in parsed.namespace.enums:
+        for value in enum.values:
+            if value.name.endswith("_IRQn") and value.value is not None:
+                number = "".join(token.value for token in value.value.tokens)
+                if re.fullmatch(r"-?\d+", number):
+                    interrupts[value.name[:-5]] = int(number)
+    return structs, aliases, nested, interrupts
 
 
-def evaluate(header: Path, defines: list[str], expressions: list[tuple]) -> dict:
+def _clean(description: str) -> str:
+    return " ".join(description.replace("*", " ").split()).strip(" ,.")
+
+
+def _descriptions(content: str, data: HeaderData):
+    """Parses the descriptions of the structures, members and macros from the comments."""
+    for match in re.finditer(r"(?:/\*\*((?:(?!\*/).)*)\*/\s*)?typedef\s+struct\s*\w*\s*\{", content, flags=re.S):
+        end, depth = match.end(), 1
+        while depth and end < len(content):
+            depth += {"{": 1, "}": -1}.get(content[end], 0)
+            end += 1
+        if not (name := re.match(r"\s*(\w+)\s*;", content[end:])):
+            continue
+        typedef = name.group(1)
+        if match.group(1) and (brief := re.search(r"@brief\s+(.*?)(?:@|$)", match.group(1), flags=re.S)):
+            data.type_descriptions[typedef] = _clean(brief.group(1))
+        body = content[match.end() : end - 1]
+        for member, description in re.findall(r"(\w+)\s*(?:\[[^\]]*\])?\s*;\s*/\*!<\s*(.*?)\*/", body, flags=re.S):
+            description = re.sub(r",?\s*(?:Address\s+)?offset.*$", "", _clean(description), flags=re.I | re.S)
+            if description and not member.upper().startswith("RESERVED"):
+                data.member_descriptions.setdefault((typedef, member), description.strip(" ,."))
+    for name, description in re.findall(r"#define[ \t]+(\w+)[ \t]+[^\n]*?/\*!<(.*?)\*/", content):
+        if (description := _clean(description)) and not re.fullmatch(r"(0x)?[0-9A-Fa-f]+U?L?", description):
+            data.macro_descriptions.setdefault(name, description)
+    for name, description in re.findall(r"\b(\w+_IRQn)\s*=\s*-?\d+\s*,?\s*/\*!<(.*?)\*/", content):
+        data.macro_descriptions.setdefault(name, _clean(description))
+
+
+def _instance_macros(content: str) -> dict[str, set[str]]:
+    """:return: the identifiers of the IS_*_INSTANCE(INSTANCE) macros with nested macros expanded."""
+    content = re.sub(r"\\\s*\n", " ", content)
+    bodies = dict(re.findall(r"#define\s+(IS_\w+_INSTANCE)\s*\(\s*\w+\s*\)(.*)", content))
+
+    @cache
+    def expand(name, depth=0):
+        identifiers = set()
+        for identifier in re.findall(r"\b[A-Za-z_]\w*\b", bodies.get(name, "")):
+            if identifier in bodies and depth < 10:
+                identifiers |= expand(identifier, depth + 1)
+            elif identifier != "INSTANCE":
+                identifiers.add(identifier)
+        return frozenset(identifiers)
+
+    return {name: set(expand(name)) for name in bodies}
+
+
+def evaluate(
+    header: Path, defines: list[str], expressions: list[tuple], prelude: str = None, paths: list[Path] = None
+) -> dict:
     """
     Compiles a list of (key, expression) pairs in the context of the header and
     returns the integer values of all expressions that compiled successfully.
+
+    :param prelude: the source code to use instead of including the header.
+    :param paths: additional include paths.
     """
     expressions = list(expressions)
-    options = _compiler_options(header, defines)
+    options = _compiler_options(header, defines) + [f"-I{path}" for path in (paths or [])]
     with tempfile.TemporaryDirectory() as tmpdir:
         source, objfile, binfile = (Path(tmpdir) / name for name in ("values.c", "values.o", "values.bin"))
         while expressions:
-            lines = [
-                f'#include "{header.name}"',
+            lines = (prelude or f'#include "{header.name}"').splitlines()
+            lines += [
                 "#include <stddef.h>",
                 '__attribute__((used, section(".dm_values"))) const unsigned long long __dm_values[] = {',
             ]
@@ -226,11 +297,13 @@ def evaluate(header: Path, defines: list[str], expressions: list[tuple]) -> dict
 def _extract(header: Path, defines: list[str]) -> HeaderData:
     data = HeaderData(header, defines)
     data.macros = _macros(header, defines)
-    data.structs, data.aliases, nested = _structs(header, defines)
+    data.structs, data.aliases, nested, data.interrupts = _structs(header, defines)
 
     content = header.read_text(encoding="utf-8", errors="replace")
     for match in re.finditer(r"^\s*#\s*define\s+(\w+)", content, flags=re.M):
         data.local_macros.setdefault(match.group(1), match.start())
+    _descriptions(content, data)
+    data.instance_macros = _instance_macros(content)
 
     instances = {}
     for name, value in data.macros.items():
@@ -281,6 +354,33 @@ def _extract(header: Path, defines: list[str]) -> HeaderData:
         if (address := values.get(("address", name))) is not None:
             data.instances[name] = (typedef, address)
     return data
+
+
+def extract_values(header: Path, defines: list[str], sources: dict[str, tuple[str, list[str]]], paths: list[Path]):
+    """
+    Evaluates macros of additional source code in the context of a CMSIS header.
+    Source code that cannot be compiled is ignored.
+
+    :param sources: the source code and the names of the macros to evaluate by name.
+    :param paths: the include paths of the source code.
+    :return: the values of all macros that could be evaluated, which are cached.
+    """
+    hash = hashlib.sha1(header.read_bytes() + str(_VERSION).encode() + " ".join(defines).encode())
+    for name, (source, names) in sorted(sources.items()):
+        hash.update(" ".join([name, source, *sorted(names)]).encode())
+    cache = _CACHE_PATH / f"{header.stem}_values_{hash.hexdigest()[:10]}.pkl"
+    if cache.exists():
+        return pickle.loads(cache.read_bytes())
+    values = {}
+    for name, (source, names) in sorted(sources.items()):
+        expressions = [(n, n) for n in sorted(set(names)) if n not in values]
+        try:
+            values.update(evaluate(header, defines, expressions, source, paths))
+        except ValueError as error:
+            LOGGER.warning(f"Ignoring {name}: {str(error)[:2000]}")
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_bytes(pickle.dumps(values, protocol=pickle.HIGHEST_PROTOCOL))
+    return values
 
 
 def extract_header(header: Path, defines: list[str] = None) -> HeaderData:
