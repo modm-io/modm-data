@@ -59,6 +59,9 @@ build-homepage:
 	@python3 tools/scripts/synchronize_docs.py
 	@pdoc --mermaid -o docs/src/api -t docs/pdoc modm_data
 	@modm_pinout --all -o docs/src/pinout/
+	@python3 -m modm_data.header2svd.stmicro --all --output docs/src/svd/
+	@curl -fsSL --create-dirs -o docs/src/svd/index.html \
+		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/index.html
 	@(cd docs && mkdocs build)
 
 

@@ -43,6 +43,15 @@ the alternate registers, the registers paired by CubeHAL, the bit fields not
 supported by an instance, the unassigned interrupts and the differences to the
 ST SVD file.
 
+The SVD files are also published on the homepage with the
+[SVD Explorer](https://gist.github.com/salkinium/12a18032caa303697c6583937f6fcd16),
+which lists them from the `svd-files.json` file:
+
+```bash
+# Convert all CMSIS headers into the documentation folder
+python3 -m modm_data.header2svd.stmicro --all --output docs/src/svd/
+```
+
 ## Automatic Conversion
 
 To perform the steps automatically, you may also use `make`:
