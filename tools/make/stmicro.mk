@@ -201,12 +201,12 @@ clean-stmicro-html-svd:
 ## Convert the CMSIS device headers matching the pattern into SVD files and
 ## compare them with the ST SVD files. The report will be placed in
 ## log/stmicro/svd/header_%.txt.
-convert-stmicro-header-svd-%: log/stmicro/svd/ ext/stmicro/header/ ext/stmicro/svd/ ext/arm/cmsis/
+convert-stmicro-header-svd-%: log/stmicro/svd/ ext/stmicro/header/ ext/stmicro/cubehal/ ext/stmicro/svd/ ext/arm/cmsis/
 	@-python3 -m modm_data.header2svd.stmicro --compare --header $(@:convert-stmicro-header-svd-%=%)
 
 .PHONY: convert-stmicro-header-svd
 ## Convert all STMicro CMSIS device headers into SVD files.
-convert-stmicro-header-svd: log/stmicro/svd/ ext/stmicro/header/ ext/stmicro/svd/ ext/arm/cmsis/
+convert-stmicro-header-svd: log/stmicro/svd/ ext/stmicro/header/ ext/stmicro/cubehal/ ext/stmicro/svd/ ext/arm/cmsis/
 	@echo "Converting all CMSIS Headers to SVD."
 	@-python3 -m modm_data.header2svd.stmicro --all --compare
 

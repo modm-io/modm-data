@@ -26,6 +26,18 @@ def _format_report(report, differences) -> str:
     lines += [f"  {name}" for name in report.empty]
     lines += ["", f"Overlapping bit fields: {len(report.overlapping)}"]
     lines += [f"  {register}.{removed} overlaps {remaining}" for register, removed, remaining in report.overlapping]
+    lines += ["", f"Alternate registers of overlapping bit fields: {len(report.alternates)}"]
+    lines += [f"  {register}" for register in report.alternates]
+    lines += ["", f"Registers paired with bit field macros by CubeHAL: {len(set(report.hinted))}"]
+    lines += [f"  {register}: {prefix}_*" for register, prefix in sorted(set(report.hinted))]
+    lines += ["", f"Bit fields not supported by the instance: {len(report.restricted)}"]
+    restricted = defaultdict(list)
+    for peripheral, register in report.restricted:
+        restricted[peripheral].append(register)
+    lines += [f"  {peripheral}: {' '.join(registers)}" for peripheral, registers in restricted.items()]
+    lines += ["", f"Bit fields with enumerated values: {report.enumerations}"]
+    lines += ["", f"Unassigned interrupts: {len(report.interrupts)}"]
+    lines += [f"  {interrupt}" for interrupt in report.interrupts]
     if differences is not None:
         lines += ["", f"Differences to ST SVD: {len(differences)}"]
         lines += [f"  {line}" for line in differences]

@@ -42,8 +42,10 @@ from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from . import cubehal
 from ..extract import HeaderData, extract_header
-from ...svd import Device, Peripheral, Register, BitField
+from ...svd import Device, Peripheral, Register, BitField, EnumeratedValue
+from ...cubehal.registers import folder as cubehal_folder
 from ...utils import ext_path
 
 LOGGER = logging.getLogger(__name__)
@@ -97,6 +99,16 @@ class Report:
     """(register, removed bit field, remaining bit field) with overlapping bits."""
     renamed: list[tuple[str, str]] = field(default_factory=list)
     """(peripheral, register) that were renamed due to name collisions."""
+    hinted: list[tuple[str, str]] = field(default_factory=list)
+    """(register, bit field macro prefix) that were paired by the CubeHAL source code."""
+    restricted: list[tuple[str, str]] = field(default_factory=list)
+    """(peripheral, register.field) that are not supported by the instance."""
+    alternates: list[str] = field(default_factory=list)
+    """Registers that were split into alternate registers due to overlapping bit fields."""
+    interrupts: list[str] = field(default_factory=list)
+    """Interrupts that could not be assigned to a peripheral."""
+    enumerations: int = 0
+    """Number of bit fields with enumerated values."""
 
 
 @dataclass
@@ -108,6 +120,9 @@ class _Register:
     sub: str | None = None
     dim: int = 0
     type: str = ""
+    member: str = ""
+    macros: dict[str, str] = field(default_factory=dict)
+    """The bit field macro of each bit field."""
 
 
 def device_headers() -> list[Path]:
@@ -181,6 +196,11 @@ class _BitFields:
             names.append(f"{head}_{token}")
         self.assigned.update(names)
         return {name[len(prefix) :] if name.startswith(prefix) else token: name for name in names}
+
+    def take_prefix(self, prefix: str) -> dict[str, str]:
+        """:return: the bit fields of a register with the macro prefix, e.g. `FW_CR`."""
+        head, token = prefix.split("_", 1)
+        return self.take(head, token)
 
     def unassigned(self) -> list[str]:
         assigned = set(self.assigned)
@@ -338,8 +358,11 @@ def _name(kind: str, token: str, member: str, index: int, subindex: str, abbrevi
 
 
 class _Matcher:
-    def __init__(self, data: HeaderData, bitfields: _BitFields):
+    def __init__(self, data: HeaderData, bitfields: _BitFields, hints: dict = None, report: Report = None):
         self.bitfields = bitfields
+        self.hints = hints or {}
+        self.report = report
+        self.instances = {_strip_security(name) for name in data.instances}
         self.members = {typedef: [m.name for m in members] for typedef, members in data.structs.items()}
 
     def _heads(self, typedef, instance, parent, sub):
@@ -383,6 +406,17 @@ class _Matcher:
                 if "0" in name0:
                     name = re.sub(r"(?<![0-9])0(?![0-9])", str(index), name0, count=1)
                 return name, fields0
+        prefix = self.hints.get((typedef, member))
+        # Instance specific bit field macros must not be used for other instances, e.g. TIM1_AF1 for TIM6
+        head = prefix.split("_")[0] if prefix else None
+        if head in self.instances and head != _strip_security(instance or "") and head not in _type_heads(typedef):
+            prefix = None
+        # Bit field macros of arrays depend on the index, e.g. SYSCFG_ITLINE0_SR for IT_LINE_SR[0]
+        if not fields and prefix and index is None:
+            # The CubeHAL source code uses these bit field macros with the register
+            if self.report is not None:
+                self.report.hinted.append((f"{typedef}.{member}", prefix))
+            fields = self.bitfields.take_prefix(prefix)
         return name, fields
 
 
@@ -463,8 +497,13 @@ def _group_instances(instances, usb_blocks):
     return parents, virtual
 
 
-def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFields, report: Report):
-    """Splits non-contiguous bit fields and removes overlapping bit fields."""
+def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFields, report: Report) -> list[dict]:
+    """
+    Splits non-contiguous bit fields and removes overlapping bit fields.
+
+    :return: the bit fields of alternate registers by bit field name, e.g. the
+             input capture bit fields of TIM_CCMR1 that overlap the output compare bit fields.
+    """
     candidates = []
     for name, macro in fields.items():
         for position, width, index in bitfields.fields[macro]:
@@ -496,15 +535,18 @@ def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFiel
     result = []
     for candidate in candidates:
         cbits = bits(*candidate[1:3])
+        base = re.sub(r"(_ALL|\d+)$", "", candidate[0])
         others = [c for c in candidates if c is not candidate and bits(*c[1:3]) < cbits]
         covered = set().union(*(bits(*c[1:3]) for c in others)) if others else set()
-        if len(others) > 1 and covered == cbits:
+        # A mask of many bit fields or of bit fields with the same name, e.g. EXTI_IMR_IM for EXTI_IMR_MRx
+        similar = all(c[0].startswith(base) for c in others)
+        if len(others) > 1 and covered == cbits and (similar or len(others) >= 8):
             report.overlapping.append((register.name, candidate[0], others[0][0]))
             continue
         result.append(candidate)
     # Prefer non-alias and non-split bit fields in the order of definition
     result.sort(key=lambda c: (c[3] in bitfields.alias, c[4], bitfields.order.get(c[3], 0), c[1]))
-    used = {}
+    used, alternate = {}, []
     for fname, position, width, macro, split in result:
         overlap = next((used[b] for b in bits(position, width) if b in used), None)
         if overlap is not None and fname not in register.fields:
@@ -517,23 +559,124 @@ def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFiel
                 report.overlapping.append((register.name, overlap, fname))
                 overlap = None
         if overlap is not None or fname in register.fields:
+            # Bit fields with a different layout are an alternate function of the register
+            inside = any(
+                bits(position, width) <= bits(*register.fields[n])
+                for n in {used[b] for b in bits(position, width) if b in used}
+            )
+            # Bit fields inside another bit field are values, e.g. I2C_OAR2_OA2MASK01 in I2C_OAR2_OA2MSK
+            if overlap is not None and not split and macro not in bitfields.alias and not inside:
+                if register.fields[overlap] != (position, width):
+                    alternate.append((fname, position, width, macro))
+                    continue
             report.overlapping.append((register.name, fname, overlap or fname))
             continue
         register.fields[fname] = (position, width)
+        register.macros[fname] = macro
         used.update((b, fname) for b in bits(position, width))
 
+    # Build alternate registers from the overlapping bit fields
+    layers = []
+    while alternate:
+        layer, used, remaining = {}, {}, []
+        for fname, position, width, macro in alternate:
+            if any(b in used for b in bits(position, width)) or fname in layer:
+                remaining.append((fname, position, width, macro))
+                continue
+            layer[fname] = (position, width, macro)
+            used.update((b, fname) for b in bits(position, width))
+        # Bit fields of the register that do not overlap and do not belong to an overlapping bit field
+        conflicting = {re.sub(r"_\d+$", "", n) for n, (p, w) in register.fields.items() if bits(p, w) & set(used)}
+        for fname, (position, width) in register.fields.items():
+            if not bits(position, width) & set(used) and re.sub(r"_\d+$", "", fname) not in conflicting:
+                layer.setdefault(fname, (position, width, register.macros[fname]))
+        layers.append(layer)
+        alternate = remaining
+    return layers
 
-def memory_map(data: HeaderData, name: str = None) -> tuple[Device, Report]:
+
+def _interrupts(data: HeaderData, names: set[str], report: Report) -> dict[str, list[tuple[str, int, str]]]:
+    """:return: the (name, number, description) of the interrupts by peripheral name."""
+    interrupts = defaultdict(list)
+    for irq, number in sorted(data.interrupts.items(), key=lambda i: i[1]):
+        if number < 0:
+            continue
+        parts = irq.split("_")
+        tokens = {"_".join(parts[i:j]) for i in range(len(parts)) for j in range(i + 1, len(parts) + 1)}
+        matches = {n for n in names if n in tokens or any(n.endswith(f"_{token}") for token in tokens if "_" in token)}
+        if not matches:
+            # Numbered interrupt lines, e.g. EXTI0 or EXTI9_5 for EXTI
+            matches = {n for n in names if n in {re.sub(r"\d+$", "", token) for token in tokens}}
+        if not matches:
+            # Shared interrupts of numbered instances, e.g. ADC for ADC1 and ADC2
+            matches = {n for n in names if re.fullmatch(r"[A-Z]+\d+", n) and re.sub(r"\d+$", "", n) in tokens}
+        # Do not assign to both the sub-instance and its parent, e.g. DFSDM1_FLT0 to DFSDM1
+        matches = {n for n in matches if not any(m != n and m.startswith(n) for m in matches)}
+        description = data.macro_descriptions.get(f"{irq}_IRQn", "")
+        for match in matches:
+            interrupts[match].append((irq, number, description))
+        if not matches:
+            report.interrupts.append(irq)
+    return interrupts
+
+
+def _channels(data: HeaderData) -> dict[int, set[str]]:
+    """:return: the timer instances by capture/compare channel, e.g. IS_TIM_CC3_INSTANCE."""
+    channels = {}
+    for macro, identifiers in data.instance_macros.items():
+        if match := re.fullmatch(r"IS_TIM_CC(\d)_INSTANCE", macro):
+            channels[int(match.group(1))] = {_strip_security(i) for i in identifiers}
+    return channels
+
+
+def _restrict(pname: str, registers: list[_Register], restrictions, counters, channels, report: Report):
+    """Removes the bit fields and registers that are not supported by the instance."""
+    instance = _strip_security(pname)
+    for register in list(registers):
+        if not register.fields:
+            continue
+        for fname, macro in list(register.macros.items()):
+            keys = [(register.type, register.member, macro), (register.type, register.member, fname)]
+            # The capture/compare channel bit fields of timers, e.g. TIM_CCER_CC3E or TIM_CCR3
+            channel = None
+            if register.type == "TIM_TypeDef":
+                if match := re.match(r"(?:(?:CC|OC|IC)(\d)(?!\d)|OIS(\d)(?!\d))", fname):
+                    channel = int(match.group(1) or match.group(2))
+                elif match := re.fullmatch(r"CCR(\d)", register.member):
+                    channel = int(match.group(1))
+            if channel in channels and instance not in channels[channel]:
+                keys.append(None)
+            if None in keys or any(key in restrictions and instance not in restrictions[key] for key in keys):
+                report.restricted.append((pname, f"{register.name}.{fname}"))
+                del register.fields[fname]
+                del register.macros[fname]
+                continue
+            position, width = register.fields[fname]
+            # Instances without 32-bit counter only have 16-bit fields
+            if width > 16 and any(key in counters and instance not in counters[key] for key in keys):
+                report.restricted.append((pname, f"{register.name}.{fname}[{position + 15}:{position}]"))
+                register.fields[fname] = (position, 16)
+        if not register.fields:
+            registers.remove(register)
+
+
+def memory_map(data: HeaderData, name: str = None, cubehal_path: Path = None) -> tuple[Device, Report]:
     """
     Reconstructs the memory map of a CMSIS header.
 
     :param data: the extracted header data.
     :param name: the name of the device, defaults to the header name.
+    :param cubehal_path: the CubeHAL folder of the family for additional information.
     :return: the memory map as SVD device tree and a report of discrepancies.
     """
     report = Report(data.header.name)
     bitfields = _BitFields(data)
-    matcher = _Matcher(data, bitfields)
+    hints, restrictions, counters, enumerations = {}, {}, {}, {}
+    if cubehal_path is not None:
+        hints = cubehal.register_hints(data, bitfields, cubehal_path)
+        restrictions, counters = cubehal.instance_restrictions(data, bitfields, cubehal_path)
+        enumerations = cubehal.enumerations(data.header, data, bitfields, cubehal_path)
+    matcher = _Matcher(data, bitfields, hints, report)
 
     instances, seen = [], defaultdict(list)
     for iname, (typedef, address) in sorted(data.instances.items(), key=lambda i: (len(i[0]), i[0])):
@@ -578,9 +721,18 @@ def memory_map(data: HeaderData, name: str = None) -> tuple[Device, Report]:
         for rtype, member, index, offset, size in _flatten(data, typedef, address - paddress):
             parent = (ptype or None) if iname in parents else None
             rname, fields = matcher.match(rtype, member, index, subindex, pname, parent, iname)
-            register = _Register(rname, offset, size, {}, sub, type=rtype)
-            _bit_fields(register, fields, bitfields, report)
+            register = _Register(rname, offset, size, {}, sub, type=rtype, member=member)
+            layers = _bit_fields(register, fields, bitfields, report)
             registers.append(register)
+            if layers:
+                report.alternates.append(f"{pname}.{rname}")
+            for number, layer in enumerate(layers, start=1):
+                alternate = _Register(
+                    f"{rname}_ALT{number if len(layers) > 1 else ''}", offset, size, {}, sub, type=rtype, member=member
+                )
+                alternate.fields = {fname: (p, w) for fname, (p, w, _) in layer.items()}
+                alternate.macros = {fname: m for fname, (_, _, m) in layer.items()}
+                registers.append(alternate)
             if index is not None:
                 arrays[(rtype, member)].append(register)
         # Large arrays without bit fields are usually memories, e.g. PKA_RAM
@@ -592,7 +744,7 @@ def memory_map(data: HeaderData, name: str = None) -> tuple[Device, Report]:
                 registers.append(_Register(rname, elements[0].offset, elements[0].size, {}, sub, len(elements), rtype))
     for pname, member, offset in usb_registers:
         rname, fields = matcher.match("USB_OTG_TypeDef", member, instance=pname)
-        register = _Register(rname, offset, 4, {})
+        register = _Register(rname, offset, 4, {}, member=member)
         _bit_fields(register, fields, bitfields, report)
         peripherals[pname][2].append(register)
 
@@ -610,6 +762,11 @@ def memory_map(data: HeaderData, name: str = None) -> tuple[Device, Report]:
             for r in registers
             if (r.sub is None and (r.offset, r.type) not in subs) or (r.sub is not None and r.offset not in parent)
         ]
+
+    channels = _channels(data)
+    for pname, (address, ptype, registers) in peripherals.items():
+        _restrict(pname, registers, restrictions, counters, channels, report)
+    interrupts = _interrupts(data, {re.sub(r"_NS$", "", pname) for pname in peripherals}, report)
 
     device = Device(name or data.header.stem, compatible=data.defines[:1])
     signatures, addresses = {}, {}
@@ -633,6 +790,8 @@ def memory_map(data: HeaderData, name: str = None) -> tuple[Device, Report]:
         derived = signatures.setdefault(signature, pname) if ptype and registers else pname
         # The non-secure instances use the plain name
         peripheral = Peripheral(re.sub(r"_NS$", "", pname), ptype, address, parent=device)
+        peripheral.description = data.type_descriptions.get(ptype, "")
+        peripheral.interrupts = interrupts.get(peripheral.name, [])
         if (alternate := addresses.setdefault(address, peripheral.name)) != peripheral.name:
             peripheral.alternate = alternate
         if derived != pname:
@@ -641,13 +800,21 @@ def memory_map(data: HeaderData, name: str = None) -> tuple[Device, Report]:
         offsets = {}
         for register in registers:
             treg = Register(register.name, register.offset, register.size, parent=peripheral)
+            treg.description = data.member_descriptions.get((register.type, register.member), "")
             if register.dim:
                 treg.dim = register.dim
             # Registers at the same offset are alternates, e.g. unions
             if (alternate := offsets.setdefault(register.offset, register.name)) != register.name:
                 treg.alternate = alternate
             for fname, (position, width) in sorted(register.fields.items(), key=lambda f: f[1]):
-                BitField(fname, position, width, parent=treg)
+                tfield = BitField(fname, position, width, parent=treg)
+                macro = register.macros.get(fname, "")
+                tfield.description = data.macro_descriptions.get(macro, "")
+                values = enumerations.get(bitfields.alias.get(macro, macro), [])
+                if values and all(value < (1 << width) for _, value, _ in values):
+                    report.enumerations += 1
+                    for vname, value, description in values:
+                        EnumeratedValue(vname, value, description=description, parent=tfield)
 
     report.defines = len(bitfields.local)
     report.unassigned = bitfields.unassigned()
@@ -664,4 +831,4 @@ def memory_map_from_header(header: Path, core: str = None) -> tuple[Device, Repo
     """
     data = extract_header(header, header_defines(header, core))
     name = header.stem + (f"_{core}" if core else "")
-    return memory_map(data, name)
+    return memory_map(data, name, cubehal_folder(header.parent.parent.name))

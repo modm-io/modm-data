@@ -22,9 +22,26 @@ python3 -m modm_data.header2svd.stmicro --header stm32f4
 python3 -m modm_data.header2svd.stmicro --all --compare
 ```
 
+The CubeHAL source code in `ext/stmicro/cubehal` provides additional information,
+see `modm_data.header2svd.stmicro.cubehal`:
+
+- Register accesses like `SET_BIT(USARTx->CR1, USART_CR1_UE)` pair registers
+  with bit field macros when the naming heuristics fail.
+- The `IS_*_INSTANCE` macros documented in the LL functions remove the bit
+  fields and registers that are not supported by an instance of a shared
+  structure type, for example, the break and dead-time register of basic timers.
+- The LL function parameters are evaluated as enumerated values of bit fields.
+
+The interrupts and the descriptions of peripherals, registers and bit fields
+are taken from the CMSIS header. Overlapping bit fields with a different layout
+are placed into alternate registers, for example, the input capture bit fields
+of `TIM_CCMR1` in `CCMR1_ALT`.
+
 The report lists the bit field macros that could not be assigned to a register,
-the registers without bit fields, the overlapping bit fields that were removed
-and the differences to the ST SVD file.
+the registers without bit fields, the overlapping bit fields that were removed,
+the alternate registers, the registers paired by CubeHAL, the bit fields not
+supported by an instance, the unassigned interrupts and the differences to the
+ST SVD file.
 
 ## Automatic Conversion
 

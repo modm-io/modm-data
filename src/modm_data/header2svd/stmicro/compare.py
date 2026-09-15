@@ -90,7 +90,10 @@ def compare_svd(header: Device, svd: Device) -> list[str]:
         if hperipheral.address != speripheral.address:
             lines.append(f"{prefix}: address 0x{hperipheral.address:08x} != 0x{speripheral.address:08x}")
 
-        hregisters = {r.offset: r for r in registers(hperipheral)}
+        # Alternate registers are merged, e.g. TIM_CCMR1 and TIM_CCMR1_ALT
+        halternates = defaultdict(list)
+        for hregister in registers(hperipheral):
+            halternates[hregister.offset].append(hregister)
         # Alternate registers are merged, e.g. TIM_CCMR1_Output and TIM_CCMR1_Input
         sregisters = defaultdict(list)
         for sregister in speripheral.children:
@@ -98,15 +101,16 @@ def compare_svd(header: Device, svd: Device) -> list[str]:
         for offset, alternates in sregisters.items():
             snames = {_normalize_register(speripheral.name, r.name) for r in alternates}
             sname = "/".join(sorted(snames))
-            if (hregister := hregisters.get(offset)) is None:
+            if not (hregisters := halternates.get(offset)):
                 lines.append(f"{prefix}.{sname} @ 0x{offset:03x}: not defined in header")
                 continue
+            hregister = hregisters[0]
             rprefix = f"{prefix}.{hregister.name}"
             if hregister.name.replace("[%s]", "") not in snames:
                 lines.append(f"{rprefix}: named {sname} in SVD")
             if hregister.width not in {r.width for r in alternates}:
                 lines.append(f"{rprefix}: size {hregister.width} != {alternates[0].width} in SVD")
-            hfields = {(f.position, f.width): f.name for f in hregister.children}
+            hfields = {(f.position, f.width): f.name for r in reversed(hregisters) for f in r.children}
             sfields = defaultdict(set)
             for sregister in alternates:
                 for f in sregister.children:
@@ -128,7 +132,7 @@ def compare_svd(header: Device, svd: Device) -> list[str]:
                     lines.append(f"{rprefix}.{name}[{_range(bits)}]: not defined in SVD")
         if speripheral.children:
             for hregister in registers(hperipheral):
-                if hregister.offset not in sregisters:
+                if hregister.offset not in sregisters and not getattr(hregister, "alternate", None):
                     lines.append(f"{prefix}.{hregister.name} @ 0x{hregister.offset:03x}: not defined in SVD")
 
     for hperipheral in header.children:
