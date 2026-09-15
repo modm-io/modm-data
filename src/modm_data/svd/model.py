@@ -110,9 +110,18 @@ class BitField(Node):
             return NotImplemented
 
 
-# class EnumeratedValue(Node):
-#     def __init__(self, name, value):
-#         super().__init__(name, value=value)
+class EnumeratedValue(Node):
+    def __init__(self, name, value, **kw):
+        super().__init__(name, value=value, **kw)
+
+    def __hash__(self) -> int:
+        return hash(f"{self.name} {self.value}")
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, self.__class__):
+            return self.name == other.name and self.value == other.value
+        else:
+            return NotImplemented
 
 
 def _compare_trees(left, right):
