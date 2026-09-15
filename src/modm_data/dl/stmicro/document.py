@@ -75,6 +75,7 @@ _json_short_urls = {
         "SC2155",
         "SC2157",
         "SC2156",
+        "LN2411",
     ],
     # Technical docs for STM32 development boards
     "boards": [
