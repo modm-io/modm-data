@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import re
+import json
 import tqdm
 import logging
 import argparse
@@ -45,9 +46,9 @@ def _format_report(report, differences) -> str:
 
 
 def _convert(job):
-    header, core, compare = job
+    header, core, compare, output = job
     device, report = memory_map_from_header(header, core)
-    output_path = ext_path(f"stmicro/svd/header_{device.name}.svd")
+    output_path = output / f"header_{device.name}.svd"
     write_svd(format_svd(device), str(output_path))
     differences = None
     if compare and (svd_path := svd_for_header(header)) is not None:
@@ -68,18 +69,26 @@ def main():
     )
     parser.add_argument("--all", action="store_true", default=False, help="Convert all CMSIS device headers.")
     parser.add_argument("--compare", action="store_true", default=False, help="Compare with the ST SVD files.")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Folder for the SVD files and their svd-files.json list, defaults to ext/stmicro/svd.",
+    )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     args = parser.parse_args()
     logging.basicConfig(level=[logging.WARNING, logging.INFO, logging.DEBUG][min(args.verbose, 2)])
 
+    output = args.output or ext_path("stmicro/svd")
+    output.mkdir(exist_ok=True, parents=True)
     headers = [h for h in device_headers() if args.all or any(re.match(p, h.stem) for p in args.header)]
     jobs = []
     for header in headers:
         # Dual-core devices have a memory map for each core
         if "CORE_CM4 or CORE_CM7" in header.read_text(encoding="utf-8", errors="replace"):
-            jobs += [(header, "cm7", args.compare), (header, "cm4", args.compare)]
+            jobs += [(header, "cm7", args.compare, output), (header, "cm4", args.compare, output)]
         else:
-            jobs.append((header, None, args.compare))
+            jobs.append((header, None, args.compare, output))
     if not jobs:
         print("No matching CMSIS headers found!")
         return False
@@ -87,6 +96,11 @@ def main():
     Path("log/stmicro/svd").mkdir(exist_ok=True, parents=True)
     with ThreadPool() as pool:
         results = list(tqdm.tqdm(pool.imap_unordered(_convert, jobs), total=len(jobs), disable=len(jobs) < 5))
+
+    if args.output:
+        # The SVD Explorer lists the files from this file on static hosts
+        files = sorted(path.name for path in output.glob("header_*.svd"))
+        (output / "svd-files.json").write_text(json.dumps(files, indent=0) + "\n")
 
     defines = sum(r[1] for r in results)
     unassigned = sum(r[2] for r in results)
