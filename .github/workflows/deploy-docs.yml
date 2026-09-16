@@ -10,6 +10,10 @@ on:
 jobs:
   build-upload-docs:
     runs-on: ubuntu-latest
+    # Only one deployment at a time, otherwise the pushes to data.modm.io race.
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -22,6 +26,7 @@ jobs:
       - name: Install modm-data with docs dependencies
         run: |
           pip3 install -r tools/requirements.txt -e ".[docs]"
+          pip3 install git+https://github.com/modm-ext/modm-pinout.git@main
 
       - name: Install ARM toolchain and sources for the SVD files
         run: |
@@ -50,6 +55,10 @@ jobs:
           git config --global user.email "bot@modm.io"
           git config --global user.name "modm update bot"
           cd docs/data.modm.io
+          # The generated content replaces the repository wholesale, so rebase
+          # onto whatever is on the remote instead of merging into it.
+          git fetch origin main
+          git reset --soft origin/main
           git add -A
           git diff-index --quiet HEAD || git commit -m "Update"
           git push origin main
