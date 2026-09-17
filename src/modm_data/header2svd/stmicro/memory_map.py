@@ -509,12 +509,14 @@ def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFiel
         for position, width, index in bitfields.fields[macro]:
             split = len(bitfields.fields[macro]) > 1
             fname = f"{name}_{index}" if index else name
-            candidates.append((fname, position, width, macro, split))
+            candidates.append((fname, position, width, macro, split, name))
 
     def bits(position, width):
         return set(range(position, position + width))
 
-    # Remove values and bits of other bit fields, e.g. AFIO_EXTICR1_EXTI0_PB in AFIO_EXTICR1_EXTI0
+    # Remove values and bits of other bit fields, e.g. AFIO_EXTICR1_EXTI0_PB in AFIO_EXTICR1_EXTI0. The parent
+    # may be one part of a non-contiguous bit field, e.g. CRYP_CR_ALGOMODE_AES_KEY in bits 5:3 of CRYP_CR_ALGOMODE,
+    # which also uses bit 19, otherwise the values replace the bit field itself.
     result = []
     for candidate in candidates:
         cbits = bits(*candidate[1:3])
@@ -522,7 +524,10 @@ def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFiel
             (
                 c
                 for c in candidates
-                if c is not candidate and candidate[0].startswith(c[0] + "_") and cbits <= bits(*c[1:3]) and not c[4]
+                if c is not candidate
+                and candidate[0] != c[0]
+                and candidate[0].startswith(c[5] + "_")
+                and cbits <= bits(*c[1:3])
             ),
             None,
         )
@@ -547,7 +552,7 @@ def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFiel
     # Prefer non-alias and non-split bit fields in the order of definition
     result.sort(key=lambda c: (c[3] in bitfields.alias, c[4], bitfields.order.get(c[3], 0), c[1]))
     used, alternate = {}, []
-    for fname, position, width, macro, split in result:
+    for fname, position, width, macro, split, _name in result:
         overlap = next((used[b] for b in bits(position, width) if b in used), None)
         if overlap is not None and fname not in register.fields:
             # A narrow field at the edge of a much wider field, e.g. TIM_CNT_UIFCPY in TIM_CNT_CNT
@@ -769,6 +774,7 @@ def memory_map(data: HeaderData, name: str = None, cubehal_path: Path = None) ->
     interrupts = _interrupts(data, {re.sub(r"_NS$", "", pname) for pname in peripherals}, report)
 
     device = Device(name or data.header.stem, compatible=data.defines[:1])
+    access = {(typedef, member.name): member.access for typedef, members in data.structs.items() for member in members}
     signatures, addresses = {}, {}
     for pname, (address, ptype, registers) in sorted(peripherals.items(), key=lambda p: (p[1][0], p[0])):
         # Registers of sub-instances with colliding names are prefixed with the sub-instance name
@@ -791,6 +797,8 @@ def memory_map(data: HeaderData, name: str = None, cubehal_path: Path = None) ->
         # The non-secure instances use the plain name
         peripheral = Peripheral(re.sub(r"_NS$", "", pname), ptype, address, parent=device)
         peripheral.description = data.type_descriptions.get(ptype, "")
+        if ptype:
+            peripheral.group = re.sub(r"_?TypeDef$", "", ptype)
         peripheral.interrupts = interrupts.get(peripheral.name, [])
         if (alternate := addresses.setdefault(address, peripheral.name)) != peripheral.name:
             peripheral.alternate = alternate
@@ -800,6 +808,7 @@ def memory_map(data: HeaderData, name: str = None, cubehal_path: Path = None) ->
         offsets = {}
         for register in registers:
             treg = Register(register.name, register.offset, register.size, parent=peripheral)
+            treg.access = access.get((register.type, register.member), "read-write")
             treg.description = data.member_descriptions.get((register.type, register.member), "")
             if register.dim:
                 treg.dim = register.dim

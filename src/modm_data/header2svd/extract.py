@@ -37,7 +37,7 @@ LOGGER = logging.getLogger(__name__)
 
 _CMSIS_PATH = ext_path("arm/cmsis/CMSIS/Core/Include")
 _CACHE_PATH = cache_path("cmsis/header2svd")
-_VERSION = 2
+_VERSION = 3
 
 
 @dataclass
@@ -48,6 +48,10 @@ class Member:
     """Type name of the member, or `pointer` for pointer members."""
     length: str | None
     """The array length expression or `None` if the member is not an array."""
+    access: str = "read-write"
+    """`read-only` for members declared with `__I` or `__IM`, which expand to
+    `volatile const`. The `__O` qualifier expands to the same `volatile` as `__IO`,
+    so write-only members cannot be told apart, but ST does not use it."""
 
 
 @dataclass
@@ -152,6 +156,7 @@ def _structs(header: Path, defines: list[str]) -> tuple[dict[str, list[Member]],
             if isinstance(mtype, ctypes.Array):
                 length = "".join(token.value for token in mtype.size.tokens)
                 mtype = mtype.array_of
+            access = "read-only" if getattr(mtype, "const", False) else "read-write"
             if isinstance(mtype, (ctypes.Pointer, ctypes.FunctionType)) or not hasattr(mtype, "typename"):
                 if member.name:
                     result.append(Member(member.name, "pointer", length))
@@ -171,7 +176,7 @@ def _structs(header: Path, defines: list[str]) -> tuple[dict[str, list[Member]],
                 result.append(Member(member.name, subtype, length))
                 continue
             if member.name:
-                result.append(Member(member.name, segment.name, length))
+                result.append(Member(member.name, segment.name, length, access))
         # Anonymous unions and structures without a member name
         for cid, inner_cls in inner.items():
             if cid not in named:
