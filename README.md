@@ -56,7 +56,9 @@ flowchart LR
     B(HTML) -->|html| C
     C(Python) -->|owl| E
     D(CMSIS-SVD) -->|cmsis-svd| C
+    D -->|svd2variants| K
     E[OWL]
+    K[Peripheral Variants]
     F(CMSIS Header) -->|header2svd| D
     I(Open Pin Data) -->|cubemx| C
     G(CubeMX) -->|cubemx| C

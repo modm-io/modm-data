@@ -62,6 +62,12 @@ build-homepage:
 	@python3 -m modm_data.header2svd.stmicro --all --output docs/src/svd/
 	@curl -fsSL --create-dirs -o docs/src/svd/index.html \
 		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/index.html
+	@curl -fsSL --create-dirs -o ext/cache/svd2variants/feature-names-gemma.json \
+		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/feature-names-gemma.json || true
+	@python3 -m modm_data.svd2variants --all --input docs/src/svd/ \
+		--names ext/cache/svd2variants/feature-names-gemma.json --output docs/src/variants/
+	@curl -fsSL --create-dirs -o docs/src/variants/index.html \
+		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/variants.html
 	@(cd docs && mkdocs build)
 
 

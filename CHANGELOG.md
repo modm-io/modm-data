@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Merge the register maps of all STM32 peripheral instances into the smallest
+  set of binary, source and similar compatible variants and publish them with
+  the Peripheral Variant Explorer.
+- Add the register access to the SVD files reconstructed from the CMSIS headers.
+
 ## 0.0.4
 
 - Move the data extraction pipelines of all vendors from modm-devices.

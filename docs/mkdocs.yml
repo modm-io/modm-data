@@ -87,6 +87,8 @@ nav:
       - HTML to SVD: pipeline/html2svd.md
       #- HTML to OWL: pipeline/html2owl.md
       - Header to SVD: pipeline/header2svd.md
+      - SVD to Variants: pipeline/svd2variants.md
   - API Reference: api/modm_data.html
   - Pinouts: pinout/index.html
   - SVD Explorer: svd/index.html
+  - Peripheral Variants: variants/index.html

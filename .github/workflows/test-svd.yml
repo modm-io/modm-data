@@ -54,10 +54,33 @@ jobs:
           path: svd-archive/
           retention-days: 7
 
-      - name: Zip SVD Files
+      - name: Analyze Peripheral Variants
+        run: |
+          curl -fsSL --create-dirs -o ext/cache/svd2variants/feature-names-gemma.json \
+            https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/feature-names-gemma.json || true
+          python3 -m modm_data.svd2variants --all --input svd-archive/ --names ext/cache/svd2variants/feature-names-gemma.json \
+            --no-generate --output variants-archive/
+
+      - name: Upload Variant Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: variant-logs
+          path: log/stmicro/variants
+          retention-days: 1
+
+      - name: Upload Peripheral Variants
+        uses: actions/upload-artifact@v4
+        with:
+          name: variants-archive
+          path: variants-archive/
+          retention-days: 7
+
+      - name: Zip SVD Files and Peripheral Variants
         if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
         run: |
           zip -r svd-archive.zip svd-archive/
+          zip -r variants-archive.zip variants-archive/
 
       - name: Upload to Github Release
         uses: softprops/action-gh-release@v2
@@ -65,3 +88,4 @@ jobs:
         with:
           files: |
             svd-archive.zip
+            variants-archive.zip
