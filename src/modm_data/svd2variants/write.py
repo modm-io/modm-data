@@ -25,6 +25,8 @@ def _names(elements: ElementMap, location: tuple) -> list[str]:
 
 def _register_map(variant: Variant, features: dict[tuple, int], mode: str) -> list[dict]:
     """The merged register map of the variant, with every element tagged by its feature."""
+    # A bit field that moved inside its own register appears at each of its positions
+    relocated = {location for conflict in variant.relocated for location in conflict.locations | conflict.other}
     registers = {}
     descriptions = {}
     offsets = defaultdict(set)
@@ -57,6 +59,7 @@ def _register_map(variant: Variant, features: dict[tuple, int], mode: str) -> li
                         "names": _names(variant.elements, flocation),
                         "feature": features.get(flocation, -1),
                         "description": field.description,
+                        **({"relocated": True} if flocation in relocated else {}),
                     },
                 )
     for location, entry in registers.items():
@@ -98,6 +101,7 @@ def _variant(variant: Variant, index: int, devices: dict[str, int], conflicts: d
             for feature in variant.features
         ],
         "renames": sorted({str(rename) for rename in variant.renames}),
+        "relocated": sorted({str(conflict) for conflict in variant.relocated}),
         "conflicts": {
             str(other): [str(conflict) for conflict in found]
             for (left, other), found in conflicts.items()

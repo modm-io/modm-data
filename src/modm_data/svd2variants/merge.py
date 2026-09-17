@@ -53,7 +53,9 @@ addressed, so the comparison runs in two modes, see `scope_of`:
   register may move as long as it keeps its name and its layout. This is what
   code written against a CMSIS header needs, since the structure member
   abstracts the offset away. A renamed register is a different register here,
-  and simply becomes an optional feature of the merged map.
+  and simply becomes an optional feature of the merged map. A header
+  abstracts the position of a bit field just as much, so a bit field that
+  keeps its name and its register may move too, see `relocations`.
 - `similar`: like `source`, but conflicts that only exist in the
   documentation are tolerated, see `documentation_only`.
 """
@@ -366,6 +368,8 @@ class Difference:
 
     conflicts: list[Conflict | Overlap | Reuse] = _field(default_factory=list)
     widened: list[Conflict] = _field(default_factory=list)
+    relocated: list[Conflict] = _field(default_factory=list)
+    """Bit fields that moved inside their own register, see `relocations`."""
     tolerated: list = _field(default_factory=list)
     """Conflicts that only differ in the documentation, see `documentation_only`."""
     renames: list[Rename] = _field(default_factory=list)
@@ -426,6 +430,41 @@ def _related(names: set[NameKey], others: set[NameKey], width: int) -> bool:
             if short and (short == long or (len(short) >= 4 and short in long) or long.startswith(short[:3])):
                 return True
     return False
+
+
+def relocations(conflicts: list, renames: list[Rename]) -> tuple[list, list]:
+    """
+    Separates the conflicts that are only a bit field moving inside its own
+    register from the ones that are a different register map.
+
+    Source compatibility means that code written against a CMSIS header keeps
+    working, and a header abstracts the position of a bit field into its
+    `_Pos` and `_Msk` macros exactly as much as it abstracts the offset of a
+    register into a structure member. A bit field that keeps both its name and
+    its register is therefore merely *relocated*, for example the `IWDG_SR`
+    early wake-up flag `EWIF`, which sits in bit 15 on the STM32WBA2 and in
+    bit 14 on the STM32WBA5.
+
+    A bit field that is *permuted* inside its register is not relocated, since
+    its position is what it means: the `GTZC_TZSC_SECCFGR1` bit of every
+    peripheral differs per device, so bit 9 is `USART2` on one device and
+    `WWDG` on another. A permutation therefore renames every position it
+    touches, while a relocation moves into bits that nobody else claims.
+
+    :return: the conflicts that are a different register map and the ones that
+             are only a relocation.
+    """
+    renamed = {rename.location for rename in renames}
+    silicon, relocated = [], []
+    for conflict in conflicts:
+        if isinstance(conflict, Conflict) and conflict.name[0] == "F" and conflict.kind == "moved":
+            locations = conflict.locations | conflict.other
+            same_register = len({location[1] for location in locations}) == 1
+            if same_register and renamed.isdisjoint(locations):
+                relocated.append(conflict)
+                continue
+        silicon.append(conflict)
+    return silicon, relocated
 
 
 def documentation_only(conflicts: list) -> tuple[list, list]:
@@ -491,7 +530,7 @@ def documentation_only(conflicts: list) -> tuple[list, list]:
     return silicon, documentation
 
 
-def compare(left: ElementMap, right: ElementMap, widening: bool = True, similar: bool = False) -> Difference:
+def compare(left: ElementMap, right: ElementMap, widening: bool = True, mode: str = "binary") -> Difference:
     """
     Compares two register maps, see the module documentation for the rules.
 
@@ -499,8 +538,11 @@ def compare(left: ElementMap, right: ElementMap, widening: bool = True, similar:
     :param right: the register map to compare.
     :param widening: whether a bit field that only grew into the reserved bits
                      above it is an optional extension instead of a conflict.
-    :param similar: whether differences in the documentation are tolerated, see
-                    `documentation_only`.
+    :param mode: `binary` locates elements by register address, `source` by
+                 register name and also tolerates a bit field that moved inside
+                 its own register, see `relocations`, and `similar` also
+                 tolerates differences in the documentation, see
+                 `documentation_only`.
     :return: the differences between both maps.
     """
     conflicts, renames = left.compare(right)
@@ -511,14 +553,18 @@ def compare(left: ElementMap, right: ElementMap, widening: bool = True, similar:
     if widening:
         widened = [conflict for conflict in conflicts if conflict.kind == "widened"]
         conflicts = [conflict for conflict in conflicts if conflict.kind != "widened"]
+    relocated = []
+    if mode != "binary":
+        conflicts, relocated = relocations(conflicts, renames)
     tolerated = []
-    if similar:
+    if mode == "similar":
         conflicts, tolerated = documentation_only(conflicts)
     # Two maps without a single common register describe unrelated hardware
     disjoint = bool(left.names) and bool(right.names) and left.scopes.isdisjoint(right.scopes)
     return Difference(
         conflicts=conflicts,
         widened=widened,
+        relocated=relocated,
         tolerated=tolerated,
         renames=renames,
         only_left=set(left.names) - set(right.names),

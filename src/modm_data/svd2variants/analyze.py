@@ -62,6 +62,7 @@ class Variant:
     members: list["Member"] = _field(default_factory=list, repr=False)
     elements: ElementMap = _field(default_factory=ElementMap, repr=False)
     renames: list[Rename] = _field(default_factory=list, repr=False)
+    relocated: list[Conflict] = _field(default_factory=list, repr=False)
     core: set[LocationKey] = _field(default_factory=set, repr=False)
     features: list[Feature] = _field(default_factory=list, repr=False)
 
@@ -81,10 +82,11 @@ class Variant:
     def names(self) -> set[str]:
         return {instance.name for member in self.members for instance in member.instances}
 
-    def add(self, member: "Member", renames: list[Rename]):
+    def add(self, member: "Member", renames: list[Rename], relocated: list[Conflict]):
         self.members.append(member)
         self.elements.update(member.elements)
         self.renames += renames
+        self.relocated += relocated
 
     def described(self, mode: str) -> dict[LocationKey, tuple[str, str, str, str]]:
         """:return: the kind, register name, name and description of every element."""
@@ -182,19 +184,20 @@ def variants_of(
         group.ignored = sorted({r.name for i in instances for r in i.shape.registers if ignored.match(r.name)})
     for shape, shape_instances in _shapes(instances, ignored).items():
         member = Member(shape, ElementMap.from_shape(shape, mode), shape_instances)
-        best, shared, renames = None, -1, []
+        best, shared, renames, relocated = None, -1, [], []
         for variant in group.variants:
-            difference = compare(variant.elements, member.elements, widening, mode == "similar")
+            difference = compare(variant.elements, member.elements, widening, mode)
             if not difference.compatible:
                 continue
             common = len(set(variant.elements.names) & set(member.elements.names))
             if common > shared:
-                best, shared, renames = variant, common, difference.renames
+                best, shared = variant, common
+                renames, relocated = difference.renames, difference.relocated
         if best is None:
             best = Variant(name)
             group.variants.append(best)
-            renames = []
-        best.add(member, renames)
+            renames, relocated = [], []
+        best.add(member, renames, relocated)
 
     # A merged map collects aliases that are later evidence for a rename, so a
     # conflict that kept two shapes apart may be gone once both variants are
@@ -204,20 +207,22 @@ def variants_of(
     while merged:
         merged = False
         for small in sorted(group.variants, key=lambda v: len(v.instances)):
-            best, shared, renames = None, -1, []
+            best, shared, renames, relocated = None, -1, [], []
             for large in group.variants:
                 if large is small:
                     continue
-                difference = compare(large.elements, small.elements, widening, mode == "similar")
+                difference = compare(large.elements, small.elements, widening, mode)
                 if not difference.compatible:
                     continue
                 common = len(set(large.elements.names) & set(small.elements.names))
                 if common > shared:
-                    best, shared, renames = large, common, difference.renames
+                    best, shared = large, common
+                    renames, relocated = difference.renames, difference.relocated
             if best is not None:
                 for member in small.members:
-                    best.add(member, [])
+                    best.add(member, [], [])
                 best.renames += small.renames + renames
+                best.relocated += small.relocated + relocated
                 group.variants.remove(small)
                 merged = True
                 break
@@ -233,6 +238,6 @@ def conflicts_between(variants: list[Variant], mode: str = "binary") -> dict[tup
     conflicts = {}
     for left in range(len(variants)):
         for right in range(left + 1, len(variants)):
-            difference = compare(variants[left].elements, variants[right].elements, similar=mode == "similar")
+            difference = compare(variants[left].elements, variants[right].elements, mode=mode)
             conflicts[(left, right)] = difference.conflicts
     return conflicts

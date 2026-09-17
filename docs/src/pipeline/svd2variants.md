@@ -75,10 +75,28 @@ addressed, so the analysis runs in three modes:
 - `source`: elements are located by the **name** of their register, so a
   register may move as long as it keeps its name and its layout. This is what
   code written against a CMSIS header needs, since the structure member
-  abstracts the offset away.
+  abstracts the offset away. A header abstracts the *position* of a bit field
+  just as much, so a bit field may move too, see
+  `modm_data.svd2variants.merge.relocations`.
 - `similar`: like `source`, but differences that only exist in the
   documentation are tolerated, see `modm_data.svd2variants.merge.documentation_only`.
   This is a heuristic for how many implementations are *essentially* the same.
+
+A bit field that keeps both its name and its register but sits at another
+position is *relocated* rather than in conflict, since a header hides the
+position behind its `_Pos` and `_Msk` macros exactly as it hides the offset of
+a register behind a structure member. This is the only difference between the
+two `IWDG` implementations: the early wake-up flag `IWDG_SR_EWIF` is bit 15 on
+the STM32WBA2 and bit 14 on the STM32WBA5, which the headers, the ST SVD files
+and RM0521 and RM0493 all agree on. Without this rule the flag alone splits
+every STM32 into two watchdogs.
+
+A bit field that is *permuted* inside its register is not relocated, since its
+position is what it means. Bit 9 of `GTZC_TZSC_SECCFGR1` is `USART2` on one
+device and `WWDG` on another, so a permutation renames every position it
+touches, while a relocation moves into bits that nobody else claims. The
+relocated fields are drawn at each of their positions in the explorer and
+listed per variant.
 
 Neither mode is strictly coarser than the other. Source compatibility merges
 the two GPIO implementations into one, because the STM32F1 `IDR` at `0x08` and
