@@ -33,6 +33,8 @@ def _format_peripheral(xmlnode, treenode):
     _add_element(peripheral, "name", treenode.name)
     if description := getattr(treenode, "description", None):
         _add_element(peripheral, "description", description)
+    if group := getattr(treenode, "group", None):
+        _add_element(peripheral, "groupName", group)
     if alternate := getattr(treenode, "alternate", None):
         _add_element(peripheral, "alternatePeripheral", alternate)
     _add_element(peripheral, "baseAddress", hex(treenode.address))
@@ -62,6 +64,8 @@ def _format_register(xmlnode, treenode):
         _add_element(register, "alternateRegister", alternate)
     _add_element(register, "addressOffset", hex(treenode.offset))
     _add_element(register, "size", hex(treenode.width * 8))
+    if access := getattr(treenode, "access", None):
+        _add_element(register, "access", access)
     if treenode.children:
         return _add_element(register, "fields")
     else:
