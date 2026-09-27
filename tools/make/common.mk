@@ -54,8 +54,8 @@ format:
 .PHONY: build-homepage
 ## Generate the entire homepage to /docs.
 build-homepage:
-	@rm -rf docs/data.modm.io/docs/
-	@mkdir -p docs/data.modm.io/docs/
+	@rm -rf docs/data.modm.dev/docs/
+	@mkdir -p docs/data.modm.dev/docs/
 	@python3 tools/scripts/synchronize_docs.py
 	@pdoc --mermaid -o docs/src/api -t docs/pdoc modm_data
 	@modm_pinout --all -o docs/src/pinout/

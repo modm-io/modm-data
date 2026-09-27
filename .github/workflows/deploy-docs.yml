@@ -10,7 +10,7 @@ on:
 jobs:
   build-upload-docs:
     runs-on: ubuntu-latest
-    # Only one deployment at a time, otherwise the pushes to data.modm.io race.
+    # Only one deployment at a time, otherwise the pushes to data.modm.dev race.
     concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -35,13 +35,13 @@ jobs:
           make clone-sources-arm ext/stmicro/header/ ext/stmicro/cubehal/
 
 
-      - name: Clone modm-ext/data.modm.io repository
+      - name: Clone modm-ext/data.modm.dev repository
         if: startsWith(github.ref, 'refs/heads/main')
         uses: actions/checkout@v4
         with:
-          repository: modm-ext/data.modm.io
-          ssh-key: ${{secrets.SSH_KEY_DATA_MODM_IO}}
-          path: docs/data.modm.io
+          repository: modm-ext/data.modm.dev
+          ssh-key: ${{secrets.SSH_KEY_DATA_MODM_DEV}}
+          path: docs/data.modm.dev
 
 
       - name: Build Homepage
@@ -54,9 +54,33 @@ jobs:
         run: |
           git config --global user.email "bot@modm.io"
           git config --global user.name "modm update bot"
-          cd docs/data.modm.io
+          cd docs/data.modm.dev
           # The generated content replaces the repository wholesale, so rebase
           # onto whatever is on the remote instead of merging into it.
+          git fetch origin main
+          git reset --soft origin/main
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "Update"
+          git push origin main
+
+
+      # TODO: Remove once data.modm.io redirects to data.modm.dev
+      - name: Clone modm-ext/data.modm.io repository
+        if: startsWith(github.ref, 'refs/heads/main')
+        uses: actions/checkout@v4
+        with:
+          repository: modm-ext/data.modm.io
+          ssh-key: ${{secrets.SSH_KEY_DATA_MODM_IO}}
+          path: docs/data.modm.io
+
+
+      - name: Push New Docs to data.modm.io
+        if: startsWith(github.ref, 'refs/heads/main')
+        run: |
+          rm -rf docs/data.modm.io/docs
+          cp -r docs/data.modm.dev/docs docs/data.modm.io/docs
+          echo "data.modm.io" > docs/data.modm.io/docs/CNAME
+          cd docs/data.modm.io
           git fetch origin main
           git reset --soft origin/main
           git add -A

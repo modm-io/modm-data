@@ -84,7 +84,7 @@ sources = extract(readme, "inputsources")
 # remove html comments
 readme = re.sub(r"((<!--webignore-->.*?<!--/webignore-->)|(<!--links-->.*?<!--/links-->))\n", "", readme, flags=re.DOTALL | re.MULTILINE)
 readme = re.sub(r"<!--.*?-->", "", readme)
-readme = readme.replace("https://data.modm.io", "")
+readme = readme.replace("https://data.modm.io", "").replace("https://data.modm.dev", "")
 
 template(index_in_path, index_path, {"content": readme, "links": links})
 template(pipelines_in_path, pipelines_path, {"content": pipelines, "links": links})

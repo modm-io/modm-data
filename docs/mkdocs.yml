@@ -1,7 +1,7 @@
 site_name: 'modm-data: Semantic Hardware Description'
 site_description: 'Semantic Hardware Description'
 site_author: 'Niklas Hauser'
-site_url: 'https://data.modm.io'
+site_url: 'https://data.modm.dev'
 
 # Repository
 repo_name: modm-io/modm-data
@@ -11,7 +11,7 @@ copyright: 'Copyright &copy 2022-<script>document.write(new Date().getFullYear()
 
 # Turn around for GitHub Hosting in /docs
 docs_dir: 'src'
-site_dir: 'data.modm.io/docs'
+site_dir: 'data.modm.dev/docs'
 extra_css: []
 
 theme:
