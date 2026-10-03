@@ -7,8 +7,12 @@ import argparse
 from pathlib import Path
 
 from modm_data.html.document import Document
-from modm_data.html2pinout import board_bridges_from_user_manual, board_pinouts_from_user_manual
-from modm_data.html2pinout.signals import board_uses, device_for_board, device_signals
+from modm_data.html2pinout import (
+    board_bridges_from_user_manual,
+    board_pinouts_from_user_manual,
+    inherit_bridge_defaults,
+)
+from modm_data.html2pinout.signals import board_uses, device_for_board, device_signals, has_board_file
 from modm_data.utils import ext_path
 
 
@@ -39,15 +43,27 @@ def main():
     for path in paths:
         document = Document(path.absolute())
         for board, connectors in board_pinouts_from_user_manual(document).items():
+            pins = sum(len(c["pins"]) for c in connectors.values())
+            # Several manuals may name a board, the one that describes the most of it is its own
+            if board in pinouts and pins <= sum(len(c["pins"]) for c in pinouts[board]["connectors"].values()):
+                continue
             pinouts[board] = {"board": board, "document": document.fullname, "connectors": connectors}
-        for board, bridges in board_bridges_from_user_manual(document).items():
-            if board in pinouts:
+        bridges = board_bridges_from_user_manual(document)
+        # Older revisions of the manual may still know the defaults that this one lost
+        older = sorted(args.input.glob(f"{document.name}-v*"), key=_version, reverse=True)
+        for old in older if not args.document else []:
+            missing = any(not any(o["default"] for o in b["states"]) for bs in bridges.values() for b in bs)
+            if missing and old != path:
+                inherit_bridge_defaults(bridges, board_bridges_from_user_manual(Document(old.absolute())), old.name)
+        for board, bridges in bridges.items():
+            if pinouts.get(board, {}).get("document") == document.fullname:
                 pinouts[board]["bridges"] = bridges
 
     boards = []
     for board, data in sorted(pinouts.items()):
-        # Family names like NUCLEO-WB55 describe the same board as NUCLEO-WB55RG
-        if any(other != board and other.startswith(board) for other in pinouts):
+        # Family names like NUCLEO-WB55 or NUCLEO-WL55JC describe the same board as NUCLEO-WB55RG or
+        # NUCLEO-WL55JC1. A real board like NUCLEO-L452RE next to NUCLEO-L452RE-P has its own description.
+        if any(other != board and other.startswith(board) for other in pinouts) and not has_board_file(board):
             continue
         # Only the signals of the GPIOs on the connectors are of interest
         gpios = {p["signal"] for c in data["connectors"].values() for p in c["pins"].values() if p["kind"] == "gpio"}

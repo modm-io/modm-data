@@ -88,14 +88,22 @@ def device_signals(name: str) -> dict[str, dict[str, int | None]]:
     return {gpio: dict(sorted(names.items())) for gpio, names in signals.items()}
 
 
+def _board_files(board: str) -> list[Path]:
+    return sorted((_cubemx_path() / "plugins/boardmanager/boards").glob(f"*_Nucleo_{board}_*_Board_AllConfig.ioc"))
+
+
+def has_board_file(board: str) -> bool:
+    """:return: whether CubeMX describes a board with exactly this name."""
+    return bool(_board_files(board))
+
+
 def board_uses(board: str) -> dict[str, dict[str, str]]:
     """
     :param board: A board name like `NUCLEO-F429ZI`.
     :return: `gpio -> {use, label, part, signal}` for all GPIOs that are connected to something on the board
              itself, like the ST-LINK, an Ethernet PHY, a crystal, LEDs or buttons.
     """
-    paths = sorted((_cubemx_path() / "plugins/boardmanager/boards").glob(f"*_Nucleo_{board}_*_Board_AllConfig.ioc"))
-    if not paths:
+    if not (paths := _board_files(board)):
         return {}
     pins = {}
     # The shortest name is the default configuration without TrustZone or multi-core variants

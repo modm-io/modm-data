@@ -64,3 +64,12 @@ def test_bridges():
     # Brackets list the GPIO of each bridge or name the whole group
     cell = "SB58 (PA1), SB62 (PC1) (Ethernet)"
     assert re.findall(r"\(([^()]*)\)", cell) == ["PA1", "PC1", "Ethernet"]
+
+
+def test_transcribed():
+    from modm_data.html2pinout.transcribed import TRANSCRIBED
+
+    sizes = {doc: [len(names.split()) for names in connectors.values()] for doc, (_, connectors) in TRANSCRIBED.items()}
+    assert sizes == {"UM2324": [38, 38], "UM2206": [38, 38], "UM2953": [38, 38], "UM2592": [12, 12], "UM2581": [2, 2]}
+    assert _signal("5V-USB-CHG") == ("5V_USB_CHGR", "power")
+    assert _signal("5V-STLINK") == ("5V_STLK", "power")

@@ -12,8 +12,9 @@ import re
 import logging
 from collections import defaultdict
 from ..html.document import Document
+from .transcribed import BRIDGES, TRANSCRIBED
 
-__all__ = ["board_pinouts_from_user_manual", "board_bridges_from_user_manual"]
+__all__ = ["board_pinouts_from_user_manual", "board_bridges_from_user_manual", "inherit_bridge_defaults"]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ _GPIO = re.compile(r"(?<![A-Z0-9])P[A-Q]\d{1,2}(?!\d)")
 _BRIDGE = re.compile(r"\b(?:SB|JP)\d+\b")
 _STLINK = re.compile(r"(?:P[A-K]\d+\W+(?:and\W+)?)+(?:on|of)\W+(?:the\W+)?ST-?LINK")
 _CN = re.compile(r"\bCN\d+\b")
-_BOARD = re.compile(r"NUCLEO-(?:[FGLHUCN]|WBA?|WL)\d[0-9A-Z]*(?:-[PQ])?\b")
+_BOARD = re.compile(r"NUCLEO-(?:[FGLHUCN]|WBA?|WL)\d(?![0-9A-Z]*XX)[0-9A-Z]*(?:-[PQ])?\b")
 
 # The manuals spell the same signal in many ways
 _SIGNALS = [
@@ -35,7 +36,8 @@ _SIGNALS = [
     (r"\+?3(\.3 ?V|V3)", "3V3"),
     (r"\+?5 ?V( OUTPUT)?", "5V"),
     (r"5V_EXT", "E5V"),
-    (r"U5V|5V_(USB_)?STL(IN)?K|VBUS_STL ?K", "5V_STLK"),
+    (r"U5V|5V[-_](USB_)?STL(IN)?K|VBUS_STL ?K", "5V_STLK"),
+    (r"5V[-_]USB[-_]CHGR?", "5V_USB_CHGR"),
     (r"5V[_ ]INT.*", "5V_INT"),
     (r"IO ?REF|3V3 \(IOREF\)|3V3 I/O", "IOREF"),
     (r"VDDA|AVVD/VREF\+", "AVDD"),
@@ -89,9 +91,13 @@ def _field(header: str) -> str:
 
 
 def _boards(html: str) -> set[str]:
-    boards = set(_BOARD.findall(html))
-    # Family names like NUCLEO-WB55 are only prefixes of the real board names
-    return {b for b in boards if not any(o != b and o.startswith(b) for o in boards)}
+    return set(_BOARD.findall(html))
+
+
+def _document_boards(chapters: list) -> set[str]:
+    # The title, features and ordering information name the boards of the manual, later chapters also name others
+    boards = set().union(*(_boards(c._path.read_text()) for c in chapters if c.number <= 2))
+    return boards or set().union(*(_boards(c._path.read_text()) for c in chapters))
 
 
 def _groups(header: list[str]) -> dict[int, list[int]]:
@@ -186,8 +192,7 @@ def board_pinouts_from_user_manual(document: Document) -> dict[str, dict[str, di
              pin), `label` (connector pin name), `net`, `function`, `remark` and `bridge`.
     """
     chapters = sorted(document.chapters(), key=lambda c: c.number)
-    boards = next((b for c in chapters[:1] if (b := _boards(c._path.read_text()))), None)
-    boards = boards or set().union(*(_boards(c._path.read_text()) for c in chapters))
+    boards = _document_boards(chapters)
     pinouts = defaultdict(dict)
 
     for chapter in chapters:
@@ -216,6 +221,15 @@ def board_pinouts_from_user_manual(document: Document) -> dict[str, dict[str, di
                             continue
                         current[number] = pin
 
+    # Some pinouts are only in a figure or got lost in the conversion to HTML
+    source, transcribed = TRANSCRIBED.get(document.name, ("", {}))
+    for connectors in pinouts.values():
+        for connector, names in transcribed.items():
+            pins = connectors.setdefault(connector, {"type": "morpho", "pins": {}})["pins"]
+            for number, name in enumerate(names.split(), start=1):
+                signal, kind = _signal(name)
+                pins.setdefault(number, {"signal": signal, "kind": kind, "label": name, "remark": f"From {source}"})
+
     for connectors in pinouts.values():
         for connector in connectors.values():
             connector["pins"] = dict(sorted(connector["pins"].items()))
@@ -231,13 +245,12 @@ def board_bridges_from_user_manual(document: Document) -> dict[str, list[dict]]:
     Solder bridges and jumpers change what a pin is connected to. The manuals describe their effect only as
     text, so the bridges are linked to the GPIOs that their descriptions mention.
 
-    :return: `board -> [{ids, name, gpios, pins, states: [{state, default, text}]}]` for all NUCLEO boards in
+    :return: `board -> [{ids, name, source, gpios, pins, states: [{state, default, text}]}]` for all NUCLEO boards in
              the user manual. The default state is printed in bold. `pins` maps a single bridge of a group to
              its GPIOs, where the manual says so.
     """
     chapters = sorted(document.chapters(), key=lambda c: c.number)
-    boards = next((b for c in chapters[:1] if (b := _boards(c._path.read_text()))), None)
-    boards = boards or set().union(*(_boards(c._path.read_text()) for c in chapters))
+    boards = _document_boards(chapters)
     bridges = defaultdict(dict)
 
     for chapter in chapters:
@@ -246,12 +259,13 @@ def board_bridges_from_user_manual(document: Document) -> dict[str, list[dict]]:
                 continue
             columns, rows = range(table.columns), range(table._hrows, table.rows)
             header = [_key(_text(table.cell(x, table._hrows - 1))) for x in columns]
-            # The bridge column is the one naming the most bridges, since the headers are ambiguous
+            # The headers are ambiguous, so the bridge column is the first one that names bridges in most rows.
+            # Columns to its right may list even more of them, for example the mutually exclusive ones.
             named = [sum(bool(_BRIDGE.search(_text(table.cell(x, y)))) for y in rows) for x in columns]
             state = next((x for x in columns if re.search(r"state|setting|status|value|position", header[x])), None)
             if not max(named) or state is None:
                 continue
-            bridge = named.index(max(named))
+            bridge = next(x for x in columns if named[x] >= max(named) / 2)
             others = [x for x in columns if x not in {bridge, state}]
 
             for y in rows:
@@ -269,15 +283,52 @@ def board_bridges_from_user_manual(document: Document) -> dict[str, list[dict]]:
                 # The pins of the ST-LINK microcontroller are not the pins of the board
                 gpios = _GPIO.findall(_STLINK.sub("", f"{cell} {name} {text}"))
                 for board in _boards(table.caption()) or boards:
-                    entry = bridges[board].setdefault(ids, {"ids": list(ids), "name": name, "gpios": [], "states": []})
+                    # Boards made of two PCBs number their bridges twice, so the table is part of the identity
+                    entry = bridges[board].setdefault(
+                        (table.caption(), ids),
+                        {"ids": list(ids), "name": name, "source": _text(table._caption), "gpios": [], "states": []},
+                    )
                     entry.setdefault("pins", {}).update({i: g for i, g in pins.items() if g})
                     entry["gpios"] = sorted(set(entry["gpios"]) | set(gpios))
-                    entry["states"].append(
-                        {
-                            "state": _text(table.cell(state, y)),
-                            "default": "<b>" in table.cell(state, y).html,
-                            "text": text,
-                        }
-                    )
+                    option = {
+                        "state": _text(table.cell(state, y)),
+                        "default": "<b>" in table.cell(state, y).html,
+                        "text": text,
+                    }
+                    # Some tables list a bridge once for every feature it affects
+                    same = next((o for o in entry["states"] if o["state"] == option["state"]), None)
+                    if same is None:
+                        entry["states"].append(option)
+                    else:
+                        same["default"] |= option["default"]
+                        if text not in same["text"]:
+                            same["text"] += " " + text
 
-    return {board: list(entries.values()) for board, entries in sorted(bridges.items())}
+    # A bridge with only one described state is delivered in it
+    for entries in bridges.values():
+        for entry in entries.values():
+            if len(entry["states"]) == 1:
+                entry["states"][0]["default"] = True
+
+    return {
+        board: list(bridges[board].values()) + BRIDGES.get(board, [])
+        for board in sorted(boards | bridges.keys())
+        if board in bridges or board in BRIDGES
+    }
+
+
+def inherit_bridge_defaults(bridges: dict[str, list[dict]], older: dict[str, list[dict]], source: str):
+    """
+    Newer revisions of a manual sometimes lose the bold formatting of the default state. The older revision
+    still has it, so bridges without a default take the one of the same bridge there.
+    """
+    for board, entries in bridges.items():
+        known = {tuple(b["ids"]): b for b in older.get(board, [])}
+        for bridge in entries:
+            if any(o["default"] for o in bridge["states"]) or not (old := known.get(tuple(bridge["ids"]))):
+                continue
+            defaults = {o["state"] for o in old["states"] if o["default"]}
+            if len(defaults) == 1 and defaults & {o["state"] for o in bridge["states"]}:
+                bridge["default_from"] = source
+                for option in bridge["states"]:
+                    option["default"] = option["state"] in defaults
