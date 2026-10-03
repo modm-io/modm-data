@@ -68,7 +68,7 @@ build-homepage:
 		--names ext/cache/svd2variants/feature-names-gemma.json --output docs/src/variants/
 	@curl -fsSL --create-dirs -o docs/src/variants/index.html \
 		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/variants.html
-	@python3 -m modm_data.html2pinout --output docs/src/boards/nucleo.json
+	@python3 -m modm_data.html2pinout --output docs/src/boards/nucleo.json --pinout docs/src/pinout
 	@curl -fsSL --create-dirs -o docs/src/boards/index.html \
 		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/boards.html
 	@(cd docs && mkdocs build)

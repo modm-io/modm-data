@@ -48,7 +48,10 @@ def device_for_board(board: str) -> tuple[str, str] | None:
     :return: The name of the mounted device and of its CubeMX description, or `None` if unknown.
     """
     if not (match := re.fullmatch(r"NUCLEO-(\w+?)(?:-([PQ]))?", board)):
-        return None
+        # The names of the other boards do not contain the whole device name, but their board file does
+        mcu = dict(re.findall(r"^Mcu\.(Name|UserName)=(.*)$", _board_file(board), re.MULTILINE))
+        exists = mcu and (_mcu_path() / f"{mcu['Name']}.xml").exists()
+        return (mcu["UserName"], mcu["Name"]) if exists else None
     smps = match.group(2) or ""
     # Some board names end in a revision digit, which is not part of the device name
     for part in ("STM32" + match.group(1), "STM32" + match.group(1)[:-1]):
@@ -89,7 +92,13 @@ def device_signals(name: str) -> dict[str, dict[str, int | None]]:
 
 
 def _board_files(board: str) -> list[Path]:
-    return sorted((_cubemx_path() / "plugins/boardmanager/boards").glob(f"*_Nucleo_{board}_*_Board_AllConfig.ioc"))
+    return sorted((_cubemx_path() / "plugins/boardmanager/boards").glob(f"*_{board}_*_Board_AllConfig.ioc"))
+
+
+def _board_file(board: str) -> str:
+    # The shortest name is the default configuration without TrustZone or multi-core variants
+    paths = _board_files(board)
+    return min(paths, key=lambda p: len(p.name)).read_text(errors="replace") if paths else ""
 
 
 def has_board_file(board: str) -> bool:
@@ -103,11 +112,8 @@ def board_uses(board: str) -> dict[str, dict[str, str]]:
     :return: `gpio -> {use, label, part, signal}` for all GPIOs that are connected to something on the board
              itself, like the ST-LINK, an Ethernet PHY, a crystal, LEDs or buttons.
     """
-    if not (paths := _board_files(board)):
-        return {}
     pins = {}
-    # The shortest name is the default configuration without TrustZone or multi-core variants
-    for line in min(paths, key=lambda p: len(p.name)).read_text(errors="replace").splitlines():
+    for line in _board_file(board).splitlines():
         if match := re.match(r"(P[A-Z]\d+)[^.=]*\.(GPIO_Label|Signal)=(.*)", line):
             pins.setdefault(match.group(1), {})[match.group(2)] = match.group(3).strip()
 

@@ -3,7 +3,8 @@
 
 import re
 
-from modm_data.html2pinout import _groups, _signal, _field
+from modm_data.html2pinout import _boards, _device_table_pinout, _groups, _signal, _field
+from modm_data.html2pinout.share import share_state
 from modm_data.html2pinout.signals import _USES
 
 
@@ -73,3 +74,73 @@ def test_transcribed():
     assert sizes == {"UM2324": [38, 38], "UM2206": [38, 38], "UM2953": [38, 38], "UM2592": [12, 12], "UM2581": [2, 2]}
     assert _signal("5V-USB-CHG") == ("5V_USB_CHGR", "power")
     assert _signal("5V-STLINK") == ("5V_STLK", "power")
+
+
+def test_boards():
+    text = "NUCLEO-F429ZI 32F429IDISCOVERY STM32F4DISCOVERY STM32H573I-DK B-U585I-IOT02A STM32L552E-EV NUCLEO-G4XXRY"
+    assert _boards(text) == {
+        "NUCLEO-F429ZI",
+        "STM32F429I-DISCO",
+        "STM32F4DISCOVERY",
+        "STM32H573I-DK",
+        "B-U585I-IOT02A",
+        "STM32L552E-EV",
+    }
+
+
+class _Table:
+    def __init__(self, hrows, rows):
+        self._hrows, self._rows = hrows, rows
+        self.rows, self.columns = len(rows), len(rows[0])
+
+    def cell(self, x, y):
+        text = self._rows[y][x]
+        return type("Cell", (), {"text": lambda self, **kw: text})()
+
+
+def test_device_table():
+    table = _Table(
+        2,
+        [
+            ["MCU pin", "MCU pin", "Board function", "Board function", "Board function", "Board function"],
+            ["Main function", "LQFP64", "LED", "Power supply", "P1", "P2"],
+            ["PA0- WKUP", "14", "-", "-", "15", "-"],
+            ["PC9", "40", "Green", "-", "-", "4"],
+            ["-", "-", "-", "GND", "1 33", "1"],
+        ],
+    )
+    assert _device_table_pinout(table) == {
+        "P1": {
+            15: {"signal": "PA0", "kind": "gpio", "pin": "PA0- WKUP"},
+            1: {"signal": "GND", "kind": "ground", "pin": "GND"},
+            33: {"signal": "GND", "kind": "ground", "pin": "GND"},
+        },
+        "P2": {
+            4: {"signal": "PC9", "kind": "gpio", "pin": "PC9", "function": "LED: Green"},
+            1: {"signal": "GND", "kind": "ground", "pin": "GND"},
+        },
+    }
+    # Any other table has no connector columns
+    assert _device_table_pinout(_Table(1, [["Pin", "Main function"], ["1", "PA0"]])) == {}
+
+
+def test_share_state():
+    rows = [
+        {"row_id": 0, "short_name": "PA0/WKUP", "functions": ["TIM2_CH1"]},
+        {"row_id": 1, "short_name": "PA13", "functions": ["SYS_JTMS/SYS_SWDIO"]},
+        {"row_id": 2, "short_name": "PG13", "functions": ["ETH_TXD0", "SPI6_SCK"]},
+        {"row_id": 3, "short_name": "VDD", "functions": []},
+    ]
+    connectors = {
+        "CN7": {"pins": {1: {"signal": "PA0", "kind": "gpio", "label": "A0"}, 2: {"signal": "VDD", "kind": "power"}}}
+    }
+    uses = {
+        "PA0": {"use": "button", "label": "B1", "signal": "GPXTI0"},
+        "PA13": {"use": "debug", "label": "TMS", "signal": "SYS_JTMS-SWDIO"},
+        "PG13": {"use": "ethernet", "label": "RMII_TXD0", "part": "LAN8742", "signal": "ETH_RMII_TXD0"},
+    }
+    assert share_state(rows, connectors, uses) == {
+        "version": 1,
+        "selectedByRowId": {"1": ["SYS_JTMS/SYS_SWDIO"], "2": ["ETH_TXD0"]},
+        "namesByRowId": {"0": "B1, CN7-1 (A0)", "1": "TMS", "2": "RMII_TXD0 [LAN8742]"},
+    }

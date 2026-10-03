@@ -13,6 +13,7 @@ from modm_data.html2pinout import (
     inherit_bridge_defaults,
 )
 from modm_data.html2pinout.signals import board_uses, device_for_board, device_signals, has_board_file
+from modm_data.html2pinout.share import pinout_link
 from modm_data.utils import ext_path
 
 
@@ -25,6 +26,7 @@ def main():
     parser.add_argument("--document", type=Path, help="A single user manual, otherwise all are converted.")
     parser.add_argument("--input", type=Path, default=ext_path("stmicro/html-archive"))
     parser.add_argument("--output", type=Path, default=ext_path("stmicro/pinout/nucleo.json"))
+    parser.add_argument("--pinout", type=Path, help="The output folder of modm_pinout to link the boards to.")
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
 
@@ -39,14 +41,17 @@ def main():
                 latest[name] = path
         paths = sorted(latest.values())
 
-    pinouts = {}
+    pinouts, scores = {}, {}
     for path in paths:
         document = Document(path.absolute())
-        for board, connectors in board_pinouts_from_user_manual(document).items():
-            pins = sum(len(c["pins"]) for c in connectors.values())
-            # Several manuals may name a board, the one that describes the most of it is its own
-            if board in pinouts and pins <= sum(len(c["pins"]) for c in pinouts[board]["connectors"].values()):
+        boards = board_pinouts_from_user_manual(document)
+        for board, connectors in boards.items():
+            # Several manuals may name a board, the one that describes the most of it is its own. The manuals
+            # of the Discovery kits however also name their predecessors, which have their own smaller manual.
+            score = (board.startswith("NUCLEO") or -len(boards), sum(len(c["pins"]) for c in connectors.values()))
+            if board in pinouts and score <= scores[board]:
                 continue
+            scores[board] = score
             pinouts[board] = {"board": board, "document": document.fullname, "connectors": connectors}
         bridges = board_bridges_from_user_manual(document)
         # Older revisions of the manual may still know the defaults that this one lost
@@ -65,6 +70,9 @@ def main():
         # NUCLEO-WL55JC1. A real board like NUCLEO-L452RE next to NUCLEO-L452RE-P has its own description.
         if any(other != board and other.startswith(board) for other in pinouts) and not has_board_file(board):
             continue
+        # The Discovery kits have marketing names and placeholders next to their real name
+        if not board.startswith("NUCLEO") and not has_board_file(board):
+            continue
         # Only the signals of the GPIOs on the connectors are of interest
         gpios = {p["signal"] for c in data["connectors"].values() for p in c["pins"].values() if p["kind"] == "gpio"}
         device = device_for_board(board)
@@ -74,9 +82,14 @@ def main():
         # Only the bridges that mention a GPIO on the connectors
         bridges = [dict(b, gpios=[g for g in b["gpios"] if g in gpios]) for b in data.pop("bridges", [])]
         data["bridges"] = [b for b in bridges if b["gpios"]]
-        data["uses"] = {gpio: use for gpio, use in board_uses(board).items() if gpio in gpios}
+        uses = board_uses(board)
+        data["uses"] = {gpio: use for gpio, use in uses.items() if gpio in gpios}
+        if device and args.pinout and (link := pinout_link(args.pinout, device[0], data["connectors"], uses)):
+            data["pinout"] = link
         boards.append(data)
-        sizes = ", ".join(f"{c}={len(p['pins'])}" for c, p in data["connectors"].items() if p["type"] == "morpho")
+        sizes = ", ".join(
+            f"{c}={len(p['pins'])}" for c, p in data["connectors"].items() if p["type"] in {"morpho", "extension"}
+        )
         print(f"{board:20} {data['document']:12} {data['device'] or '-':16} {sizes}")
 
     if not boards:

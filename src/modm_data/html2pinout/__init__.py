@@ -4,8 +4,9 @@
 """
 # HTML to Board Pinout Pipeline
 
-Extracts the connector pinouts (ST morpho, ARDUINO, Zio) of the NUCLEO boards
-from the connector tables of their user manuals.
+Extracts the connector pinouts (ST morpho, ARDUINO, Zio, STMod+, Pmod, extension)
+of the NUCLEO boards and Discovery kits from the connector tables of their user
+manuals.
 """
 
 import re
@@ -18,15 +19,22 @@ __all__ = ["board_pinouts_from_user_manual", "board_bridges_from_user_manual", "
 
 LOGGER = logging.getLogger(__name__)
 
-_TABLES = r"morpho|arduino|zio"
-_NUMBER = re.compile(r"^(zio|connector)?pin(number|no\.?|nbr)?$")
+_TABLES = r"morpho|arduino|zio|stmod|pmod|mikrobus|extension"
+# The daughterboard connectors of the evaluation boards are unique to each board
+_SKIPPED = r"daughter ?board|shield"
+_NUMBER = re.compile(r"^(zio|connector)?pin(number|no\.?|nbr)?(\((cn|p)\d+\))?$")
 _CONNECTOR = re.compile(r"^(connector|cn)$")
 _MCU = re.compile(r"(stm32|mcu|stlink).*(pin?|port|name)$|^port$")
 _GPIO = re.compile(r"(?<![A-Z0-9])P[A-Q]\d{1,2}(?!\d)")
 _BRIDGE = re.compile(r"\b(?:SB|JP)\d+\b")
 _STLINK = re.compile(r"(?:P[A-K]\d+\W+(?:and\W+)?)+(?:on|of)\W+(?:the\W+)?ST-?LINK")
 _CN = re.compile(r"\bCN\d+\b")
-_BOARD = re.compile(r"NUCLEO-(?:[FGLHUCN]|WBA?|WL)\d(?![0-9A-Z]*XX)[0-9A-Z]*(?:-[PQ])?\b")
+_NAME = re.compile(r"\b(?:CN|P)\d+\b")
+_BOARD = re.compile(
+    r"NUCLEO-(?:[FGLHUCN]|WBA?|WL)\d(?![0-9A-Z]*XX)[0-9A-Z]*(?:-[PQ])?\b"
+    r"|\bSTM32[A-Z0-9]*-?(?:DISCO(?:VERY)?|DISC\d|DK\d?|EV(?:AL)?\d?)\b"
+    r"|\bB-[A-Z0-9]+-[A-Z0-9]+\b"
+)
 
 # The manuals spell the same signal in many ways
 _SIGNALS = [
@@ -91,7 +99,8 @@ def _field(header: str) -> str:
 
 
 def _boards(html: str) -> set[str]:
-    return set(_BOARD.findall(html))
+    # The Discovery kits also have a marketing name: 32F429IDISCOVERY is the STM32F429I-DISCO
+    return set(_BOARD.findall(re.sub(r"\b32([A-Z]\d\w+?)DISCOVERY\b", r"STM32\1-DISCO", html)))
 
 
 def _document_boards(chapters: list) -> set[str]:
@@ -133,17 +142,19 @@ def _table_pinout(table, kind: str) -> dict[str, dict]:
     rows = range(table._hrows, table.rows)
     if not (groups := _groups(header)):
         # Some tables only name the connectors in the header, then the pin numbers are found by their content
-        digits = [sum(_text(table.cell(x, y)).isdigit() for y in rows) for x in range(table.columns)]
+        cells = [[_text(table.cell(x, y)) for y in rows] for x in range(table.columns)]
+        # Repeated numbers are the values of a configuration table instead
+        digits = [sum(c.isdigit() for c in column) * (len(set(column)) > len(column) / 2) for column in cells]
         hy, header = table._hrows, ["Pin" if d > len(rows) * 0.8 else "Pin name" for d in digits]
         groups = _groups(header)
-    captions = set(_CN.findall(table.caption()))
+    captions = set(_NAME.findall(table.caption()))
     pinout = defaultdict(dict)
     unnamed = 1
 
     for number, columns in groups.items():
         # The connector is named in the header above, in its own column or in the caption
-        above = " ".join(_text(table.cell(number, y)) for y in range(hy))
-        connector = next(iter(_CN.findall(above)), next(iter(captions), "") if len(captions) == 1 else "")
+        above = " ".join(_text(table.cell(number, y)) for y in range(hy + 1))
+        connector = next(iter(_NAME.findall(above)), next(iter(captions), "") if len(captions) == 1 else "")
         connector_columns = [
             c
             for c in columns
@@ -185,6 +196,49 @@ def _table_pinout(table, kind: str) -> dict[str, dict]:
     return {c: pins for c, pins in pinout.items() if pins}
 
 
+def _device_table_pinout(table) -> dict[str, dict]:
+    """
+    The older Discovery kits have one table of all device pins instead of one per connector: one row per device
+    pin, with one column per board function and per extension connector (`P1`, `P2`), which contains the
+    connector pin numbers.
+    """
+    if table._hrows < 2:
+        return {}
+    header = [_text(table.cell(x, table._hrows - 1)) for x in range(table.columns)]
+    keys = [_key(h) for h in header]
+    if "mainfunction" not in keys:
+        return {}
+    main = keys.index("mainfunction")
+    power = keys.index("powersupply") if "powersupply" in keys else main
+    connectors = [x for x, h in enumerate(header) if re.fullmatch(r"P\d", h)]
+    functions = [
+        x
+        for x in range(table.columns)
+        if _key(_text(table.cell(x, 0))).startswith("boardfunction")
+        and x not in connectors
+        and keys[x] not in {"freei/o", "powersupply"}
+        and not _CN.fullmatch(header[x])
+    ]
+    pinout = defaultdict(dict)
+    for y in range(table._hrows, table.rows):
+        # The supplies are not device pins
+        name = _text(table.cell(main, y))
+        name = _text(table.cell(power, y)) if name in {"", "-"} else name
+        signal, kind = _signal(name)
+        texts = [(header[x], _text(table.cell(x, y))) for x in functions]
+        function = " / ".join(f"{h}: {text}" for h, text in texts if text not in {"", "-"})
+        for x in connectors:
+            for number in re.findall(r"\d+", _text(table.cell(x, y))):
+                pinout[header[x]][int(number)] = {
+                    "signal": signal,
+                    "kind": kind,
+                    "pin": name,
+                    **({"function": function} if function else {}),
+                }
+    # P1 is the left connector
+    return dict(sorted(pinout.items()))
+
+
 def board_pinouts_from_user_manual(document: Document) -> dict[str, dict[str, dict]]:
     """
     :return: `board -> connector -> {type, side, pins: number -> {signal, kind, ...}}` for all NUCLEO boards in
@@ -201,7 +255,12 @@ def board_pinouts_from_user_manual(document: Document) -> dict[str, dict[str, di
             kind = re.search(_TABLES, table.caption(), re.IGNORECASE) or re.search(
                 _TABLES, table.heading(), re.IGNORECASE
             )
-            if not kind or not (pinout := _table_pinout(table, kind.group(0).lower())):
+            if not kind or re.search(_SKIPPED, table.caption() + table.heading(), re.IGNORECASE):
+                continue
+            kind = kind.group(0).lower()
+            if pinout := _device_table_pinout(table):
+                kind = "extension"
+            elif not (pinout := _table_pinout(table, kind)):
                 continue
             # Some manuals describe several boards with one table for each
             for board in _boards(table.caption()) or boards:
@@ -211,7 +270,7 @@ def board_pinouts_from_user_manual(document: Document) -> dict[str, dict[str, di
                     if sum(n in known and known[n]["signal"] != p["signal"] for n, p in pins.items()) > len(pins) / 2:
                         LOGGER.warning(f"{document.fullname}: {board} {connector} is redefined in '{table.caption()}'")
                         connector += "-2"
-                    current = pinouts[board].setdefault(connector, {"type": kind.group(0).lower(), "pins": {}})["pins"]
+                    current = pinouts[board].setdefault(connector, {"type": kind, "pins": {}})["pins"]
                     for number, pin in pins.items():
                         if number in current and current[number]["signal"] != pin["signal"]:
                             LOGGER.warning(
@@ -231,6 +290,10 @@ def board_pinouts_from_user_manual(document: Document) -> dict[str, dict[str, di
                 pins.setdefault(number, {"signal": signal, "kind": kind, "label": name, "remark": f"From {source}"})
 
     for connectors in pinouts.values():
+        # A table without a connector name describes the named connector of the same type once more
+        named = {c["type"] for name, c in connectors.items() if not name.startswith(c["type"])}
+        for name in [n for n, c in connectors.items() if n.startswith(c["type"]) and c["type"] in named]:
+            del connectors[name]
         for connector in connectors.values():
             connector["pins"] = dict(sorted(connector["pins"].items()))
         # The manuals list the left morpho connector first
