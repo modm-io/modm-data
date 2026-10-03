@@ -92,3 +92,4 @@ nav:
   - Pinouts: pinout/index.html
   - SVD Explorer: svd/index.html
   - Peripheral Variants: variants/index.html
+  - NUCLEO Pinouts: boards/index.html

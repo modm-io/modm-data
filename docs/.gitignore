@@ -3,6 +3,7 @@ src/api/
 src/pinout/
 src/svd/
 src/variants/
+src/boards/
 src/index.md
 src/source/overview.md
 src/pipeline/overview.md
