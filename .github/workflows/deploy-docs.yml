@@ -35,6 +35,22 @@ jobs:
           make clone-sources-arm ext/stmicro/header/ ext/stmicro/cubehal/
 
 
+      # These archive repositories are private since copyright prevents republishing!
+      - name: Clone STMicro HTML Archive for the board pinouts
+        uses: actions/checkout@v4
+        with:
+          repository: modm-ext/archive-stmicro-html
+          path: ext/stmicro/html-archive
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_HTML }}
+
+      - name: Clone STMicro CubeMX Archive for the board pinouts
+        uses: actions/checkout@v4
+        with:
+          repository: modm-ext/archive-stmicro-cubemx
+          path: ext/stmicro/cubemx
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_CUBEMX }}
+
+
       - name: Clone modm-ext/data.modm.dev repository
         if: startsWith(github.ref, 'refs/heads/main')
         uses: actions/checkout@v4
@@ -47,6 +63,15 @@ jobs:
       - name: Build Homepage
         run: |
           make build-homepage
+
+
+      - name: Upload Homepage for Review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage
+          path: docs/data.modm.dev/docs
+          retention-days: 3
 
 
       - name: Push New Docs to Github

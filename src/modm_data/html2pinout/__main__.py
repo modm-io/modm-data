@@ -79,6 +79,10 @@ def main():
         sizes = ", ".join(f"{c}={len(p['pins'])}" for c, p in data["connectors"].items() if p["type"] == "morpho")
         print(f"{board:20} {data['document']:12} {data['device'] or '-':16} {sizes}")
 
+    if not boards:
+        print(f"No user manuals with board pinouts found in '{args.input}'!")
+        return False
+
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps({"boards": boards}, separators=(",", ":")) + "\n")
     return True
