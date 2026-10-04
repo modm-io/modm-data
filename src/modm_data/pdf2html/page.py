@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import logging
+import math
 import statistics
 from typing import Callable
 from functools import cached_property
@@ -219,12 +220,13 @@ class Page(PdfPage):
             height = max(current_line.height, next_line.height)
             # Calculate overlap via normalize origin (increasing with line index)
             if (current_line._sort_origin + rtol * height) > (next_line._sort_origin - rtol * height):
-                # if line.rotation or self.rotation:
-                #     # The next line overlaps this one, we merge the shorter line
-                #     # (typically super- and subscript) into taller line
-                #     use_current = len(current_line.chars) >= len(next_line.chars)
-                # else:
-                use_current = current_line.height >= next_line.height
+                # The next line overlaps this one, we merge the shorter line
+                # (typically super- and subscript) into the taller line. Lines
+                # of the same font size are merged into the longer line.
+                if math.isclose(current_line.height, next_line.height, rel_tol=0.01):
+                    use_current = len(current_line.chars) >= len(next_line.chars)
+                else:
+                    use_current = current_line.height > next_line.height
                 line = current_line if use_current else next_line
                 current_line = CharLine(
                     self,
