@@ -55,48 +55,50 @@ class Character:
         self.weblink: "modm_data.pdf.link.WebLink" = None  # noqa: F821
         """The web link of this character or `None`"""
 
-        bbox = Rectangle(*self._loose_charbox())
+        bbox = Rectangle(*self._em_box())
         if self._page.rotation:
             bbox = Rectangle(bbox.p0.y, self._page.height - bbox.p1.x, bbox.p1.y, self._page.height - bbox.p0.x)
         self._bbox = bbox
 
-    def _loose_charbox(self) -> tuple[float, float, float, float]:
-        # Newer pdfium computes the loose box from the real font ascent and
-        # descent, which makes it ~10% taller than the font size. All layout
-        # heuristics in pdf2html are tuned to the previous definition, where
-        # the box is exactly one font size tall and one advance width wide, and
-        # collapses for rotated characters (see `Page._fix_bboxes()`).
-        # The single precision rounding is part of that definition, since line
-        # heights are compared for equality when merging lines.
-        left, bottom, right, top = self._text.get_charbox(self._index, loose=True)
+    def _em_box(self) -> tuple[float, float, float, float]:
+        # The layout heuristics need the font size and the advance width of a
+        # character, not the extent of its glyph. We therefore compute our own
+        # box, which is exactly one font size tall, one advance width wide and
+        # placed by the text matrix, so that it also works for rotated text.
+        # The loose box of pdfium is not suitable, since its definition changed
+        # between versions and its height depends on the font metrics.
+        tight = self._text.get_charbox(self._index)
         obj = pp.raw.FPDFText_GetTextObject(self._text, self._index)
         size = pp.raw.FPDFText_GetFontSize(self._text, self._index)
-        if not obj or not size:
-            return left, bottom, right, top
+        if not obj or not size or pp.raw.FPDFText_IsGenerated(self._text, self._index):
+            return tight
         font = pp.raw.FPDFTextObj_GetFont(obj)
         ascent, descent, width = ctypes.c_float(), ctypes.c_float(), ctypes.c_float()
-        pp.raw.FPDFFont_GetAscent(font, 1000, ascent)
-        pp.raw.FPDFFont_GetDescent(font, 1000, descent)
+        pp.raw.FPDFFont_GetAscent(font, size, ascent)
+        pp.raw.FPDFFont_GetDescent(font, size, descent)
         if ascent.value == descent.value:
-            return left, bottom, right, top
+            return tight
 
-        def _f32(value: float) -> float:
-            return ctypes.c_float(value).value
+        m = pp.raw.FS_MATRIX()
+        ox, oy = ctypes.c_double(), ctypes.c_double()
+        assert pp.raw.FPDFText_GetMatrix(self._text, self._index, m)
+        assert pp.raw.FPDFText_GetCharOrigin(self._text, self._index, ox, oy)
+        ox, oy = ox.value, oy.value
 
-        matrix = pp.raw.FS_MATRIX()
-        x, y = ctypes.c_double(), ctypes.c_double()
-        assert pp.raw.FPDFText_GetMatrix(self._text, self._index, matrix)
-        assert pp.raw.FPDFText_GetCharOrigin(self._text, self._index, x, y)
-        scale = _f32(_f32(matrix.a * size) / (ascent.value - descent.value))
-        bottom = _f32(y.value + _f32(descent.value * scale))
-        top = _f32(y.value + _f32(ascent.value * scale))
-        if pp.raw.FPDFText_IsGenerated(self._text, self._index):
-            return x.value, bottom, x.value, top
-        # The width lookup fails for characters without a reverse unicode
-        # mapping, in which case the new left and right bounds are close enough.
-        if pp.raw.FPDFFont_GetGlyphWidth(font, self.unicode, size, width) and width.value:
-            left, right = x.value, _f32(x.value + _f32(matrix.a * width.value))
-        return left, bottom, right, top
+        # Split the font size above and below the baseline like the font does
+        scale = size / (ascent.value - descent.value)
+        y0, y1 = descent.value * scale, ascent.value * scale
+        x1 = 0
+        if pp.raw.FPDFFont_GetGlyphWidth(font, self.unicode, size, width):
+            x1 = width.value
+        if not x1 and (norm := m.a * m.a + m.b * m.b):
+            # The width lookup fails for characters without a reverse unicode
+            # mapping, so we use the extent of the glyph along the baseline.
+            x1 = max(((x - ox) * m.a + (y - oy) * m.b) / norm for x in tight[::2] for y in tight[1::2])
+
+        xs = [ox + m.a * x + m.c * y for x in (0, x1) for y in (y0, y1)]
+        ys = [oy + m.b * x + m.d * y for x in (0, x1) for y in (y0, y1)]
+        return min(xs), min(ys), max(xs), max(ys)
 
     def generated_space(self) -> "Character":
         """

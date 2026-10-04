@@ -7,7 +7,6 @@ import pypdfium2 as pp
 from typing import Iterator, Iterable, NamedTuple
 from pathlib import Path
 from functools import cached_property, cache
-from collections import defaultdict
 from .page import Page
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,7 +51,6 @@ class Document(pp.PdfDocument):
         """Stem of the document file name"""
         super().__init__(path, autoclose=autoclose)
         self._path = path
-        self._bbox_cache = defaultdict(dict)
         _LOGGER.debug(f"Loading: {path}")
 
     @cached_property
