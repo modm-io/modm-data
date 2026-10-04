@@ -25,7 +25,7 @@ class Image(pp.PdfImage):
         """
         :param obj: Page object of the image.
         """
-        super().__init__(obj.raw, obj.page, obj.pdf, obj.level)
+        super().__init__(obj.raw, obj.page, obj.pdf, obj.container, obj.level)
         assert pp.raw.FPDFPageObj_GetType(obj.raw) == pp.raw.FPDF_PAGEOBJ_IMAGE
         self.type = pp.raw.FPDF_PAGEOBJ_IMAGE
 
@@ -50,7 +50,7 @@ class Image(pp.PdfImage):
     @cached_property
     def bbox(self) -> Rectangle:
         """The bounding box of the image."""
-        bbox = Rectangle(*self.get_pos())
+        bbox = Rectangle(*self.get_bounds())
         if self.page.rotation:
             bbox = Rectangle(bbox.p0.y, self.page.height - bbox.p1.x, bbox.p1.y, self.page.height - bbox.p0.x)
         return bbox

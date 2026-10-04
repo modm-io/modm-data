@@ -38,6 +38,7 @@ class Page(pp.PdfPage):
         """1-index page number."""
 
         super().__init__(pp.raw.FPDF_LoadPage(document, index), document, document.formenv)
+        document._add_kid(self)
         self._links = None
         self._weblinks = None
         self._linked = False

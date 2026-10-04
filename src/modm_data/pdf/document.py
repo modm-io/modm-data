@@ -4,7 +4,7 @@
 import ctypes
 import logging
 import pypdfium2 as pp
-from typing import Iterator, Iterable
+from typing import Iterator, Iterable, NamedTuple
 from pathlib import Path
 from functools import cached_property, cache
 from collections import defaultdict
@@ -13,8 +13,11 @@ from .page import Page
 _LOGGER = logging.getLogger(__name__)
 
 
-# We cannot monkey patch this class, since it's a named tuple. :-(
-class _OutlineItem(pp.PdfOutlineItem):
+class _OutlineItem(NamedTuple):
+    level: int
+    title: str
+    page_index: int
+
     def __hash__(self) -> int:
         return hash(f"{self.page_index}+{self.title}")
 
@@ -61,16 +64,16 @@ class Document(pp.PdfDocument):
     def destinations(self) -> Iterator[tuple[int, str]]:
         """Yields (page 0-index, named destination) of the whole document."""
         for ii in range(pp.raw.FPDF_CountNamedDests(self)):
-            length = pp.raw.FPDF_GetNamedDest(self, ii, 0, 0)
-            clength = ctypes.c_long(length)
-            cbuffer = ctypes.create_string_buffer(length * 2)
+            clength = ctypes.c_long()
+            pp.raw.FPDF_GetNamedDest(self, ii, None, clength)
+            cbuffer = ctypes.create_string_buffer(clength.value)
             dest = pp.raw.FPDF_GetNamedDest(self, ii, cbuffer, clength)
-            name = cbuffer.raw[: clength.value * 2].decode("utf-16-le").rstrip("\x00")
+            name = cbuffer.raw[: clength.value].decode("utf-16-le").rstrip("\x00")
             page = pp.raw.FPDFDest_GetDestPageIndex(self, dest)
             yield (page, name)
 
     @cached_property
-    def toc(self) -> list[pp.PdfOutlineItem]:
+    def toc(self) -> list[_OutlineItem]:
         """
         The table of content as a sorted list of outline items ensuring item has
         a page index by reusing the last one.
@@ -79,17 +82,9 @@ class Document(pp.PdfDocument):
         # Sometimes the TOC contains duplicates so we must use a set
         last_page_index = 0
         for toc in self.get_toc():
-            outline = _OutlineItem(
-                toc.level,
-                toc.title,
-                toc.is_closed,
-                toc.n_kids,
-                toc.page_index or last_page_index,
-                toc.view_mode,
-                toc.view_pos,
-            )
-            last_page_index = toc.page_index or last_page_index
-            tocs.add(outline)
+            dest = toc.get_dest()
+            last_page_index = (dest and dest.get_index()) or last_page_index
+            tocs.add(_OutlineItem(toc.level, toc.get_title(), last_page_index))
         return list(sorted(list(tocs), key=lambda o: (o.page_index, o.level, o.title)))
 
     @cached_property

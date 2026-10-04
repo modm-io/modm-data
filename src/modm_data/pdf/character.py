@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import math
+import copy
 import ctypes
 from functools import cached_property
 from enum import Enum
@@ -54,10 +55,60 @@ class Character:
         self.weblink: "modm_data.pdf.link.WebLink" = None  # noqa: F821
         """The web link of this character or `None`"""
 
-        bbox = Rectangle(*self._text.get_charbox(self._index, loose=True))
+        bbox = Rectangle(*self._loose_charbox())
         if self._page.rotation:
             bbox = Rectangle(bbox.p0.y, self._page.height - bbox.p1.x, bbox.p1.y, self._page.height - bbox.p0.x)
         self._bbox = bbox
+
+    def _loose_charbox(self) -> tuple[float, float, float, float]:
+        # Newer pdfium computes the loose box from the real font ascent and
+        # descent, which makes it ~10% taller than the font size. All layout
+        # heuristics in pdf2html are tuned to the previous definition, where
+        # the box is exactly one font size tall and one advance width wide, and
+        # collapses for rotated characters (see `Page._fix_bboxes()`).
+        # The single precision rounding is part of that definition, since line
+        # heights are compared for equality when merging lines.
+        left, bottom, right, top = self._text.get_charbox(self._index, loose=True)
+        obj = pp.raw.FPDFText_GetTextObject(self._text, self._index)
+        size = pp.raw.FPDFText_GetFontSize(self._text, self._index)
+        if not obj or not size:
+            return left, bottom, right, top
+        font = pp.raw.FPDFTextObj_GetFont(obj)
+        ascent, descent, width = ctypes.c_float(), ctypes.c_float(), ctypes.c_float()
+        pp.raw.FPDFFont_GetAscent(font, 1000, ascent)
+        pp.raw.FPDFFont_GetDescent(font, 1000, descent)
+        if ascent.value == descent.value:
+            return left, bottom, right, top
+
+        def _f32(value: float) -> float:
+            return ctypes.c_float(value).value
+
+        matrix = pp.raw.FS_MATRIX()
+        x, y = ctypes.c_double(), ctypes.c_double()
+        assert pp.raw.FPDFText_GetMatrix(self._text, self._index, matrix)
+        assert pp.raw.FPDFText_GetCharOrigin(self._text, self._index, x, y)
+        scale = _f32(_f32(matrix.a * size) / (ascent.value - descent.value))
+        bottom = _f32(y.value + _f32(descent.value * scale))
+        top = _f32(y.value + _f32(ascent.value * scale))
+        if pp.raw.FPDFText_IsGenerated(self._text, self._index):
+            return x.value, bottom, x.value, top
+        # The width lookup fails for characters without a reverse unicode
+        # mapping, in which case the new left and right bounds are close enough.
+        if pp.raw.FPDFFont_GetGlyphWidth(font, self.unicode, size, width) and width.value:
+            left, right = x.value, _f32(x.value + _f32(matrix.a * width.value))
+        return left, bottom, right, top
+
+    def generated_space(self) -> "Character":
+        """
+        :return: A zero-sized space character located at the origin of this
+                 character, like the ones pdfium generates for visual gaps.
+        """
+        space = copy.copy(self)
+        space.__dict__ = {k: v for k, v in self.__dict__.items() if k.startswith("_") or k.endswith("link")}
+        space.unicode = 0x20
+        space._bbox = space.tbbox = Rectangle(self.origin.x, self.origin.y, self.origin.x, self.origin.y)
+        space.origin = self.origin
+        return space
 
     def _font_flags(self) -> tuple[str, int]:
         if self._font is None:
@@ -129,7 +180,9 @@ class Character:
     @cached_property
     def render_mode(self) -> RenderMode:
         """The render mode of the character."""
-        return Character.RenderMode(pp.raw.FPDFText_GetTextRenderMode(self._text, self._index))
+        return Character.RenderMode(
+            pp.raw.FPDFTextObj_GetTextRenderMode(pp.raw.FPDFText_GetTextObject(self._text, self._index))
+        )
 
     @cached_property
     def rotation(self) -> int:

@@ -27,7 +27,7 @@ platformdirs==4.5.1
 ply==3.11
 Pygments==2.19.2
 pymdown-extensions==10.20
-pypdfium2==4.30.0
+pypdfium2==5.14.0
 python-dateutil==2.9.0.post0
 PyYAML==6.0.3
 pyyaml_env_tag==1.1

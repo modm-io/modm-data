@@ -265,10 +265,13 @@ class Page(PdfPage):
                         return char.origin.x + 1e9
                     return char.origin.x
 
+            chars = sorted(line.chars, key=sort_key)
+            if not line.rotation:
+                chars = self._chars_with_bullet_space(chars)
             sorted_lines.append(
                 CharLine(
                     self,
-                    sorted(line.chars, key=sort_key),
+                    chars,
                     line.bottom,
                     line.origin,
                     line.top,
@@ -280,6 +283,22 @@ class Page(PdfPage):
             )
 
         return sorted_lines
+
+    @staticmethod
+    def _chars_with_bullet_space(chars: list) -> list:
+        # Newer pdfium does not generate a space for every visual gap anymore,
+        # but the list detection relies on the one between bullet and text.
+        for ii, (bullet, char) in enumerate(zip(chars, chars[1:]), 1):
+            if bullet.unicode == 0x20:
+                continue
+            if (
+                bullet.char in {"•", "–"}
+                and char.unicode not in {0x20, 0xA, 0xD}
+                and char.origin.x - bullet.bbox.right >= 0.25 * bullet.height
+            ):
+                return chars[:ii] + [char.generated_space()] + chars[ii:]
+            break
+        return chars
 
     def graphic_bboxes_in_area(
         self, area: Rectangle, with_graphics: bool = True

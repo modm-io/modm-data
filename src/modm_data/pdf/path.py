@@ -49,7 +49,7 @@ class Path(pp.PdfObject):
         """
         :param obj: PDF object of the path.
         """
-        super().__init__(obj.raw, obj.page, obj.pdf, obj.level)
+        super().__init__(obj.raw, obj.page, obj.pdf, obj.container, obj.level)
         assert pp.raw.FPDFPageObj_GetType(obj.raw) == pp.raw.FPDF_PAGEOBJ_PATH
         self.type = pp.raw.FPDF_PAGEOBJ_PATH
 
