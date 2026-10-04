@@ -6,6 +6,7 @@ charset-normalizer==3.4.4
 click==8.3.1
 colorama==0.4.6
 CppHeaderParser==2.7.4
+cxxheaderparser==1.9.2
 ghp-import==2.1.0
 idna==3.11
 Jinja2==3.1.6
