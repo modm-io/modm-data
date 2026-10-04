@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import logging
+import math
 import statistics
 from typing import Callable
 from functools import cached_property
@@ -211,20 +212,44 @@ class Page(PdfPage):
         if not bbox_lines:
             return []
 
+        def _stacked(line0, line1) -> bool:
+            # Characters of the same font size, that overlap along the line by
+            # more than half their width, are printed on top of each other.
+            horizontal = not line0.rotation
+
+            def _spans(line):
+                chars = (c for c in line.chars if c.unicode not in {0x20, 0xA, 0xD})
+                chars = (c for c in chars if math.isclose(c.height, line.height, rel_tol=0.01))
+                return [(c.bbox.left, c.bbox.right) if horizontal else (c.bbox.bottom, c.bbox.top) for c in chars]
+
+            spans1 = _spans(line1)
+            for start0, stop0 in _spans(line0):
+                for start1, stop1 in spans1:
+                    overlap = min(stop0, stop1) - max(start0, start1)
+                    if overlap > 0.5 * min(stop0 - start0, stop1 - start1):
+                        return True
+            return False
+
         # Merge lines that have overlapping bbox_lines
-        # FIXME: This merges lines that "collide" vertically like in formulas
         merged_lines = []
         current_line = bbox_lines[0]
         for next_line in bbox_lines[1:]:
             height = max(current_line.height, next_line.height)
+            same_height = math.isclose(current_line.height, next_line.height, rel_tol=0.01)
             # Calculate overlap via normalize origin (increasing with line index)
-            if (current_line._sort_origin + rtol * height) > (next_line._sort_origin - rtol * height):
-                # if line.rotation or self.rotation:
-                #     # The next line overlaps this one, we merge the shorter line
-                #     # (typically super- and subscript) into taller line
-                #     use_current = len(current_line.chars) >= len(next_line.chars)
-                # else:
-                use_current = current_line.height >= next_line.height
+            if (current_line._sort_origin + rtol * height) > (next_line._sort_origin - rtol * height) and not (
+                # Lines of the same font size printed on top of each other are
+                # separate lines, like the numerator and denominator of a formula
+                same_height and current_line.rotation == next_line.rotation and _stacked(current_line, next_line)
+            ):
+                # The next line overlaps this one, we merge the shorter line
+                # (typically super- and subscript) into the taller line. Lines
+                # of the same font size continue each other with a slightly
+                # shifted baseline, so we merge them into the longer line.
+                if same_height:
+                    use_current = len(current_line.chars) >= len(next_line.chars)
+                else:
+                    use_current = current_line.height > next_line.height
                 line = current_line if use_current else next_line
                 current_line = CharLine(
                     self,

@@ -22,9 +22,8 @@ _LOGGER = logging.getLogger(__name__)
 
 class Page(pp.PdfPage):
     """
-    This class provides low-level access to graphics and characters of the page.
-    It also fixes missing bounding boxes for rotates characters on page load,
-    as well as allow searching for characters in an area instead of just text.
+    This class provides low-level access to graphics and characters of the page
+    and allows searching for characters in an area instead of just text.
     """
 
     def __init__(self, document: "modm_data.pdf.Document", index: int):  # noqa: F821
@@ -51,8 +50,6 @@ class Page(pp.PdfPage):
         # close them in reverse order
         weakref.finalize(self, pp.raw.FPDF_StructTree_Close, self._structtree)
         weakref.finalize(self, pp.raw.FPDFLink_CloseWebLinks, self._linkpage)
-
-        self._fix_bboxes()
 
     @cached_property
     def label(self) -> str:
@@ -256,30 +253,3 @@ class Page(pp.PdfPage):
             orderedchars[ypos] = sorted(chars, key=lambda c: c.bbox.midpoint.x)
 
         return orderedchars
-
-    def _fix_bboxes(self):
-        def _key(char):
-            height = round(char.tbbox.height, 1)
-            width = round(char.tbbox.width, 1)
-            return f"{char.font} {char.unicode} {height} {width}"
-
-        fix_chars = []
-        for char in self.chars:
-            if not char._bbox.width or not char._bbox.height:
-                if char._rotation:
-                    fix_chars.append(char)
-                elif char.unicode not in {0xA, 0xD}:
-                    fix_chars.append(char)
-            elif char.unicode not in {0xA, 0xD} and not char._rotation and _key(char) not in self.pdf._bbox_cache:
-                bbox = char._bbox.translated(-char.origin).rotated(self.rotation + char._rotation)
-                self.pdf._bbox_cache[_key(char)] = (char, bbox)
-                # print("->", _key(char), char.descr(), char.height, char.rotation, char._rotation, self.rotation)
-        for char in fix_chars:
-            bbox = self.pdf._bbox_cache.get(_key(char))
-            if bbox is not None:
-                # print("<-", char.descr(), char._rotation, char.rotation, char.height)
-                _, bbox = bbox
-                bbox = bbox.rotated(-self.rotation - char._rotation).translated(char.origin)
-                char._bbox = bbox
-            elif char.unicode not in {0x20, 0xA, 0xD}:
-                _LOGGER.debug(f"Unable to fix bbox for {char.descr()}!")
