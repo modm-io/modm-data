@@ -5,6 +5,7 @@
 import os
 import re
 import logging
+from pathlib import Path
 from functools import cache
 from collections import defaultdict
 from lxml import etree
@@ -117,6 +118,84 @@ def _is_software_ip(name: str, version: str) -> bool:
     return root.get("IPType", "").lower() in ("middleware", "lpbam") or root.get("IpGroup") == "Utilities"
 
 
+def _device_file(partname: str) -> XmlReader:
+    """
+    :param partname: A full STM32 device name.
+    :return: The CubeMX MCU description of the device, which may describe
+             several order codes at once, for example, `STM32G071C(6-8-B)Tx`.
+    """
+    devices = _family_file().query(f'//Family/SubFamily/Mcu[starts-with(@RefName,"{partname}")]')
+    return XmlReader(os.path.join(_MCU_PATH, sorted(d.get("Name") for d in devices)[0] + ".xml"))
+
+
+def _dfp_folder(did: DeviceIdentifier) -> str:
+    folder = "STM32{}xx_DFP".format(did.family.upper())
+    if did.string[5:8] in ["h7r", "h7s"]:
+        folder = "STM32H7RSxx_DFP"
+    elif did.string[5:8] == "wb0":
+        folder = "STM32WB0x_DFP"
+    elif did.string[5:8] == "wba":
+        folder = "STM32WBAxx_DFP"
+    elif did.string[5:8] == "wl3":
+        folder = "STM32WL3x_DFP"
+    return folder
+
+
+def _dfp_node(partname: str, did: DeviceIdentifier):
+    """:return: The OpenCMSIS pack entry of the device, or an empty list."""
+    folder = _dfp_folder(did)
+    pack = _EXT_PATH / folder / f"Keil.{folder}.pdsc"
+    if not pack.exists():
+        # The STM32MP1 and STM32MP2 have no OpenCMSIS pack and no CMSIS header
+        return []
+    dfp_file = XmlReader(pack)
+    for query in (
+        f'//variant[starts-with(@Dvariant,"{partname}")]',
+        f'//device[starts-with(@Dname,"{partname}")]',
+        f'//device[starts-with(@Dname,"{partname[:11]}")]',
+    ):
+        if node := dfp_file.query(query):
+            return node
+    return []
+
+
+def _dfp_findall(node, key: str, core: str = None, attribs: list[str] = None):
+    """The pack entries of a key, from the device entry outwards to the family."""
+    values = []
+    while node.tag != "devices":
+        values += node.findall(key)
+        node = node.getparent()
+    if core:
+        values = [v for v in values if core.upper() in v.get("Pname", core.upper())]
+    if attribs is not None:
+        # The attributes of the inner nodes take precedence over the outer nodes
+        values = {a: v.get(a) for v in reversed(values) for a in attribs if v.get(a)}
+    return values
+
+
+@cache
+def header_from_partname(partname: str) -> Header:
+    """
+    :param partname: A full STM32 device name.
+    :return: The CMSIS device header of the device, or None if there is none.
+    """
+    did = did_from_string(partname.lower())
+    # The pack does not list every order code, for example, the 32kB STM32G071C6,
+    # however, the header only depends on the name, the size and the pin count
+    define = ""
+    if node := _dfp_node(partname, did):
+        define = _dfp_findall(node[0], "compile")[0].get("define")
+    family = _dfp_folder(did)[:-4].lower()
+    if not (Header._HEADER_PATH / (family if "xx" in family else family + "x")).exists():
+        # The STM32MP1 and STM32MP2 have no CMSIS device header
+        return None
+    header = Header(did, family, define)
+    if not header.is_valid:
+        LOGGER.error("CMSIS Header invalid for %s", did.string)
+        return None
+    return header
+
+
 def devices_from_partname(partname: str) -> list[dict[str]]:
     """
     Find the STM32 device name in the STM32CubeMX database and convert the data
@@ -129,9 +208,8 @@ def devices_from_partname(partname: str) -> list[dict[str]]:
     :param partname: A full STM32 device name.
     :return: a list of dictionaries containing a device specific data structure.
     """
-    deviceNames = _family_file().query(f'//Family/SubFamily/Mcu[starts-with(@RefName,"{partname}")]')
-    comboDeviceName = sorted([d.get("Name") for d in deviceNames])[0]
-    device_file = XmlReader(os.path.join(_MCU_PATH, comboDeviceName + ".xml"))
+    device_file = _device_file(partname)
+    comboDeviceName = Path(device_file.filename).stem
     did = did_from_string(partname.lower())
     LOGGER.info(f"Parsing '{did.string}'")
 
@@ -148,50 +226,15 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         did.set("core", core[7:9])
     p = {"id": did, "die": device_file.query("//Die/text()")[0]}
 
-    dfp_folder = "STM32{}xx_DFP".format(did.family.upper())
-    if did.string[5:8] in ["h7r", "h7s"]:
-        dfp_folder = "STM32H7RSxx_DFP"
-    elif did.string[5:8] == "wb0":
-        dfp_folder = "STM32WB0x_DFP"
-    elif did.string[5:8] == "wba":
-        dfp_folder = "STM32WBAxx_DFP"
-    elif did.string[5:8] == "wl3":
-        dfp_folder = "STM32WL3x_DFP"
-
-    # Find OpenCMSIS pack file
-    dfp_file = XmlReader(os.path.join(_EXT_PATH, dfp_folder, f"Keil.{dfp_folder}.pdsc"))
-
-    # Find the correct DFP start node
-    dfp_node = dfp_file.query(f'//variant[starts-with(@Dvariant,"{partname}")]')
-    if not dfp_node:
-        dfp_node = dfp_file.query(f'//device[starts-with(@Dname,"{partname}")]')
-        if not dfp_node:
-            dfp_node = dfp_file.query(f'//device[starts-with(@Dname,"{partname[:11]}")]')
-
-    if not dfp_node:
-        LOGGER.error(f"No DFP device entry found for {did.string}: {partname}")
+    dfp_node = _dfp_node(partname, did)
+    stm_header = header_from_partname(partname)
+    if not dfp_node or stm_header is None:
         return None
 
     def dfp_findall(key, attribs=None):
-        values = []
-        node = dfp_node[0]
-        while node.tag != "devices":
-            values += node.findall(key)
-            node = node.getparent()
-        if core := did.get("core"):
-            values = [v for v in values if core.upper() in v.get("Pname", core.upper())]
-        if attribs is not None:
-            # The attributes of the inner nodes take precedence over the outer nodes
-            values = {a: v.get(a) for v in reversed(values) for a in attribs if v.get(a)}
-        return values
+        return _dfp_findall(dfp_node[0], key, did.get("core"), attribs)
 
-    # Find the correct CMSIS header
-    dfp_compile = dfp_findall("compile")[0].get("define")
-    p["cmsis_header"] = cmsis_header = dfp_folder[:-4].lower()
-    stm_header = Header(did, cmsis_header, dfp_compile)
-    if not stm_header.is_valid:
-        LOGGER.error("CMSIS Header invalid for %s", did.string)
-        return None
+    p["cmsis_header"] = _dfp_folder(did)[:-4].lower()
     p["define"] = stm_header.define
     p["interrupts"] = stm_header.interrupt_table
 
