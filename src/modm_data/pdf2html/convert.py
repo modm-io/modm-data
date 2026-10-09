@@ -1,7 +1,8 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-from anytree import RenderTree
+from anytree import RenderTree, PreOrderIter
+from lxml import etree
 from typing import Iterable
 
 from .html import format_document, write_html
@@ -10,6 +11,38 @@ from ..utils import pkg_apply_patch, pkg_file_exists, apply_patch
 from .ast import merge_area
 from pathlib import Path
 import pypdfium2 as pp
+
+
+def _write_figures(root, html_file: Path):
+    """
+    Writes the vector graphics of all figures as SVG files and their bitmap
+    images in their embedded format into a folder named like the HTML file, so
+    that the HTML only contains references to them.
+    """
+    folder = Path(html_file).with_suffix("")
+    names, images = set(), {}
+    for node in PreOrderIter(root, filter_=lambda n: n.name == "figure"):
+        name = f"figure_{node.number}" if node.number >= 0 else f"page_{node.obj._page.number}"
+        # Figures without caption and side-by-side figures share their name
+        name = next(n for n in [name] + [f"{name}_{ii}" for ii in range(1, 100)] if n not in names)
+        names.add(name)
+
+        files = []
+        for image in node.obj.images:
+            suffix, data = image.encode()
+            # Patterns consist of hundreds of identical images, so save them once
+            if (file := images.get(data)) is None:
+                file = images[data] = (
+                    f"{name}_image_{sum(f.startswith(name + '_image_') for f in images.values()) + 1}{suffix}"
+                )
+                folder.mkdir(parents=True, exist_ok=True)
+                (folder / file).write_bytes(data)
+            files.append(file)
+        if (svg := node.obj.as_svg(files)) is not None:
+            folder.mkdir(parents=True, exist_ok=True)
+            etree.ElementTree(svg).write(folder / f"{name}.svg", pretty_print=True)
+            files.insert(0, f"{name}.svg")
+        node._srcs = [f"{folder.name}/{file}" for file in dict.fromkeys(files)]
 
 
 def convert(
@@ -69,12 +102,14 @@ def convert(
                 for chapter in document.children:
                     if chapter.name == "chapter":
                         print(f"\nFormatting HTML for '{chapter.title}'")
-                        html = format_document(chapter)
                         output_file = f"{output_path}/chapter_{chapter._filename}.html"
+                        _write_figures(chapter, output_file)
+                        html = format_document(chapter)
                         print(f"\nWriting HTML '{output_file}'")
                         write_html(html, output_file, pretty=pretty)
             else:
                 print("\nFormatting HTML")
+                _write_figures(document, output_path)
                 html = format_document(document)
                 print(f"\nWriting HTML '{str(output_path)}'")
                 write_html(html, str(output_path), pretty=pretty)

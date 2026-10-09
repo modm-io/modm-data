@@ -237,10 +237,13 @@ class Page(PdfPage):
             height = max(current_line.height, next_line.height)
             same_height = math.isclose(current_line.height, next_line.height, rel_tol=0.01)
             # Calculate overlap via normalize origin (increasing with line index)
-            if (current_line._sort_origin + rtol * height) > (next_line._sort_origin - rtol * height) and not (
+            if (
+                # Horizontal and vertical lines have different sort origins
+                bool(current_line.rotation) == bool(next_line.rotation)
+                and (current_line._sort_origin + rtol * height) > (next_line._sort_origin - rtol * height)
                 # Lines of the same font size printed on top of each other are
                 # separate lines, like the numerator and denominator of a formula
-                same_height and current_line.rotation == next_line.rotation and _stacked(current_line, next_line)
+                and not (same_height and _stacked(current_line, next_line))
             ):
                 # The next line overlaps this one, we merge the shorter line
                 # (typically super- and subscript) into the taller line. Lines

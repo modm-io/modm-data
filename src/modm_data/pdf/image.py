@@ -1,6 +1,8 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
+import zlib
+import struct
 from functools import cached_property
 import pypdfium2 as pp
 from ..utils import Point, Rectangle, Line
@@ -79,6 +81,44 @@ class Image(pp.PdfImage):
             Line(p[2], p[3], p[3].type, 0),
             Line(p[3], p[0], p[0].type, 0),
         ]
+
+    def encode(self) -> tuple[str, bytes]:
+        """
+        Encodes the image in its embedded format (JPEG, JPEG 2000) without
+        converting it. All other formats are encoded as lossless PNG.
+
+        :return: The file suffix and content of the image file.
+        """
+        filters = self.get_filters(skip_simple=True)
+        if filters == ["DCTDecode"]:
+            return ".jpg", bytes(self.get_data(decode_simple=True))
+        if filters == ["JPXDecode"]:
+            return ".jp2", bytes(self.get_data(decode_simple=True))
+
+        bitmap = self.get_bitmap()
+        channels, width, height = bitmap.n_channels, bitmap.width, bitmap.height
+        # PNG color types: grayscale, RGB, RGBA
+        color_type = {1: 0, 3: 2, 4: 6}[channels]
+        buffer = bytes(bitmap.buffer)
+        rows = bytearray()
+        for yy in range(height):
+            row = bytearray(buffer[yy * bitmap.stride : yy * bitmap.stride + width * channels])
+            if channels >= 3:
+                # The bitmap is BGR(A) or BGRx
+                row[0::channels], row[2::channels] = row[2::channels], row[0::channels]
+                if bitmap.format == pp.raw.FPDFBitmap_BGRx:
+                    row[3::4] = b"\xff" * width
+            rows += b"\0" + row
+
+        def _chunk(name: bytes, data: bytes) -> bytes:
+            return struct.pack(">I", len(data)) + name + data + struct.pack(">I", zlib.crc32(name + data))
+
+        return ".png", (
+            b"\x89PNG\r\n\x1a\n"
+            + _chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, color_type, 0, 0, 0))
+            + _chunk(b"IDAT", zlib.compress(bytes(rows), 9))
+            + _chunk(b"IEND", b"")
+        )
 
     def __repr__(self) -> str:
         return f"I{self.bbox}"

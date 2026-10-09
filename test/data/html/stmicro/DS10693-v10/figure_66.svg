@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 565.25 113.4" width="565.25" height="113.4" font-family="Arial, Helvetica, sans-serif">
+  <path d="M109.08 110.64L513.07 110.64L513.07 0L109.08 0L109.08 110.64L109.08 110.64" fill="#ffffff"/>
+  <path d="M301.42 60.4L257.3 60.4L254.11 68.37L257.3 76.34L301.42 76.34L305.14 68.37" fill="#dadada"/>
+  <path d="M405.6 60.4L386.46 60.4L383.27 68.37L386.46 76.34L405.6 76.34" fill="#dadada"/>
+  <path d="M228.6 41.26L234.98 41.26L241.36 25.32L279.63 25.32L286 41.26L324.27 41.26L330.65 25.32L365.73 25.32L372.11 41.26L404 41.26" fill="none" stroke="#000000" stroke-width="1"/>
+  <path d="M228.6 76.34L250.92 76.34L258.9 60.39L301.42 60.39L307.8 76.34L378.49 76.34L388.06 60.39L405.6 60.39" fill="none" stroke="#000000" stroke-width="1"/>
+  <path d="M228.6 60.4L250.92 60.4L258.9 76.34L301.42 76.34L307.8 60.4L378.49 60.4L388.06 76.34L405.6 76.34" fill="none" stroke="#000000" stroke-width="1"/>
+  <path d="M282.29 25.32L282.29 54.02" fill="none" stroke="#000000" stroke-width="0.5"/>
+  <path d="M368.92 25.32L368.92 54.02" fill="none" stroke="#000000" stroke-width="0.5"/>
+  <path d="M282.29 50.47L311.52 50.47" fill="none" stroke="#000000" stroke-width="0.5"/>
+  <path d="M307.8 47.64L307.8 79.53" fill="none" stroke="#000000" stroke-width="0.5"/>
+  <path d="M287.6 48.35L282.29 50.47L287.6 52.6" fill="#000000"/>
+  <path d="M303.01 48.35L308.33 50.47L303.01 52.6" fill="#000000"/>
+  <path d="M378.49 47.64L378.49 79.53" fill="none" stroke="#000000" stroke-width="0.5"/>
+  <path d="M383.8 47.68L378.49 49.81L383.8 51.93" fill="#000000"/>
+  <path d="M364.14 47.68L369.45 49.81L364.14 51.93" fill="#000000"/>
+  <path d="M388.06 49.91L360.95 49.91" fill="none" stroke="#000000" stroke-width="0.5"/>
+  <path d="M109.32 0.54L513.07 0.54L513.07 0.06L109.32 0.06L109.32 0.54L109.32 0.54" fill="#000000"/>
+  <path d="M512.59 113.4L513.07 113.4L513.07 0.3L512.59 0.3L512.59 113.4L512.59 113.4" fill="#000000"/>
+  <path d="M109.08 113.4L512.83 113.4L512.83 112.92L109.08 112.92L109.08 113.4L109.08 113.4" fill="#000000"/>
+  <path d="M109.08 113.16L109.57 113.16L109.57 0.06L109.08 0.06L109.08 113.16L109.08 113.16" fill="#000000"/>
+  <text font-size="8" x="199.9" y="38.1" textLength="11.11">CK</text>
+  <text font-size="8" x="313.11" y="52.02">t</text>
+  <text font-size="8" x="315.34" y="54.27" textLength="17.38">OVD</text>
+  <text font-size="8" x="391.24" y="52.45">t</text>
+  <text font-size="8" x="393.47" y="54.7" textLength="17.82">OHD</text>
+  <text font-size="8" x="195.11" y="66.8" textLength="28.44">D, CMD</text>
+  <text font-size="8" x="195.11" y="76.4" textLength="27.57">(output)</text>
+  <text font-size="6" x="488.81" y="109.23" textLength="21.35">ai14888</text>
+</svg>
