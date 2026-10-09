@@ -25,6 +25,7 @@ def main():
     parser.add_argument("--tree", action="store_true")
     parser.add_argument("--html", action="store_true")
     parser.add_argument("--parallel", action="store_true")
+    parser.add_argument("--figures", type=Path)
     parser.add_argument("--chapters", action="store_true")
     parser.add_argument("--tags", action="store_true")
     parser.add_argument("--all", action="store_true")
@@ -76,6 +77,7 @@ def main():
                 call = (
                     f"python3 -m modm_data.pdf2html.stmicro "
                     f"--document {args.document} --range {p0 + 1}:{p1} --html "
+                    f"--figures {output_dir}/figures "
                     f"--output {output_dir}/chapter_{ii}_{title}.html"
                 )
                 calls.append(call + f" >> {log} 2>&1")
@@ -95,6 +97,7 @@ def main():
         doc,
         page_range,
         output_path,
+        figures_path=args.figures,
         format_chapters=args.chapters,
         render_html=args.html,
         render_pdf=args.pdf,
