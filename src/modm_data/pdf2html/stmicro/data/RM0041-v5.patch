@@ -202,8 +202,8 @@ index 175c46de..580ac10b 100644
 -          <p>OC2M<br/>[2:0]</p>
 -          <p>0 0 0</p>
 -        </td>
--        <td>0<sup>OC2PE</sup></td>
--        <td>0<sup>OC2FE</sup></td>
+-        <td>0<br/>OC2PE</td>
+-        <td>0<br/>OC2FE</td>
 -        <td colspan="2">
 -          <p>CC2S <br/>[1:0]</p>
 -          <p>0 0</p>

@@ -27,7 +27,10 @@ def _format_html_figure(xmlnode, figurenode):
 
     xynode = etree.Element("td")
     ynode.append(xynode)
-    xynode.text = "(omitted)"
+    if srcs := getattr(figurenode, "_srcs", None):
+        xynode.extend(etree.Element("img", src=src) for src in srcs)
+    else:
+        xynode.text = "(omitted)"
 
 
 def _format_html_table(xmlnode, tablenode):

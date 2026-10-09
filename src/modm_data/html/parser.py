@@ -86,7 +86,7 @@ class Parser(HTMLParser):
         elif self._table and tag == "table":
             if self._table._cells:
                 self._table._normalize()
-                if self._table.size > (1, 1) or self._table.cell(0, 0).html != "(omitted)":
+                if self._table.size > (1, 1) or not re.fullmatch(r"\(omitted\)|(<img>)+", self._table.cell(0, 0).html):
                     self._items.append(self._table)
             self._table = None
             self._type = None
