@@ -42,6 +42,25 @@ def read_bdma_request_map(did):
     return request_map
 
 
+def read_dma3_request_map(did: DeviceIdentifier, controller: str) -> dict[str, int]:
+    """
+    Reads the request mapping of the linked-list DMA controllers (GPDMA, HPDMA,
+    LPDMA) from the CubeHAL header. All instances of one controller type share
+    the same request numbers, so `controller` is the type, for example `gpdma`.
+
+    :param did: Device to query for.
+    :param controller: The controller type: `gpdma`, `hpdma` or `lpdma`.
+    :return: A dictionary of DMA request name to request number.
+    """
+    pattern = re.compile(rf"^\s*#define\s+(?P<name>{controller.upper()}1_REQUEST_\w+)\s+(?P<id>[0-9]+)U")
+    request_map = {
+        name.split("_REQUEST_", 1)[1]: int(number)
+        for name, number in _read_map(_get_hal_dma_header_path(did), pattern).items()
+    }
+    _fix_request_data(request_map, controller.upper())
+    return request_map
+
+
 def _fix_request_data(request_map, prefix):
     fix_requests = {}
     dac_pattern = re.compile(r"(?P<dac>(DAC[0-9]))_CHANNEL(?P<ch>[0-9])")

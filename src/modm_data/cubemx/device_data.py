@@ -15,6 +15,7 @@ from ..utils import ext_path, XmlReader
 from . import stm32_data
 from ..cubehal import read_request_map as dmamux_request_map
 from ..cubehal import read_bdma_request_map as dmamux_bdma_request_map
+from ..cubehal import read_dma3_request_map as dma3_request_map
 from ..cubehal.remaps import read_afio_remap_macros
 from . import peripherals
 from .dma_remap import dma_remaps
@@ -572,6 +573,25 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
             else:
                 mux_channels.append({"position": mux_ch_position, "dma-channel": int(m.group("channel"))})
         p["bdma_mux_channels"] = mux_channels
+
+    # The linked-list DMA controllers have no request data in CubeMX, only in the CubeHAL
+    for controller in sorted({m[0] for m in modules if m[0] in ("gpdma", "hpdma", "lpdma")}):
+        requests = defaultdict(list)
+        for rname, number in dma3_request_map(did, controller).items():
+            name = rname.lower().replace("spdif_rx", "spdifrx")
+            if len(name.split("_")) < 2:
+                name = f"{name}_default"
+            driver, inst, name = split_dma_signal(name, modules)
+            if driver is None:  # peripheral is not part of this device
+                LOGGER.debug(f"{controller.upper()}#{number}: dumping {rname}")
+                continue
+            signal = {"driver": driver, "name": None if name == "default" else name}
+            if inst:
+                signal["instance"] = inst
+            if signal not in requests[number]:
+                requests[number].append(signal)
+        p[controller] = {0: {0: requests}}
+        p[controller + "_naming"] = (None, "request", "signal")
 
     if did.family == "f1":
         grouped_f1_signals = gpioFile.compactQuery("//GPIO_Pin/PinSignal/@Name")
