@@ -137,7 +137,6 @@ def load_remote_info(base_dir: Path, use_cached: bool = False) -> list[dict]:
 def store_remote_info(base_dir: Path, docs: list[dict]):
     info = base_dir / _remote_info
     info.parent.mkdir(parents=True, exist_ok=True)
-    exit(1)
     info.write_text(json.dumps(sorted(docs, key=lambda d: (d["title"], d["version"])), indent=4, sort_keys=True))
 
 
