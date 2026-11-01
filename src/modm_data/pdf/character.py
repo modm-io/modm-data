@@ -4,10 +4,33 @@
 import math
 import copy
 import ctypes
-from functools import cached_property
 from enum import Enum
 import pypdfium2 as pp
 from ..utils import Rectangle, Point
+
+_FONTS = {}
+
+
+class _slot_cache:
+    """Like `functools.cached_property`, but stores the value in a slot."""
+
+    def __init__(self, func):
+        self.func = func
+        self.slot = f"_{func.__name__}_"
+        self.__doc__ = func.__doc__
+
+    def __get__(self, obj, cls=None):
+        if obj is None:
+            return self
+        try:
+            return getattr(obj, self.slot)
+        except AttributeError:
+            value = self.func(obj)
+            setattr(obj, self.slot, value)
+            return value
+
+    def __set__(self, obj, value):
+        setattr(obj, self.slot, value)
 
 
 class Character:
@@ -36,6 +59,26 @@ class Character:
         STROKE_CLIP = 5
         FILL_STROKE_CLIP = 6
         CLIP = 7
+
+    # A dictionary per character is the largest part of the memory usage
+    __slots__ = (
+        "_bbox",
+        "_fill_",
+        "_font",
+        "_index",
+        "_origin_",
+        "_page",
+        "_render_mode_",
+        "_rotation",
+        "_size_",
+        "_stroke_",
+        "_tbbox_",
+        "_text",
+        "_weight_",
+        "objlink",
+        "unicode",
+        "weblink",
+    )
 
     def __init__(self, page: "modm_data.pdf.page.Page", index: int):  # noqa: F821
         """
@@ -106,7 +149,6 @@ class Character:
                  character, like the ones pdfium generates for visual gaps.
         """
         space = copy.copy(self)
-        space.__dict__ = {k: v for k, v in self.__dict__.items() if k.startswith("_") or k.endswith("link")}
         space.unicode = 0x20
         space._bbox = space.tbbox = Rectangle(self.origin.x, self.origin.y, self.origin.x, self.origin.y)
         space.origin = self.origin
@@ -117,7 +159,9 @@ class Character:
             font = ctypes.create_string_buffer(255)
             flags = ctypes.c_int()
             pp.raw.FPDFText_GetFontInfo(self._text, self._index, font, 255, flags)
-            self._font = (font.value.decode("utf-8"), flags.value)
+            # Share one tuple per font instead of one per character
+            font = (font.value.decode("utf-8"), flags.value)
+            self._font = _FONTS.setdefault(font, font)
         return self._font
 
     @property
@@ -126,7 +170,7 @@ class Character:
         char = chr(self.unicode)
         return char if char.isprintable() else ""
 
-    @cached_property
+    @_slot_cache
     def origin(self) -> Point:
         """The origin of the character."""
         x, y = ctypes.c_double(), ctypes.c_double()
@@ -135,21 +179,21 @@ class Character:
             return Point(y.value, self._page.height - x.value)
         return Point(x.value, y.value)
 
-    @cached_property
+    @property
     def width(self) -> float:
         """The width of the character's bounding box."""
         if self.rotation:
             return self.bbox.height
         return self.bbox.width
 
-    @cached_property
+    @property
     def height(self) -> float:
         """The height of the character's bounding box."""
         if self.rotation:
             return self.bbox.width
         return self.bbox.height
 
-    @cached_property
+    @_slot_cache
     def tbbox(self) -> Rectangle:
         """The tight bounding box of the character."""
         tbbox = Rectangle(*self._text.get_charbox(self._index))
@@ -169,24 +213,24 @@ class Character:
             return self.tbbox
         return self._bbox
 
-    @cached_property
+    @property
     def twidth(self) -> float:
         """The width of the character's tight bounding box."""
         return self.tbbox.width
 
-    @cached_property
+    @property
     def theight(self) -> float:
         """The height of the character's tight bounding box."""
         return self.tbbox.height
 
-    @cached_property
+    @_slot_cache
     def render_mode(self) -> RenderMode:
         """The render mode of the character."""
         return Character.RenderMode(
             pp.raw.FPDFTextObj_GetTextRenderMode(pp.raw.FPDFText_GetTextObject(self._text, self._index))
         )
 
-    @cached_property
+    @property
     def rotation(self) -> int:
         """The rotation of the character in degrees modulo 360."""
         # Special case for vertical text in rotated pages
@@ -196,36 +240,36 @@ class Character:
             return (self._page.rotation + self._rotation) % 360
         return self._rotation
 
-    @cached_property
+    @_slot_cache
     def size(self) -> float:
         """The font size of the character."""
         return pp.raw.FPDFText_GetFontSize(self._text, self._index)
 
-    @cached_property
+    @_slot_cache
     def weight(self) -> int:
         """The font weight of the character."""
         return pp.raw.FPDFText_GetFontWeight(self._text, self._index)
 
-    @cached_property
+    @_slot_cache
     def fill(self) -> int:
         """The fill color of the character."""
         r, g, b, a = ctypes.c_uint(), ctypes.c_uint(), ctypes.c_uint(), ctypes.c_uint()
         pp.raw.FPDFText_GetFillColor(self._text, self._index, r, g, b, a)
         return r.value << 24 | g.value << 16 | b.value << 8 | a.value
 
-    @cached_property
+    @_slot_cache
     def stroke(self) -> int:
         """The stroke color of the character."""
         r, g, b, a = ctypes.c_uint(), ctypes.c_uint(), ctypes.c_uint(), ctypes.c_uint()
         pp.raw.FPDFText_GetStrokeColor(self._text, self._index, r, g, b, a)
         return r.value << 24 | g.value << 16 | b.value << 8 | a.value
 
-    @cached_property
+    @property
     def font(self) -> str:
         """The font name of the character."""
         return self._font_flags()[0]
 
-    @cached_property
+    @property
     def flags(self) -> int:
         """The font flags of the character."""
         return self._font_flags()[1]

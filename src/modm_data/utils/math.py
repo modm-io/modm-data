@@ -10,6 +10,8 @@ import pypdfium2 as pp
 
 
 class Point:
+    __slots__ = ("type", "x", "y")
+
     def __init__(self, *xy, type: Enum = None):
         if isinstance(xy[0], tuple):
             self.x = xy[0][0]
@@ -149,6 +151,8 @@ class HLine(Line):
 
 
 class Rectangle:
+    __slots__ = ("_midpoint", "bottom", "height", "left", "p0", "p1", "right", "top", "width", "x", "y")
+
     def __init__(self, *r):
         # P0 is left, bottom
         # P1 is right, top
@@ -184,6 +188,7 @@ class Rectangle:
 
         self.width = self.p1.x - self.p0.x
         self.height = self.p1.y - self.p0.y
+        self._midpoint = None
 
     def contains(self, other) -> bool:
         if isinstance(other, Point):
@@ -203,11 +208,13 @@ class Rectangle:
     def isclose(self, other, rtol: float = 1e-09, atol: float = 0.0) -> bool:
         return self.p0.isclose(other.p0, rtol, atol) and self.p1.isclose(other.p1, rtol, atol)
 
-    @cached_property
+    @property
     def midpoint(self) -> Point:
-        return Point((self.p1.x + self.p0.x) / 2, (self.p1.y + self.p0.y) / 2)
+        if self._midpoint is None:
+            self._midpoint = Point((self.p1.x + self.p0.x) / 2, (self.p1.y + self.p0.y) / 2)
+        return self._midpoint
 
-    @cached_property
+    @property
     def points(self) -> list[Point]:
         return [self.p0, Point(self.right, self.bottom), self.p1, Point(self.left, self.top)]
 

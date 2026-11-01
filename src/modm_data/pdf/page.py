@@ -6,7 +6,7 @@ import logging
 import weakref
 from typing import Iterator, Callable
 from bisect import bisect_left, bisect_right
-from functools import cached_property, cache
+from functools import cached_property
 from collections import defaultdict, OrderedDict
 import pypdfium2 as pp
 
@@ -81,10 +81,17 @@ class Page(pp.PdfPage):
         """The total count of characters."""
         return self._text.count_chars()
 
-    @cache
+    @cached_property
+    def _chars(self) -> list[Character | None]:
+        return [None] * self.char_count
+
     def char(self, index: int) -> Character:
         """:return: The character at the 0-index."""
-        return Character(self, index)
+        # A list per page is smaller than a global `functools.cache`, which
+        # also keeps every page alive after the document is closed.
+        if (char := self._chars[index]) is None:
+            char = self._chars[index] = Character(self, index)
+        return char
 
     @property
     def chars(self) -> Iterator[Character]:
