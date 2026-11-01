@@ -57,7 +57,12 @@ def read_dma3_request_map(did: DeviceIdentifier, controller: str) -> dict[str, i
         name.split("_REQUEST_", 1)[1]: int(number)
         for name, number in _read_map(_get_hal_dma_header_path(did), pattern).items()
     }
-    _fix_request_data(request_map, controller.upper())
+    # The names are used as is, the DMAMUX fixes would only add aliases.
+    # The DCMI request is shared with the PSSI according to the reference manuals.
+    if "DCMI_PSSI" in request_map:
+        request_map["DCMI"] = request_map["PSSI"] = request_map.pop("DCMI_PSSI")
+    elif "DCMI" in request_map:
+        request_map.setdefault("PSSI", request_map["DCMI"])
     return request_map
 
 
