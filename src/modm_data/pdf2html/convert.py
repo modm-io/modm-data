@@ -1,6 +1,7 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
+import gc
 from anytree import RenderTree
 from typing import Iterable
 
@@ -29,6 +30,10 @@ def convert(
     debug_doc = None
     debug_index = 0
     for page in doc.pages(page_range):
+        # The previous pages create millions of long-lived objects, which the
+        # garbage collector would otherwise traverse again in every collection
+        # of the oldest generation, taking a third of the conversion time.
+        gc.freeze()
         if not render_all and not page.is_relevant:
             continue
         print(f"\n\n=== {page.top} #{page.number} ===\n")
