@@ -20,8 +20,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _dl(url):
-    cmd = f"curl '{url}' -L -s --max-time 120 -o - " + " ".join(f"-H '{k}: {v}'" for k, v in _hdr.items())
-    return subprocess.run(cmd, shell=True, stdout=subprocess.PIPE).stdout
+    cmd = f"curl '{url}' -L -s --fail --max-time 1800 -o - " + " ".join(f"-H '{k}: {v}'" for k, v in _hdr.items())
+    return subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, check=True).stdout
 
 
 def download_cubemx(extraction_path: Path, with_download: bool = True, with_patch: bool = True) -> bool:
