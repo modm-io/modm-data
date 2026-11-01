@@ -495,6 +495,9 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
             if len(channels) == 0:
                 # match channels from node without <Condition> child node
                 channels = dmaFile.query('//RefParameter[@Name="Instance" and not(Condition)]/PossibleValue/@Value')
+            # CubeMX lists some DMA channels that do not exist, for example, DMA1_Channel8-12 on the STM32U073,
+            # which would shift the DMAMUX channel positions of the following DMA channels.
+            channels = [c for c in channels if c in stm_header.peripherals or c + "_NS" in stm_header.peripherals]
 
             mux_channels = []
             # H7 has "Stream" instead of "Channel" for DMAMUX1
