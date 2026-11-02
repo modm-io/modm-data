@@ -174,6 +174,8 @@ class _BitFields:
             if value.endswith("_Pos") and data.values.get(f"{value[:-4]}_Msk") is not None:
                 self.alias[name] = value[:-4]
         self.local = {name for name in self.fields if f"{name}_Pos" in data.local_macros}
+        # Multi-bit fields also define their single bits, e.g. RCC_CFGR_PLLMULL_0 to RCC_CFGR_PLLMULL_3
+        self.with_bits = {name for name in self.fields if f"{name}_0" in data.macros}
         self.names = sorted(self.fields)
         self.assigned = set()
 
@@ -545,7 +547,14 @@ def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFiel
         covered = set().union(*(bits(*c[1:3]) for c in others)) if others else set()
         # A mask of many bit fields or of bit fields with the same name, e.g. EXTI_IMR_IM for EXTI_IMR_MRx
         similar = all(c[0].startswith(base) for c in others)
-        if len(others) > 1 and covered == cbits and (similar or len(others) >= 8):
+        # A field with its own bit macros is a real field and the others are its values, e.g. RCC_CFGR_PLLMULL4
+        # is a value of RCC_CFGR_PLLMULL on the STM32F1 with a position and mask of its own.
+        if (
+            len(others) > 1
+            and covered == cbits
+            and (similar or len(others) >= 8)
+            and candidate[3] not in bitfields.with_bits
+        ):
             report.overlapping.append((register.name, candidate[0], others[0][0]))
             continue
         result.append(candidate)
@@ -558,7 +567,12 @@ def _bit_fields(register: _Register, fields: dict[str, str], bitfields: _BitFiel
             # A narrow field at the edge of a much wider field, e.g. TIM_CNT_UIFCPY in TIM_CNT_CNT
             opos, owidth = register.fields[overlap]
             cbits, obits = bits(position, width), bits(opos, owidth)
-            if cbits < obits and owidth > 2 * width and (position == opos or position + width == opos + owidth):
+            edge = position == opos or position + width == opos + owidth
+            # but not a value of a field with bit macros, e.g. RCC_CFGR_PLLMULL3 at the edge of RCC_CFGR_PLLMULL
+            value = register.macros[overlap] in bitfields.with_bits and re.fullmatch(
+                rf"{re.escape(overlap)}\d+(_\d+)?", fname
+            )
+            if cbits < obits and owidth > 2 * width and edge and not value:
                 trimmed = sorted(obits - cbits)
                 register.fields[overlap] = (trimmed[0], len(trimmed))
                 report.overlapping.append((register.name, overlap, fname))
