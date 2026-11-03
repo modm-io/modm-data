@@ -51,6 +51,7 @@ class Document(pp.PdfDocument):
         """Stem of the document file name"""
         super().__init__(path, autoclose=autoclose)
         self._path = path
+        self._glyph_offsets: dict[str, int] = {}
         _LOGGER.debug(f"Loading: {path}")
 
     @cached_property
