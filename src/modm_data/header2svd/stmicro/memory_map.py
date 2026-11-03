@@ -130,7 +130,7 @@ def device_headers() -> list[Path]:
     headers = []
     for header in sorted(_HEADER_PATH.glob("stm32*xx/Include/stm32*.h")):
         content = header.read_text(encoding="utf-8", errors="replace")
-        if "_TypeDef" in content and re.search(r'#include +"core_cm', content):
+        if "_TypeDef" in content and re.search(r'#include +["<]core_cm', content):
             headers.append(header)
     return headers
 

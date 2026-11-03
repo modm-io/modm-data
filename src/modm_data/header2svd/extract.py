@@ -93,7 +93,7 @@ class HeaderData:
 
 
 def _cpu(content: str) -> str:
-    core = re.search(r'#include +"core_cm(\w+?)\.h"', content).group(1)
+    core = re.search(r'#include +["<]core_cm(\w+?)\.h[">]', content).group(1)
     return {"0plus": "cortex-m0plus"}.get(core, f"cortex-m{core}")
 
 
