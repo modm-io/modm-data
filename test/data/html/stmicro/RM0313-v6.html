@@ -7,7 +7,7 @@
     <p id="page893">
       <b>TPUI TRACE pin assignment</b>
     </p>
-    <p>By default, these pins are NOT assigned. They can be assigned by setting the <br/>TRACE_IOEN and TRACE_MODE bits in the <i><b>MCU Debug component configuration </b></i><br/><i><b>register</b></i>. This configuration has to be done by the debugger host.</p>
+    <p>By default, these pins are NOT assigned. They can be assigned by setting the <br/>TRACE_IOEN and TRACE_MODE bits in the <i><b>MCU Debug component configuration</b></i> <br/><i><b>register</b></i>. This configuration has to be done by the debugger host.</p>
     <p>In addition, the number of pins to assign depends on the trace configuration (asynchronous <br/>or synchronous).</p>
     <ul>
       <li><b>Asynchronous mode</b>: 1 extra pin is needed</li>
@@ -38,7 +38,7 @@
         <td>0</td>
         <td>XX</td>
         <td>No Trace <br/>(default state)</td>
-        <td>Released<sup> (1)</sup></td>
+        <td>Released <sup>(1)</sup></td>
         <td colspan="5">-</td>
       </tr>
       <tr>
@@ -54,7 +54,7 @@
         <td>1</td>
         <td>01</td>
         <td>Synchronous <br/>Trace 1 bit</td>
-        <td rowspan="3">Released<sup> <u>(1)</u></sup></td>
+        <td rowspan="3">Released <sup><u>(1)</u></sup></td>
         <td>TRACEC<br/>K</td>
         <td>TRACED[<br/>0]</td>
         <td>-</td>
@@ -86,11 +86,7 @@
       <li value="1">When Serial Wire mode is used, it is released. But when JTAG is used, it is assigned to JTDO.</li>
     </ol>
     <div class="nt">
-      <p>
-        <i>Note: By default, the TRACECLKIN input clock of the TPIU is tied to GND. It is assigned to HCLK </i>
-        <br/>
-        <i>two clock cycles after the bit TRACE_IOEN has been set.</i>
-      </p>
+      <p><i>Note: By default, the TRACECLKIN input clock of the TPIU is tied to GND. It is assigned to HCLK</i> <br/><i>two clock cycles after the bit TRACE_IOEN has been set.</i></p>
     </div>
   </body>
 </html>
