@@ -95,6 +95,14 @@ class Character:
         """The unicode value of the character."""
         if pp.raw.FPDFText_HasUnicodeMapError(self._text, self._index):
             self.unicode = self._page._glyph_unicodes.get((self.font, self.unicode), self.unicode)
+        if 0xD800 <= self.unicode < 0xDC00:
+            # Characters outside the BMP are split into two UTF-16 code units,
+            # so we combine them into the first and ignore the second one.
+            low = pp.raw.FPDFText_GetUnicode(self._text, self._index + 1)
+            if 0xDC00 <= low < 0xE000:
+                self.unicode = 0x10000 + ((self.unicode - 0xD800) << 10) + low - 0xDC00
+        elif 0xDC00 <= self.unicode < 0xE000:
+            self.unicode = 0
         self.objlink: "modm_data.pdf.link.ObjLink" = None  # noqa: F821
         """The object link of this character or `None`"""
         self.weblink: "modm_data.pdf.link.WebLink" = None  # noqa: F821
