@@ -1,6 +1,7 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
+import re
 import subprocess
 from pathlib import Path
 from importlib.resources import files, as_file
@@ -43,7 +44,6 @@ def apply_patch(patch_file: Path, base_dir: Path) -> bool:
     cmds = [
         "patch",
         "--strip=1",
-        "--silent",
         "--ignore-whitespace",
         "--reject-file=-",
         "--forward",
@@ -53,6 +53,13 @@ def apply_patch(patch_file: Path, base_dir: Path) -> bool:
         "--input",
         Path(patch_file).absolute(),
     ]
-    if subprocess.run(cmds + ["--dry-run"]).returncode:
-        return False
-    return subprocess.run(cmds).returncode == 0
+
+    def run(*args) -> bool:
+        result = subprocess.run(cmds + list(args), capture_output=True, text=True)
+        # Hunks that the conversion already fixed are ignored, which is fine
+        if result.returncode and re.search(r"failed|can't find|malformed|garbage", result.stdout + result.stderr):
+            print(result.stdout + result.stderr)
+            return False
+        return True
+
+    return run("--dry-run") and run()
