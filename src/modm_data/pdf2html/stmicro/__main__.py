@@ -63,7 +63,7 @@ def main():
             for toc in doc.toc:
                 if toc.level == 0 and not toc.title.startswith("Table"):
                     title = toc.title.lower().strip("0123456789").strip()
-                    title = re.sub(r"[\(\)/®&\n\r,;:™]", "", title)
+                    title = re.sub(r"[\(\)/®&\n\r,;:™'’\"]", "", title)
                     title = re.sub(r"[ -]", "_", title)
                     title = re.sub(r"_+", "_", title)
                     title = title.replace("²", "2")
