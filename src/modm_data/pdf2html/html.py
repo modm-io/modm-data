@@ -148,6 +148,12 @@ def _format_lines(textnode, ignore, with_newlines, with_start):
                 chars.append(char)
 
     chars = list_strip(chars, lambda c: c["char"] in {" ", "\n"})
+    # Whitespace at the end of a formatted run belongs to the following text,
+    # otherwise "<b>NAME </b>Text" becomes "NAMEText" when the tags are stripped
+    for prev, char, succ in zip(chars, chars[1:], chars[2:]):
+        if char["char"] == " ":
+            for key in ("superscript", "subscript", "bold", "italic", "underline"):
+                char[key] = prev[key] and succ[key] and succ["char"] != "\n"
     state = None
     node = formatn
     while chars:

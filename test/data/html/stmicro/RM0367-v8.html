@@ -16,11 +16,11 @@
       <b>Calibration</b>
     </p>
     <p>The MSI RC oscillator frequency can vary from one chip to another due to manufacturing <br/>process variations, this is why each device is factory calibrated by ST for 1% accuracy at an <br/>ambient temperature, T<sub>A</sub>, of 25 &#176;C.</p>
-    <p>After reset, the factory calibration value is loaded in the MSICAL[7:0] bits in the <br/>RCC_ICSCR register. If the application is subject to voltage or temperature variations, this <br/>may affect the RC oscillator speed. You can trim the MSI frequency in the application by <br/>using the MSITRIM[7:0] bits in the RCC_ICSCR register. For more details on how to <br/>measure the MSI frequency variation please refer to <i><u>Section 7.2.15: Internal/external clock </u></i><u><br/><i>measurement using TIM21</i></u>.</p>
+    <p>After reset, the factory calibration value is loaded in the MSICAL[7:0] bits in the <br/>RCC_ICSCR register. If the application is subject to voltage or temperature variations, this <br/>may affect the RC oscillator speed. You can trim the MSI frequency in the application by <br/>using the MSITRIM[7:0] bits in the RCC_ICSCR register. For more details on how to <br/>measure the MSI frequency variation please refer to <i><u>Section 7.2.15: Internal/external clock</u></i> <u><br/><i>measurement using TIM21</i></u>.</p>
     <h4 id="section7.2.4">7.2.4 HSI48 clock</h4>
     <p>The HSI48 clock signal is generated from an internal 48 MHz RC oscillator and can be used <br/>directly for USB and for random number generator (RNG).</p>
     <p>The internal 48MHz RC oscillator is mainly dedicated to provide a high precision clock to the <br/>USB peripheral by means of a special Clock Recovery System (CRS) circuitry. The CRS <br/>can use the USB SOF signal, the LSE or an external signal to automatically and quickly <br/>adjust the oscillator frequency on-fly. It is disabled as soon as the system enters Stop or <br/>Standby mode. When the CRS is not used, the HSI48 RC oscillator runs on its default <br/>frequency which is subject to manufacturing process variations.</p>
-    <p>For more details on how to configure and use the CRS peripheral please refer to <i><u>Section 8: </u></i><u><br/><i>Clock recovery system (CRS)</i></u><i>.</i></p>
+    <p>For more details on how to configure and use the CRS peripheral please refer to <i><u>Section 8:</u></i> <u><br/><i>Clock recovery system (CRS)</i></u><i>.</i></p>
     <p>The HSI48 requires VREFINT and its buffer with 48 MHz RC to be enabled (see</p>
   </body>
 </html>
