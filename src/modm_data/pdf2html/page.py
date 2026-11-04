@@ -299,7 +299,7 @@ class Page(PdfPage):
                 and line.bbox.right < prev.bbox.left
             ):
                 # Keep the spaces between the words of the label, but not around it
-                label = [c for c in line.chars if c.unicode not in {0xA, 0xD}]
+                label = sorted((c for c in line.chars if c.unicode not in {0xA, 0xD}), key=lambda c: c.origin.x)
                 label = list_strip(label, lambda c: c.unicode == 0x20)
                 chars = label + [label[-1].generated_space()] + prev.chars
                 labeled_lines[-1] = CharLine(
