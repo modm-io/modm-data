@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import math
+import statistics
 from lxml import etree
 from ..utils import Rectangle, Point
 from ..pdf import Path, Image
@@ -84,11 +85,24 @@ class Figure:
                         runs[-1][1].append(char)
                     continue
                 if not runs or runs[-1][0] != key or start - last > 0.5 * line.height:
-                    runs.append((key, []))
+                    runs.append((key, [], []))
+                else:
+                    runs[-1][2].append((start - last, len(runs[-1][1])))
                 runs[-1][1].append(char)
                 last = stop
 
-            for (font, size, _), chars in runs:
+            # pdfium generates no spaces at the word gaps of fonts without a
+            # space glyph, so we insert them at gaps wider than the typical gap
+            # between the letters, which may be letter-spaced.
+            for _, chars, gaps in runs:
+                if not gaps or chars[0].has_space_glyph:
+                    continue
+                letter_gap = statistics.median(gap for gap, _ in gaps)
+                for gap, index in reversed(gaps):
+                    if gap > letter_gap + 0.15 * line.height and chars[index - 1].unicode != 0x20:
+                        chars.insert(index, chars[index].generated_space())
+
+            for (font, size, _), chars, _ in runs:
                 while chars and not chars[-1].char.strip():
                     chars = chars[:-1]
                 if not chars or not size:

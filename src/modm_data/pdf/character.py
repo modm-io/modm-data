@@ -284,6 +284,19 @@ class Character:
         """The font flags of the character."""
         return self._font_flags()[1]
 
+    @property
+    def has_space_glyph(self) -> bool:
+        """
+        Whether the font of the character has a space with a width. pdfium
+        cannot generate spaces at the visual gaps of text in fonts without.
+        """
+        obj = pp.raw.FPDFText_GetTextObject(self._text, self._index)
+        if not obj:
+            return True
+        width = ctypes.c_float()
+        font = pp.raw.FPDFTextObj_GetFont(obj)
+        return not pp.raw.FPDFFont_GetGlyphWidth(font, 0x20, 1, width) or width.value > 0
+
     def descr(self) -> str:
         """Human-readable description of the character for debugging."""
         char = chr(self.unicode)
