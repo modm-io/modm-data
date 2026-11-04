@@ -68,6 +68,11 @@ update-sources-stmicro: update-sources-arm update-ext/stmicro/cubehal update-ext
 download-stmicro-pdfs:
 	@python3 -m modm_data.dl.stmicro --directory ext/stmicro/pdf --download pdf
 
+.PHONY: download-stmicro-markdown
+## Download the Markdown versions of the PDFs from the vendor's website.
+download-stmicro-markdown:
+	@python3 -m modm_data.dl.stmicro --directory ext/stmicro/markdown --download markdown
+
 .PHONY: download-stmicro-cubemx
 ## Download the CubeMX database from ST's update server.
 download-stmicro-cubemx:
