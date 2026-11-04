@@ -107,9 +107,14 @@ ext/stmicro/html-archive/:
 ext/stmicro/pdf/:
 	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-pdf.git $@
 
+# Note: The STMicro Markdown archive repo is private and used for our CI.
+#       Please download the Markdown documents via 'make download-stmicro-markdown'.
+ext/stmicro/markdown/:
+	@git clone --depth=1 https://github.com/modm-ext/archive-stmicro-markdown.git $@
+
 .PHONY: clone-sources-stmicro-private
 clone-sources-stmicro-private: clone-sources-stmicro ext/stmicro/cubemx/ ext/stmicro/cubeprog/ \
-							   ext/stmicro/pdf/ ext/stmicro/html-archive/
+							   ext/stmicro/pdf/ ext/stmicro/html-archive/ ext/stmicro/markdown/
 
 .PHONY: update-sources-stmicro-private
 update-sources-stmicro-private: update-sources-stmicro
@@ -117,6 +122,7 @@ update-sources-stmicro-private: update-sources-stmicro
 	@(cd ext/stmicro/cubeprog && git fetch && git reset --hard origin/main) &
 	@(cd ext/stmicro/html-archive && git fetch && git reset --hard origin/main) &
 	@(cd ext/stmicro/pdf && git fetch && git reset --hard origin/main) &
+	@(cd ext/stmicro/markdown && git fetch && git reset --hard origin/main) &
 	@wait
 
 
