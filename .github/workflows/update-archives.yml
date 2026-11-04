@@ -90,6 +90,54 @@ jobs:
 
 
 
+  update-markdown:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out Repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "bot@modm.io"
+          git config --global user.name "modm update bot"
+
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Python Dependencies
+        run: |
+          pip3 install -r tools/requirements.txt .
+
+
+      # This cache repository is private since copyright prevents republishing!
+      # Nicely ask @salkinium for access to this repository.
+      - name: Check out STMicro Markdown Archive
+        uses: actions/checkout@v4
+        with:
+          repository: modm-ext/archive-stmicro-markdown
+          path: ext/stmicro/markdown
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_MARKDOWN }}
+          persist-credentials: true
+
+      - name: Update Markdown Archive
+        run: |
+          make download-stmicro-markdown
+
+      - name: Git push Markdown Archive
+        working-directory: ext/stmicro/markdown
+        run: |
+          git add .
+          git commit -m "Update Markdown" || true
+          git gc
+          git count-objects -vH
+          git push origin main
+
+
+
   update-cube:
     runs-on: ubuntu-latest
     steps:
