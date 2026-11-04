@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import json
+import time
 import logging
 from pathlib import Path
 from ..store import download_file, download_data
@@ -121,6 +122,18 @@ _remote_info = "remote.json"
 _local_info = "local.json"
 
 
+def _download_json(url: str, tries: int = 5) -> dict:
+    # The server sometimes answers with an empty response, so we try again
+    for attempt in range(1, tries + 1):
+        try:
+            return json.loads(download_data(url))
+        except json.JSONDecodeError:
+            if attempt == tries:
+                raise
+            LOGGER.warning(f"Invalid JSON from {url}, retrying in {10 * attempt}s")
+            time.sleep(10 * attempt)
+
+
 def load_remote_info(base_dir: Path, use_cached: bool = False) -> list[dict]:
     info = base_dir / _remote_info
     if use_cached and info.exists():
@@ -131,7 +144,7 @@ def load_remote_info(base_dir: Path, use_cached: bool = False) -> list[dict]:
         docs = []
         for urls in _json_urls.values():
             for url in urls:
-                docs.extend(json.loads(download_data(url))["rows"])
+                docs.extend(_download_json(url)["rows"])
     missing = [d for d in docs if "title" not in d or "version" not in d]
     if missing:
         LOGGER.warning(

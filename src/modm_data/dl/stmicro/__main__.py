@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import shutil
+import time
 import zipfile
 import tempfile
 import argparse
@@ -81,16 +82,23 @@ def download_markdown(base_dir, with_download):
         if (base_dir / doc.name).exists():
             continue
         LOGGER.info(f"New document: {doc}")
-        with tempfile.NamedTemporaryFile() as outfile:
-            try:
-                assert doc.store_markdown(overwrite=True, path=outfile.name)
-                # Extract the files, so that the archive shows what changed between versions
-                with zipfile.ZipFile(outfile.name) as archive:
-                    archive.extractall(base_dir / f"{doc.name}.tmp")
-                (base_dir / f"{doc.name}.tmp").rename(base_dir / doc.name)
-            except Exception as e:
-                print(e)
-                invalid_docs.append(doc)
+        # The server sometimes answers with an empty response, so we try again
+        for attempt in range(1, 4):
+            with tempfile.NamedTemporaryFile() as outfile:
+                try:
+                    assert doc.store_markdown(overwrite=True, path=outfile.name)
+                    # Extract the files, so that the archive shows what changed between versions
+                    shutil.rmtree(base_dir / f"{doc.name}.tmp", ignore_errors=True)
+                    with zipfile.ZipFile(outfile.name) as archive:
+                        archive.extractall(base_dir / f"{doc.name}.tmp")
+                    (base_dir / f"{doc.name}.tmp").rename(base_dir / doc.name)
+                    break
+                except Exception as e:
+                    print(e)
+                    if attempt == 3:
+                        invalid_docs.append(doc)
+                    else:
+                        time.sleep(10 * attempt)
 
     if invalid_docs:
         print("=======================================")
