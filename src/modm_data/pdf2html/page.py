@@ -10,7 +10,7 @@ from collections import defaultdict
 from .table import Table
 from .figure import Figure
 from .line import CharLine
-from ..utils import Rectangle, Region
+from ..utils import Rectangle, Region, list_strip
 from ..pdf import Page as PdfPage, Character
 from anytree import Node
 
@@ -95,7 +95,11 @@ class Page(PdfPage):
             "relsize": self._line_size(line),
             "char": chr(char.unicode),
         }
-        if line.rotation:
+        # Sub- and superscript use a smaller font, characters of the full size
+        # with a shifted baseline are labels next to multi-line text instead
+        if char.height >= 0.95 * line.height:
+            pass
+        elif line.rotation:
             if char.origin.x < (line.origin - 0.25 * line.height):
                 cp["superscript"] = True
             elif char.origin.x > (line.origin + 0.15 * line.height):
@@ -230,6 +234,17 @@ class Page(PdfPage):
                         return True
             return False
 
+        def _label(line0, line1) -> bool:
+            # A label of the same font size left of a multi-line text is
+            # vertically centered on the lines, so its baseline is shifted by
+            # more than a continuation of the line would be.
+            if line0.rotation or line1.rotation:
+                return False
+            offset = abs(line0._sort_origin - line1._sort_origin)
+            return offset > rtol * line0.height and (
+                line0.bbox.right < line1.bbox.left or line1.bbox.right < line0.bbox.left
+            )
+
         # Merge lines that have overlapping bbox_lines
         merged_lines = []
         current_line = bbox_lines[0]
@@ -237,10 +252,14 @@ class Page(PdfPage):
             height = max(current_line.height, next_line.height)
             same_height = math.isclose(current_line.height, next_line.height, rel_tol=0.01)
             # Calculate overlap via normalize origin (increasing with line index)
-            if (current_line._sort_origin + rtol * height) > (next_line._sort_origin - rtol * height) and not (
+            if (
+                # Horizontal and vertical lines have different sort origins
+                bool(current_line.rotation) == bool(next_line.rotation)
+                and (current_line._sort_origin + rtol * height) > (next_line._sort_origin - rtol * height)
                 # Lines of the same font size printed on top of each other are
                 # separate lines, like the numerator and denominator of a formula
-                same_height and current_line.rotation == next_line.rotation and _stacked(current_line, next_line)
+                and not (same_height and _stacked(current_line, next_line))
+                and not (same_height and _label(current_line, next_line))
             ):
                 # The next line overlaps this one, we merge the shorter line
                 # (typically super- and subscript) into the taller line. Lines
@@ -268,6 +287,28 @@ class Page(PdfPage):
         # append last line
         merged_lines.append(current_line)
 
+        # Prepend labels to the first line of their multi-line text
+        labeled_lines = []
+        for line in merged_lines:
+            prev = labeled_lines[-1] if labeled_lines else None
+            if (
+                prev is not None
+                and not line.rotation
+                and math.isclose(prev.height, line.height, rel_tol=0.01)
+                and 0 < line._sort_origin - prev._sort_origin < line.height
+                and line.bbox.right < prev.bbox.left
+            ):
+                # Keep the spaces between the words of the label, but not around it
+                label = sorted((c for c in line.chars if c.unicode not in {0xA, 0xD}), key=lambda c: c.origin.x)
+                label = list_strip(label, lambda c: c.unicode == 0x20)
+                chars = label + [label[-1].generated_space()] + prev.chars
+                labeled_lines[-1] = CharLine(
+                    self, chars, prev.bottom, prev.origin, prev.top, prev.height, sort_origin=prev._sort_origin
+                )
+            else:
+                labeled_lines.append(line)
+        merged_lines = labeled_lines
+
         # Sort all lines horizontally based on character origin
         sorted_lines = []
         for line in merged_lines:
@@ -293,6 +334,7 @@ class Page(PdfPage):
             chars = sorted(line.chars, key=sort_key)
             if not line.rotation:
                 chars = self._chars_with_bullet_space(chars)
+            chars = self._chars_with_gap_spaces(chars, line.rotation)
             sorted_lines.append(
                 CharLine(
                     self,
@@ -308,6 +350,43 @@ class Page(PdfPage):
             )
 
         return sorted_lines
+
+    @staticmethod
+    def _chars_with_gap_spaces(chars: list, rotation: int) -> list:
+        # pdfium generates no spaces at the word gaps of fonts without a space
+        # glyph, so we insert them at gaps wider than the typical gap between
+        # the letters of a run of the same font, which may be letter-spaced.
+        def _span(char):
+            if not rotation:
+                return char.bbox.left, char.bbox.right
+            if rotation == 90:
+                return char.bbox.bottom, char.bbox.top
+            return -char.bbox.top, -char.bbox.bottom
+
+        runs, last, key = [], None, None
+        for index, char in enumerate(chars):
+            if char.unicode in {0x20, 0xA, 0xD}:
+                continue
+            start, stop = _span(char)
+            size = round(char.height, 1)
+            # Lines may interleave the characters of several baselines
+            baseline = round(char.origin.x if rotation else char.origin.y, 1)
+            if key != (char.font, size, baseline) or start - last > 0.5 * size:
+                runs.append((char, []))
+            else:
+                runs[-1][1].append((start - last, index))
+            key, last = (char.font, size, baseline), stop
+
+        spaces = []
+        for first, gaps in runs:
+            if not gaps or first.has_space_glyph:
+                continue
+            size = first.height
+            letter_gap = statistics.median(g for g, _ in gaps)
+            spaces += [i for g, i in gaps if g > letter_gap + 0.15 * size and chars[i - 1].unicode != 0x20]
+        for index in sorted(spaces, reverse=True):
+            chars = chars[:index] + [chars[index].generated_space()] + chars[index:]
+        return chars
 
     @staticmethod
     def _chars_with_bullet_space(chars: list) -> list:

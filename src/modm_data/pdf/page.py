@@ -12,6 +12,7 @@ import pypdfium2 as pp
 
 from ..utils import Rectangle, Region
 from .character import Character
+from .glyph import decode_glyphs
 from .link import ObjLink, WebLink
 from .path import Path
 from .image import Image
@@ -84,6 +85,10 @@ class Page(pp.PdfPage):
     @cached_property
     def _chars(self) -> list[Character | None]:
         return [None] * self.char_count
+
+    @cached_property
+    def _glyph_unicodes(self) -> dict[tuple[str, int], int]:
+        return decode_glyphs(self)
 
     def char(self, index: int) -> Character:
         """:return: The character at the 0-index."""

@@ -85,6 +85,26 @@ class Path(pp.PdfObject):
         return width.value
 
     @cached_property
+    def draw_mode(self) -> tuple[int, bool]:
+        """
+        The fill mode (0: not filled, 1: even-odd rule, 2: non-zero winding
+        rule) and whether the path is stroked.
+        """
+        fill, stroke = ctypes.c_int(), ctypes.c_int()
+        assert pp.raw.FPDFPath_GetDrawMode(self, fill, stroke)
+        return fill.value, bool(stroke.value)
+
+    @cached_property
+    def dashes(self) -> list[float]:
+        """The stroke dash pattern or an empty list for a solid stroke."""
+        count = pp.raw.FPDFPageObj_GetDashCount(self)
+        if count <= 0:
+            return []
+        dashes = (ctypes.c_float * count)()
+        assert pp.raw.FPDFPageObj_GetDashArray(self, dashes, count)
+        return list(dashes)
+
+    @cached_property
     def cap(self) -> Cap:
         """Line cap type."""
         return Path.Cap(pp.raw.FPDFPageObj_GetLineCap(self))
@@ -128,8 +148,11 @@ class Path(pp.PdfObject):
             x, y = self.matrix.on_point(x.value, y.value)
             points.append(Point(x, y, type=ptype))
 
+            if ptype == Path.Type.MOVE:
+                start = points[-1]
             if pp.raw.FPDFPathSegment_GetClose(seg):
-                points.append(Point(points[0].x, points[0].y, type=Path.Type.LINE))
+                # Closing a path draws a line to the start of the current subpath
+                points.append(Point(start.x, start.y, type=Path.Type.LINE))
 
         if self.page.rotation:
             points = [Point(y, self.page.height - x, type=p.type) for p in points]

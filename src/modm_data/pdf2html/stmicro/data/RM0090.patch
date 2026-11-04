@@ -82,8 +82,8 @@ index 63799c6c..e695f76f 100644
            <span class="tv">VOSRDY</span>
          </td>
          <td colspan="4" rowspan="2">Reserved</td>
--        <td rowspan="2">0<sup>BRE</sup></td>
--        <td rowspan="2">0<sup>EWUP</sup></td>
+-        <td rowspan="2">0<br/>BRE</td>
+-        <td rowspan="2">0<br/>EWUP</td>
 +        <td>BRE</td>
 +        <td>EWUP</td>
          <td colspan="4" rowspan="2">Reserved</td>
@@ -275,7 +275,7 @@ index 5a4b5ca0..af02f718 100644
          </td>
          <td colspan="25" rowspan="2">Reserved</td>
          <td>
-@@ -1758,72 +1746,77 @@
+@@ -1758,78 +1746,77 @@
          </td>
        </tr>
        <tr>
@@ -296,8 +296,14 @@ index 5a4b5ca0..af02f718 100644
 -          <p>OC2M<br/>[2:0]</p>
 -          <p>0 0 0</p>
 -        </td>
--        <td>0<sup>OC2PE</sup></td>
--        <td>0<sup>OC2FE</sup></td>
+-        <td>
+-          <p>0</p>
+-          <p>OC2PE</p>
+-        </td>
+-        <td>
+-          <p>0</p>
+-          <p>OC2FE</p>
+-        </td>
 -        <td colspan="2">
 -          <p>CC2S <br/>[1:0]</p>
 -          <p>0 0</p>

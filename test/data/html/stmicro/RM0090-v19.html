@@ -5,11 +5,7 @@
   </head>
   <body>
     <table id="table15">
-      <caption id="page90">
-        <b>Table 15. Description of the option bytes (STM32F405xx/07xx and </b>
-        <br/>
-        <b>STM32F415xx/17xx) (continued)</b>
-      </caption>
+      <caption id="page90"><b>Table 15. Description of the option bytes (STM32F405xx/07xx and</b> <br/><b>STM32F415xx/17xx) (continued)</b></caption>
       <tr>
         <th colspan="2" class="thb">Option bytes (word, address 0x1FFF C008)</th>
       </tr>
@@ -34,20 +30,13 @@
       </tr>
     </table>
     <table id="table16">
-      <caption>
-        <b>Table 16. Description of the option bytes </b>
-        <br/>
-        <b>(STM32F42xxx and STM32F43xxx)</b>
-      </caption>
+      <caption><b>Table 16. Description of the option bytes</b> <br/><b>(STM32F42xxx and STM32F43xxx)</b></caption>
       <tr>
         <th colspan="2" class="thb">Option bytes (word, address 0x1FFF C000)</th>
       </tr>
       <tr>
         <td colspan="2" class="tl">
-          <p>
-            <b>RDP: </b>
-            <i>Read protection option byte.</i>
-          </p>
+          <p><b>RDP:</b> <i>Read protection option byte.</i></p>
           <p>The read protection is used to protect the software code stored in Flash memory.</p>
         </td>
       </tr>
@@ -61,7 +50,7 @@
       </tr>
       <tr>
         <td colspan="2" class="tl">
-          <p><b>USER: </b>User option byte</p>
+          <p><b>USER:</b> User option byte</p>
           <p>This byte is used to configure the following features:</p>
           <p>Select the watchdog event: Hardware or software</p>
           <p>Reset event when entering the Stop mode</p>
@@ -118,7 +107,7 @@
         <td class="tl">
           <p><b>DB1M</b>: Dual bank 1 Mbyte Flash memory devices</p>
           <p>0: 1 Mbyte single Flash memory (contiguous addresses in bank 1)</p>
-          <p>1: 1 Mbyte dual bank Flash memory. The Flash memory is organized as two banks <br/>of 512 Kbytes each (see <i><u>Table 7: 1 Mbyte Flash memory single bank vs dual bank </u></i><u><br/><i>organization (STM32F42xxx and STM32F43xxx)</i></u> and <i><u>Table 9: 1 Mbyte dual bank </u></i><u><br/><i>Flash memory organization (STM32F42xxx and STM32F43xxx)</i></u>). To perform an <br/>erase operation, the right sector must be programmed (see <i><u>Table 7</u></i> for information <br/>on the sector numbering scheme).</p>
+          <p>1: 1 Mbyte dual bank Flash memory. The Flash memory is organized as two banks <br/>of 512 Kbytes each (see <i><u>Table 7: 1 Mbyte Flash memory single bank vs dual bank</u></i> <u><br/><i>organization (STM32F42xxx and STM32F43xxx)</i></u> and <i><u>Table 9: 1 Mbyte dual bank</u></i> <u><br/><i>Flash memory organization (STM32F42xxx and STM32F43xxx)</i></u>). To perform an <br/>erase operation, the right sector must be programmed (see <i><u>Table 7</u></i> for information <br/>on the sector numbering scheme).</p>
         </td>
       </tr>
       <tr>
@@ -187,13 +176,7 @@
       <li value="4">Wait for the BSY bit to be cleared.</li>
     </ol>
     <div class="nt">
-      <p>
-        <i>Note: The value of an option is automatically modified by first erasing the user configuration sector </i>
-        <br/>
-        <i>and then programming all the option bytes with the values contained in the FLASH_OPTCR </i>
-        <br/>
-        <i>register.</i>
-      </p>
+      <p><i>Note: The value of an option is automatically modified by first erasing the user configuration sector</i> <br/><i>and then programming all the option bytes with the values contained in the FLASH_OPTCR</i> <br/><i>register.</i></p>
     </div>
     <p>
       <b>Modifying user option bytes on STM32F42xxx and STM32F43xxx</b>
@@ -208,13 +191,7 @@
       <li value="5">Wait for the BSY bit to be cleared</li>
     </ol>
     <div class="nt">
-      <p id="page93">
-        <i>Note: The value of an option byte is automatically modified by first erasing the user configuration </i>
-        <br/>
-        <i>sector (bank 1 and 2) and then programming all the option bytes with the values contained </i>
-        <br/>
-        <i>in the FLASH_OPTCR and FLASH_OPTCR1 registers.</i>
-      </p>
+      <p id="page93"><i>Note: The value of an option byte is automatically modified by first erasing the user configuration</i> <br/><i>sector (bank 1 and 2) and then programming all the option bytes with the values contained</i> <br/><i>in the FLASH_OPTCR and FLASH_OPTCR1 registers.</i></p>
     </div>
     <h4 id="section3.7.3">3.7.3 Read protection (RDP)</h4>
     <p>The user area in the Flash memory can be protected against read operations by an <br/>entrusted code. Three read protection levels are defined:</p>
@@ -246,13 +223,7 @@
       </li>
     </ul>
     <div class="nt">
-      <p>
-        <i>Note: The JTAG port is permanently disabled when Level 2 is active (acting as a JTAG fuse). As a </i>
-        <br/>
-        <i>consequence, boundary scan cannot be performed. STMicroelectronics is not able to </i>
-        <br/>
-        <i>perform analysis on defective parts on which the Level 2 protection has been set.</i>
-      </p>
+      <p><i>Note: The JTAG port is permanently disabled when Level 2 is active (acting as a JTAG fuse). As a</i> <br/><i>consequence, boundary scan cannot be performed. STMicroelectronics is not able to</i> <br/><i>perform analysis on defective parts on which the Level 2 protection has been set.</i></p>
     </div>
   </body>
 </html>

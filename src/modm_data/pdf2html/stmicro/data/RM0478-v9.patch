@@ -1,0 +1,51 @@
+diff --git a/chapter_30_hardware_semaphore_hsem.html b/chapter_30_hardware_semaphore_hsem.html
+--- a/chapter_30_hardware_semaphore_hsem.html
++++ b/chapter_30_hardware_semaphore_hsem.html
+@@ -2098,7 +2098,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x</td>
++        <td rowspan="2">0x120</td>
+         <td>HSEM_CR</td>
+         <td colspan="16">KEY[15:0]</td>
+         <td>
+@@ -2175,7 +2175,7 @@
+         <td/>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x</td>
++        <td rowspan="2">0x124</td>
+         <td>HSEM_KEYR</td>
+         <td colspan="16">KEY[15:0]</td>
+         <td>
+diff --git a/chapter_31_debug_support_dbg.html b/chapter_31_debug_support_dbg.html
+--- a/chapter_31_debug_support_dbg.html
++++ b/chapter_31_debug_support_dbg.html
+@@ -9344,7 +9344,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0S4</td>
++        <td rowspan="2">0x0A4</td>
+         <td>CTI_OUTENR1</td>
+         <td>
+           <span class="tv">Res.</span>
+@@ -9468,7 +9468,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0S8</td>
++        <td rowspan="2">0x0A8</td>
+         <td>CTI_OUTENR2</td>
+         <td>
+           <span class="tv">Res.</span>
+@@ -9592,7 +9592,7 @@
+         <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0SC</td>
++        <td rowspan="2">0x0AC</td>
+         <td>CTI_OUTENR3</td>
+         <td>
+           <span class="tv">Res.</span>

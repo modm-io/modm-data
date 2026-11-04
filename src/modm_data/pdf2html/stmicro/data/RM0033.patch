@@ -262,7 +262,7 @@ index 8860146d..f2580d29 100644
 -          <p>Reset value</p>
 -        </td>
 -        <td colspan="30">Reserved</td>
--        <td colspan="2">x x<br/>MEM_MODE</td>
+-        <td colspan="2">xx<br/>MEM_MODE</td>
 +        <td rowspan="2">0x00</td>
 +        <td>SYSCFG_MEMRM</td>
 +        <td colspan="30" rowspan="2">Reserved</td>

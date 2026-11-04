@@ -461,7 +461,7 @@ index 6dc2a109..b273eb48 100644
          </td>
          <td colspan="25" rowspan="2">Reserved</td>
          <td>
-@@ -1758,72 +1742,77 @@
+@@ -1758,78 +1742,77 @@
          </td>
        </tr>
        <tr>
@@ -483,8 +483,14 @@ index 6dc2a109..b273eb48 100644
 -          <p>OC2M<br/>[2:0]</p>
 -          <p>0 0 0</p>
 -        </td>
--        <td>0<sup>OC2PE</sup></td>
--        <td>0<sup>OC2FE</sup></td>
+-        <td>
+-          <p>0</p>
+-          <p>OC2PE</p>
+-        </td>
+-        <td>
+-          <p>0</p>
+-          <p>OC2FE</p>
+-        </td>
 -        <td colspan="2">
 -          <p>CC2S <br/>[1:0]</p>
 -          <p>0 0</p>

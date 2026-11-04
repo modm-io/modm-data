@@ -93,6 +93,16 @@ class Character:
 
         self.unicode: int = pp.raw.FPDFText_GetUnicode(self._text, self._index)
         """The unicode value of the character."""
+        if pp.raw.FPDFText_HasUnicodeMapError(self._text, self._index):
+            self.unicode = self._page._glyph_unicodes.get((self.font, self.unicode), self.unicode)
+        if 0xD800 <= self.unicode < 0xDC00:
+            # Characters outside the BMP are split into two UTF-16 code units,
+            # so we combine them into the first and ignore the second one.
+            low = pp.raw.FPDFText_GetUnicode(self._text, self._index + 1)
+            if 0xDC00 <= low < 0xE000:
+                self.unicode = 0x10000 + ((self.unicode - 0xD800) << 10) + low - 0xDC00
+        elif 0xDC00 <= self.unicode < 0xE000:
+            self.unicode = 0
         self.objlink: "modm_data.pdf.link.ObjLink" = None  # noqa: F821
         """The object link of this character or `None`"""
         self.weblink: "modm_data.pdf.link.WebLink" = None  # noqa: F821
@@ -160,7 +170,7 @@ class Character:
             flags = ctypes.c_int()
             pp.raw.FPDFText_GetFontInfo(self._text, self._index, font, 255, flags)
             # Share one tuple per font instead of one per character
-            font = (font.value.decode("utf-8"), flags.value)
+            font = (font.value.decode("utf-8", errors="replace"), flags.value)
             self._font = _FONTS.setdefault(font, font)
         return self._font
 
@@ -273,6 +283,19 @@ class Character:
     def flags(self) -> int:
         """The font flags of the character."""
         return self._font_flags()[1]
+
+    @property
+    def has_space_glyph(self) -> bool:
+        """
+        Whether the font of the character has a space with a width. pdfium
+        cannot generate spaces at the visual gaps of text in fonts without.
+        """
+        obj = pp.raw.FPDFText_GetTextObject(self._text, self._index)
+        if not obj:
+            return True
+        width = ctypes.c_float()
+        font = pp.raw.FPDFTextObj_GetFont(obj)
+        return not pp.raw.FPDFFont_GetGlyphWidth(font, 0x20, 1, width) or width.value > 0
 
     def descr(self) -> str:
         """Human-readable description of the character for debugging."""

@@ -29,7 +29,7 @@ index b46445f3..3d75da57 100644
          <td>Res.</td>
          <td>Res.</td>
          <td>Res.</td>
--        <td colspan="11">PECAUTOERENBYTES[7:0]BYTENDLOAD</td>
+-        <td colspan="11">PECAUTOEREBYTENDLOAD NBYTES[7:0]</td>
 +        <td>PEC<br/>BYTE</td>
 +        <td>AUTOE<br/>ND</td>
 +        <td>RE<br/>LOAD</td>
