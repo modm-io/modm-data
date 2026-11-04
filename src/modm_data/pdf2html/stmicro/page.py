@@ -362,14 +362,17 @@ class Page(BasePage):
 
     def _with_labels(self, area: Rectangle, bbox: Rectangle) -> Rectangle:
         # Labels of bit diagrams end at their leader lines, so they stick out
-        # of the drawn graphics and would otherwise be glued into the text
+        # of the drawn graphics and would otherwise be glued into the text.
+        # Labels that overlap the graphics are part of the figure too.
         x_em = self._spacing["x_em"]
         chars = [c for c in self.chars_in_area(area) if c.unicode not in {0x20, 0xA, 0xD}]
         while True:
             grown = bbox
             for c in chars:
+                # Labels can also stick out at the top or bottom
                 if (
-                    bbox.bottom <= c.bbox.midpoint.y <= bbox.top
+                    c.bbox.bottom < bbox.top
+                    and bbox.bottom < c.bbox.top
                     and bbox.left - x_em <= c.bbox.right
                     and c.bbox.left <= bbox.right + x_em
                 ):

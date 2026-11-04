@@ -2,9 +2,14 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import math
+import ctypes
 from lxml import etree
 from ..utils import Rectangle, Point
 from ..pdf import Path, Image
+
+
+# The thinnest stroke width, about one pixel when rendered at 3x scale
+_HAIRLINE = 0.3
 
 
 def _n(value: float) -> str:
@@ -54,8 +59,9 @@ class Figure:
             # The stroke width is not part of the path and must be scaled
             m = path.matrix.get()
             scale = math.sqrt(abs(m[0] * m[3] - m[1] * m[2]))
-            # A width of zero is the thinnest line the device can render
-            node.set("stroke-width", _n(path.width * scale or 0.1))
+            # PDF viewers draw strokes at least one device pixel wide, so that
+            # hairlines stay visible, which SVG renderers do not do
+            node.set("stroke-width", _n(max(path.width * scale, _HAIRLINE)))
             if path.dashes:
                 node.set("stroke-dasharray", " ".join(_n(d * scale) for d in path.dashes))
             if path.cap != Path.Cap.BUTT:
@@ -132,6 +138,29 @@ class Figure:
         """The bitmap images of the figure."""
         return self._in_bbox(self._page.images)
 
+    def _svg_image(self, image: Image, href: str):
+        node = etree.Element("image", href=href, preserveAspectRatio="none")
+        m = image.matrix.get()
+        # Images in forms have a matrix relative to the form, then we only know their bounds
+        xs = [m[4], m[4] + m[0], m[4] + m[2], m[4] + m[0] + m[2]]
+        ys = [m[5], m[5] + m[1], m[5] + m[3], m[5] + m[1] + m[3]]
+        matching = Rectangle(min(xs), min(ys), max(xs), max(ys)).isclose(image.bbox, atol=0.5)
+        if self._page.rotation or not matching:
+            x, y = self._xy(Point(image.bbox.left, image.bbox.top)).split()
+            node.set("x", x)
+            node.set("y", y)
+            node.set("width", _n(image.bbox.width))
+            node.set("height", _n(image.bbox.height))
+        else:
+            # The image matrix maps the unit square to the page and may flip or
+            # rotate the image, its top row is at y=1, while SVG starts at y=0
+            a, b, c, d, e, f = m
+            node.set("width", "1")
+            node.set("height", "1")
+            matrix = (a, -b, -c, d, c + e - self.bbox.left, self.bbox.top - d - f)
+            node.set("transform", f"matrix({' '.join(f'{v:.4f}'.rstrip('0').rstrip('.') for v in matrix)})")
+        return node
+
     def as_svg(self, image_hrefs: list[str] = None) -> etree._Element | None:
         """
         :param image_hrefs: The file names of the saved `images`, which are
@@ -139,18 +168,18 @@ class Figure:
         :return: The vector graphics and text of the figure as SVG, or `None`
                  if the figure has neither, for example, for bitmap images.
         """
-        nodes = [self._svg_path(p) for p in self._in_bbox(self._page.paths) if p.count > 1 and any(p.draw_mode)]
-        nodes += list(self._svg_texts())
-        if not nodes:
+        paths = [p for p in self._in_bbox(self._page.paths) if p.count > 1 and any(p.draw_mode)]
+        texts = list(self._svg_texts())
+        if not paths and not texts:
             return None
 
-        # The images are drawn first, since they are usually the background
-        for image, href in zip(self.images, image_hrefs or []):
-            x, y = self._xy(Point(image.bbox.left, image.bbox.top)).split()
-            node = etree.Element("image", href=href, x=x, y=y, preserveAspectRatio="none")
-            node.set("width", _n(image.bbox.width))
-            node.set("height", _n(image.bbox.height))
-            nodes.insert(0, node)
+        # Paths and images are drawn in the order of the page, since a filled
+        # path may be the background of an image or cover parts of it
+        order = {ctypes.cast(o.raw, ctypes.c_void_p).value: i for i, o in enumerate(self._page.get_objects())}
+        graphics = [(p, self._svg_path(p)) for p in paths]
+        graphics += [(i, self._svg_image(i, h)) for i, h in zip(self.images, image_hrefs or [])]
+        graphics.sort(key=lambda g: order.get(ctypes.cast(g[0].raw, ctypes.c_void_p).value, -1))
+        nodes = [node for _, node in graphics] + texts
 
         svg = etree.Element("svg", xmlns="http://www.w3.org/2000/svg")
         svg.set("viewBox", f"0 0 {_n(self.bbox.width)} {_n(self.bbox.height)}")
