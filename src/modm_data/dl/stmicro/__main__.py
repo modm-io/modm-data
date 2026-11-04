@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import shutil
+import zipfile
 import tempfile
 import argparse
 from pathlib import Path
@@ -70,6 +71,35 @@ def download_pdfs(base_dir, with_download, new_pdfs=None):
     return True
 
 
+def download_markdown(base_dir, with_download):
+    remote_info = load_remote_info(base_dir, use_cached=not with_download)
+    store_remote_info(base_dir, remote_info)
+    remote_docs = sorted({d for d in map(Document, remote_info) if d.md_url}, key=lambda d: d.name)
+
+    invalid_docs = []
+    for doc in remote_docs:
+        if (base_dir / doc.name).exists():
+            continue
+        LOGGER.info(f"New document: {doc}")
+        with tempfile.NamedTemporaryFile() as outfile:
+            try:
+                assert doc.store_markdown(overwrite=True, path=outfile.name)
+                # Extract the files, so that the archive shows what changed between versions
+                with zipfile.ZipFile(outfile.name) as archive:
+                    archive.extractall(base_dir / f"{doc.name}.tmp")
+                (base_dir / f"{doc.name}.tmp").rename(base_dir / doc.name)
+            except Exception as e:
+                print(e)
+                invalid_docs.append(doc)
+
+    if invalid_docs:
+        print("=======================================")
+        print(f"{len(invalid_docs)} invalid documents!")
+        for doc in invalid_docs:
+            print(doc.name, doc.md_url)
+    return not invalid_docs
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--download", action="store_true", help="Download the data source.")
@@ -85,6 +115,8 @@ if __name__ == "__main__":
 
     subparsers.add_parser("cubeprog", help="CubeProg database.")
 
+    subparsers.add_parser("markdown", help="Markdown versions of the PDF documents.")
+
     args = parser.parse_args()
 
     match args.command:
@@ -94,5 +126,7 @@ if __name__ == "__main__":
             result = download_cubemx(args.directory, args.download, args.patch)
         case "cubeprog":
             result = download_cubeprog(args.directory, args.download)
+        case "markdown":
+            result = download_markdown(args.directory, args.download)
 
     exit(0 if result else 1)

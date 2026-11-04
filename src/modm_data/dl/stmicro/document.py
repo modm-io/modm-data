@@ -23,6 +23,7 @@ class Document:
         self._version = data["version"]
         self._update = data["latestUpdate"]
         self._type = data.get("resourceType", "Unknown")
+        self._md_url = data.get("localizedMdZipLinks", {}).get("en")
 
         # Derived information
         self._short_type = self._title[:2]
@@ -33,6 +34,8 @@ class Document:
         """The leaf filename of the document."""
         self.url = "https://www.st.com" + self._url
         """The full URL that the file was downloaded from."""
+        self.md_url = "https://www.st.com" + self._md_url if self._md_url else None
+        """The full URL of the zipped Markdown version or `None` if there is none."""
 
     @property
     def data(self) -> dict:
@@ -54,6 +57,10 @@ class Document:
     def store_pdf(self, path: str, overwrite: bool = False) -> bool:
         """Download the PDF file to the path, optionally overwriting it."""
         return download_file(self.url, path, overwrite=overwrite)
+
+    def store_markdown(self, path: str, overwrite: bool = False) -> bool:
+        """Download the zipped Markdown version to the path, optionally overwriting it."""
+        return download_file(self.md_url, path, overwrite=overwrite)
 
     def __repr__(self) -> str:
         return f"Doc({self._title} v{self._version.replace('.0', '')})"
