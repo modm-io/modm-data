@@ -10,7 +10,7 @@ from collections import defaultdict
 from .table import Table
 from .figure import Figure
 from .line import CharLine
-from ..utils import Rectangle, Region
+from ..utils import Rectangle, Region, list_strip
 from ..pdf import Page as PdfPage, Character
 from anytree import Node
 
@@ -298,7 +298,9 @@ class Page(PdfPage):
                 and 0 < line._sort_origin - prev._sort_origin < line.height
                 and line.bbox.right < prev.bbox.left
             ):
-                label = [c for c in line.chars if c.unicode not in {0x20, 0xA, 0xD}]
+                # Keep the spaces between the words of the label, but not around it
+                label = [c for c in line.chars if c.unicode not in {0xA, 0xD}]
+                label = list_strip(label, lambda c: c.unicode == 0x20)
                 chars = label + [label[-1].generated_space()] + prev.chars
                 labeled_lines[-1] = CharLine(
                     self, chars, prev.bottom, prev.origin, prev.top, prev.height, sort_origin=prev._sort_origin
