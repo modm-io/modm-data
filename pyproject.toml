@@ -31,6 +31,7 @@ dependencies = [
     "cxxheaderparser>=1.4.1,<2",
     "jinja2>=3.1.3,<4",
     "lxml>=5.2.0,<6",
+    "Markdown==3.10",
     "kuzu>=0.11.3,<0.12",
     "pypdfium2==5.14.0",
     "tqdm>=4.66.2,<5",

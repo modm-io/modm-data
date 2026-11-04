@@ -6,7 +6,8 @@ from functools import cached_property
 from collections import defaultdict
 
 from .helper import split_device_filter, split_package
-from ...html.text import ReDict, listify as html_listify, replace as html_replace
+from ...html.text import ReDict, Text, listify as html_listify, replace as html_replace
+from ...html.table import Table
 from ...kg import DeviceIdentifier
 from ...kg.stmicro import did_from_string
 from ..document import Document
@@ -62,14 +63,21 @@ class DatasheetStm32(Document):
         did = defaultdict(dict)
         current = ""
         chapter = self.chapter("ordering|numbering")
-        for heading, texts in chapter.heading_texts("ordering|numbering"):
-            for text in texts:
-                for para in text.text(br="\n").split("\n"):
-                    if "=" in para or ":" in para:
-                        key, value = para.split("=" if "=" in para else ":", 1)
-                        did[current][key.strip()] = value.strip()
-                    else:
-                        current = para
+        # The ordering scheme is either text or a table with the scheme in the first column
+        for _, items in chapter._heading_objects((Text, Table), "ordering|numbering"):
+            for item in items:
+                texts = (
+                    sorted((c for c in item._cells if c.x == 0), key=lambda c: c.y)
+                    if isinstance(item, Table)
+                    else [item]
+                )
+                for text in texts:
+                    for para in text.text(br="\n", p=r"\1\n").split("\n"):
+                        if "=" in para or ":" in para:
+                            key, value = para.split("=" if "=" in para else ":", 1)
+                            did[current][key.strip()] = value.strip()
+                        else:
+                            current = para
         self._id = did = ReDict(did)
         # print(did)
         did_map = [
