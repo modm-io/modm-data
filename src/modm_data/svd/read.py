@@ -49,11 +49,12 @@ def read_svd(path) -> Device:
     root = etree.parse(str(path)).getroot()
     device = Device(root.findtext("name"), compatible=(root.findtext("description") or "").split(","))
 
-    registers = {}
+    registers, sources = {}, {}
     peripherals = []
     for node in root.iter("peripheral"):
         name = node.findtext("name")
         registers[name] = node.find("registers")
+        sources[name] = node
         peripherals.append(node)
 
     for node in peripherals:
@@ -62,6 +63,9 @@ def read_svd(path) -> Device:
         peripheral = Peripheral(name, _text(node, "groupName"), _int(node, "baseAddress"), parent=device)
         peripheral.group = _text(node, "groupName")
         peripheral.description = _text(node, "description")
+        if peripheral.description is None and derived_from in sources:
+            # derived peripherals only name what differs, e.g. USART2 derived from USART1
+            peripheral.description = _text(sources[derived_from], "description")
         peripheral.alternate = _text(node, "alternatePeripheral")
         peripheral.interrupts = [
             (inode.findtext("name"), _int(inode, "value"), _text(inode, "description"))
