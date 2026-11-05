@@ -79,6 +79,29 @@ flowchart LR
 Each pipeline has its own command-line interface, please refer to the API
 documentation for their advanced usage.
 
+
+## Lookups
+
+`modm_data.lookup` answers questions about STM32 devices from the data in
+`ext/`: the CMSIS header of a device, which headers define a macro, register
+layouts (header SVDs and the Cortex-M core headers), and the sections, tables,
+registers and figures of the documentation in the HTML archive, with a full text
+index in `ext/cache/lookup`. Every lookup is a function that returns text and a
+command:
+
+```sh
+python -m modm_data.lookup device_header g474re
+python -m modm_data.lookup decode_register stm32g474re --register RCC.CR --value 0x03030500
+python -m modm_data.lookup doc_table DS12288 13 --columns port,AF7 --where '^PA9$'
+```
+
+The same functions are an MCP server for coding agents:
+
+```sh
+pip install "modm-data[lookup]"
+claude mcp add --scope user modm-data -- python -m modm_data.lookup.mcp
+```
+
 <!--webignore-->
 ## Development
 

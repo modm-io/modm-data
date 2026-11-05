@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ peripheral_name }} Register Overview</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --header-bg: #4CAF50;
+            --header-text: #ffffff;
+            --control-bg: #f5f5f5;
+            --border-color: #dddddd;
+            --row-even: #f9f9f9;
+            --row-hover: #e8f5e9;
+            --register-bg: #e3f2fd;
+            --present-color: #4CAF50;
+            --absent-color: #cccccc;
+            --header-grayed: #999999;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1e1e1e;
+                --text-color: #e0e0e0;
+                --header-bg: #2d5016;
+                --header-text: #e0e0e0;
+                --control-bg: #2a2a2a;
+                --border-color: #444444;
+                --row-even: #252525;
+                --row-hover: #2d3a2d;
+                --register-bg: #1a3a4a;
+                --present-color: #66bb6a;
+                --absent-color: #666666;
+                --header-grayed: #555555;
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        h1 { color: var(--text-color); }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: var(--control-bg);
+            border-radius: 5px;
+        }
+        .controls label { margin-right: 20px; cursor: pointer; }
+        .controls button { margin-right: 10px; padding: 8px 16px; cursor: pointer; }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            text-align: center;
+        }
+        th {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            position: sticky;
+            z-index: 10;
+        }
+        thead th { top: 0; }
+        tfoot th { bottom: 0; }
+        th.file-header { user-select: none; }
+        th.file-header.grayed {
+            background-color: var(--header-grayed);
+            opacity: 0.6;
+        }
+        tr:nth-child(even) { background-color: var(--row-even); }
+        tr:hover { background-color: var(--row-hover); }
+        td.register-name {
+            text-align: left;
+            font-family: monospace;
+            font-weight: bold;
+            background: var(--register-bg);
+        }
+        td.bitfield-name {
+            text-align: left;
+            font-family: monospace;
+            padding-left: 30px;
+        }
+        .present { color: var(--present-color); font-weight: bold; }
+        .absent { color: var(--absent-color); }
+        .rotate { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+        .hidden { display: none; }
+        input[type="checkbox"] { cursor: pointer; margin-right: 8px; }
+        .select-cell { width: 40px; }
+
+        /* Tooltip styles */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: max-content;
+            max-width: 400px;
+            background-color: #555;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1000;
+            left: 100%;
+            margin-left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            white-space: normal;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        @media (prefers-color-scheme: dark) {
+            .tooltip .tooltiptext {
+                background-color: #222;
+                color: #eee;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ peripheral_name }} Register Overview</h1>
+    <p>Found {{ num_registers }} registers with {{ num_bitfields }} bitfields across {{ num_files }} files.</p>
+
+    <div class="controls">
+        <label><input type="checkbox" id="hideCommon" checked> Hide bitfields present in all files</label>
+        <br><br>
+        <button onclick="selectAll()">Select All</button>
+        <button onclick="clearSelection()">Clear Selection</button>
+        <span id="selectionInfo" style="margin-left: 20px; font-weight: bold;"></span>
+    </div>
+
+    <table id="registerTable">
+        <thead id="tableHead">
+            <tr>
+                <th class="select-cell">Select</th>
+                <th>Register / Bitfield</th>
+                {% for idx, filename in files %}
+                <th class="file-header" data-file-idx="{{ idx }}" data-filename="{{ filename }}">
+                    <div class="rotate">{{ filename }}</div>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for register, bitfields in registers %}
+            <tr class="register-row" data-register="{{ register }}">
+                <td class="register-name" colspan="{{ num_files + 2 }}">{{ peripheral_name }}_{{ register }}</td>
+            </tr>
+            {% for bitfield_info in bitfields %}
+            <tr class="bitfield-row{% if bitfield_info.presence.all_present %} common-bitfield{% endif %}"
+                data-pattern="{{ bitfield_info.presence.pattern }}"
+                data-register="{{ register }}">
+                <td class="select-cell">
+                    <input type="checkbox" class="bitfield-checkbox"
+                           data-pattern="{{ bitfield_info.presence.pattern }}"
+                           data-register="{{ register }}"
+                           data-bitfield="{{ bitfield_info.name }}">
+                </td>
+                <td class="bitfield-name{% if bitfield_info.description %} tooltip{% endif %}">
+                    └─ {{ bitfield_info.name }}
+                    {% if bitfield_info.description %}
+                    <span class="tooltiptext">{{ bitfield_info.description }}</span>
+                    {% endif %}
+                </td>
+                {% for present in bitfield_info.presence.files %}
+                {% if present %}
+                <td class="present">✓</td>
+                {% else %}
+                <td class="absent"></td>
+                {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+        <tfoot id="tableFoot">
+            <tr>
+                <th class="select-cell">Select</th>
+                <th>Register / Bitfield</th>
+                {% for idx, filename in files %}
+                <th class="file-header" data-file-idx="{{ idx }}" data-filename="{{ filename }}">
+                    <div class="rotate">{{ filename }}</div>
+                </th>
+                {% endfor %}
+            </tr>
+        </tfoot>
+    </table>
+
+    <script>
+        // Hide common bitfields and empty registers
+        document.getElementById("hideCommon").addEventListener("change", function() {
+            const commonRows = document.querySelectorAll(".common-bitfield");
+            commonRows.forEach(row => {
+                row.classList.toggle("hidden", this.checked);
+            });
+            updateEmptyRegisters();
+        });
+
+        // Initial hide
+        document.querySelectorAll(".common-bitfield").forEach(row => {
+            row.classList.add("hidden");
+        });
+        updateEmptyRegisters();
+
+        function updateEmptyRegisters() {
+            document.querySelectorAll(".register-row").forEach(regRow => {
+                const register = regRow.dataset.register;
+                const bitfieldRows = document.querySelectorAll(`.bitfield-row[data-register="${register}"]`);
+                const allHidden = Array.from(bitfieldRows).every(row => row.classList.contains("hidden"));
+                regRow.classList.toggle("hidden", allHidden);
+            });
+        }
+
+        // Update selection info and gray out column headers
+        document.querySelectorAll(".bitfield-checkbox").forEach(checkbox => {
+            checkbox.addEventListener("change", function() {
+                updateSelectionInfo();
+                updateColumnHeaders();
+            });
+        });
+
+        function updateSelectionInfo() {
+            const selected = document.querySelectorAll(".bitfield-checkbox:checked").length;
+            const info = document.getElementById("selectionInfo");
+            if (selected === 0) {
+                info.textContent = "";
+            } else {
+                info.textContent = `${selected} bitfield(s) selected`;
+            }
+        }
+
+        function updateColumnHeaders() {
+            const selectedCheckboxes = document.querySelectorAll(".bitfield-checkbox:checked");
+
+            if (selectedCheckboxes.length === 0) {
+                // No selection, remove all graying
+                document.querySelectorAll(".file-header").forEach(header => {
+                    header.classList.remove("grayed");
+                });
+                return;
+            }
+
+            // Count which columns have at least one selected bitfield present
+            const fileCount = {{ num_files }};
+            const columnHasPresent = new Array(fileCount).fill(false);
+
+            selectedCheckboxes.forEach(checkbox => {
+                const pattern = checkbox.dataset.pattern;
+                for (let i = 0; i < pattern.length; i++) {
+                    if (pattern[i] === '1') {
+                        columnHasPresent[i] = true;
+                    }
+                }
+            });
+
+            // Gray out headers for columns with no selected bitfields present
+            document.querySelectorAll(".file-header").forEach((header, idx) => {
+                const fileIdx = parseInt(header.dataset.fileIdx);
+                if (columnHasPresent[fileIdx]) {
+                    header.classList.remove("grayed");
+                } else {
+                    header.classList.add("grayed");
+                }
+            });
+        }
+
+        function selectAll() {
+            document.querySelectorAll(".bitfield-row:not(.hidden) .bitfield-checkbox").forEach(cb => {
+                cb.checked = true;
+            });
+            updateSelectionInfo();
+            updateColumnHeaders();
+        }
+
+        function clearSelection() {
+            document.querySelectorAll(".bitfield-checkbox").forEach(cb => {
+                cb.checked = false;
+            });
+            updateSelectionInfo();
+            updateColumnHeaders();
+        }
+    </script>
+</body>
+</html>

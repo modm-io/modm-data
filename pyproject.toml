@@ -51,7 +51,13 @@ docs = [
     "mkdocs>=1.5,<2",
     "mkdocs-material>=9.5,<10",
 ]
-all = ["modm_data[docs]"]
+# the MCP server of modm_data.lookup, figure images and the macOS OCR of bitmap figures
+lookup = [
+    "mcp>=2.3,<3",
+    "resvg-py>=0.2,<1",
+    "pyobjc-framework-Vision; sys_platform == 'darwin'",
+]
+all = ["modm_data[docs,lookup]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
