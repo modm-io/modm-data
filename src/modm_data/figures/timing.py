@@ -111,7 +111,12 @@ def _lines(shapes):
             thickness = 2 * _area(sub) / perimeter if perimeter else 0
             extent = max(math.dist(sub[0], q) for q in sub)
             # Thin and long: an outlined stroke, otherwise an area like an arrow head or a box
-            outline = len(sub) > 3 and perimeter and thickness < 2.5 and extent > max(3, 4 * thickness)
+            xs, ys = [q[0] for q in sub], [q[1] for q in sub]
+            w, h = max(xs) - min(xs), max(ys) - min(ys)
+            corners = len({(round(q[0], 1), round(q[1], 1)) for q in sub})
+            # Arrow heads are small triangles, not outlined strokes
+            triangle = corners <= 4 and w * h and 0.3 < _area(sub) / (w * h) < 0.7 and min(w, h) > 1.2
+            outline = len(sub) > 3 and perimeter and thickness < 2.5 and extent > max(3, 4 * thickness) and not triangle
             if s.fill and not s.stroke or closed and outline:
                 if outline:
                     # A thin outline, filled or stroked: one edge to the farthest point is the center line
