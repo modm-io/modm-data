@@ -20,6 +20,8 @@ from .curves import _parse
 
 # Timing parameters like t_su(SI), tsu(SI), td(SDCLKL_AddR): interval labels, never lane names
 PARAMETER = re.compile(r"^[-\u2013]?t_?[a-zA-Z]{0,8}\(|^[-\u2013]?t_[A-Za-z]")
+# Labels of signal levels and thresholds, like V_HSEH, V LSEL, 90 %, 0.3VDD
+LEVEL = re.compile(r"^V[ _]?\w+$|^\d+ ?%$|^0?\.\d+ ?V_?DD\w*$")
 FIGURE_ID = re.compile(r"^(MS|DT|AI|ai|AM|GADG)\w*\d{4,}V?\d*[a-z]?$|^aaa-\d+$")
 
 
@@ -56,6 +58,7 @@ class Lane:
     bottom: float = 0
     x0: float = 0
     x1: float = 0
+    labels: list = field(default_factory=list)  # level labels on the left, top to bottom
 
 
 def _area(points):
@@ -140,6 +143,24 @@ def extract(svg: Path):
     # The frame of the figure is not part of the diagram: lines on the outer bounds of all lines
     if not lines:
         return None
+
+    # Arrow heads: small filled areas or short strokes at the end of a line
+    def triangle(a):
+        w = max(p[0] for p in a) - min(p[0] for p in a)
+        h = max(p[1] for p in a) - min(p[1] for p in a)
+        corners = len({(round(p[0], 1), round(p[1], 1)) for p in a})
+        return w < 8 and h < 8 and min(w, h) > 1.2 and corners <= 4 and 0.3 < _area(a) / (w * h) < 0.7
+
+    heads = [a for a in areas if triangle(a)]
+
+    def arrow(line):
+        return any(
+            min(p[0] for p in a) - 1 <= e[0] <= max(p[0] for p in a) + 1
+            and min(p[1] for p in a) - 1 <= e[1] <= max(p[1] for p in a) + 1
+            for a in heads
+            for e in (line.points[0], line.points[-1])
+        )
+
     L, T = min(x.bbox[0] for x in lines), min(x.bbox[1] for x in lines)
     R, B = max(x.bbox[2] for x in lines), max(x.bbox[3] for x in lines)
 
@@ -152,21 +173,13 @@ def extract(svg: Path):
             b - t > 0.95 * (B - T) or b - t > 0.8 * (B - T) and (abs(l - L) < 1.5 or abs(r - R) < 1.5)
         )
         rectangle = r - l > 0.8 * (R - L) and b - t > 0.8 * (B - T)
-        return horizontal or vertical or rectangle
+        # Axes with arrow heads span the drawing too
+        return (horizontal or vertical) and not arrow(line) or rectangle
 
     lines = [line for line in lines if not frame(line) and line.length > 0.5]
     solid = [line for line in lines if not line.dashed]
     if not solid:
         return None
-
-    # Arrow heads: small filled areas or short strokes at the end of a line
-    def triangle(a):
-        w = max(p[0] for p in a) - min(p[0] for p in a)
-        h = max(p[1] for p in a) - min(p[1] for p in a)
-        corners = len({(round(p[0], 1), round(p[1], 1)) for p in a})
-        return w < 8 and h < 8 and min(w, h) > 1.2 and corners <= 4 and 0.3 < _area(a) / (w * h) < 0.7
-
-    heads = [a for a in areas if triangle(a)]
 
     centers = [(sum(p[0] for p in a) / len(a), sum(p[1] for p in a) / len(a), a) for a in heads]
 
@@ -195,6 +208,38 @@ def extract(svg: Path):
             )
             >= 2
         )
+
+    # Axes of one signal over time, like the AC timing of clock sources: an arrow up and an arrow right from
+    # the same corner, labelled 't' at the tip. They are no lane and no interval.
+    axes, axis_top = set(), None
+    for v in solid:
+        (vx0, vy0), (vx1, vy1) = sorted([v.points[0], v.points[-1]], key=lambda p: p[1])
+        if len(v.points) > 3 or abs(vx0 - vx1) > 0.5 or vy1 - vy0 < 20 or not has_head((vx0, vy0)):
+            continue
+        for h in solid:
+            (hx0, hy0), (hx1, hy1) = sorted([h.points[0], h.points[-1]])
+            if (
+                len(h.points) <= 3
+                and abs(hy0 - hy1) < 0.5
+                and hx1 - hx0 > 50
+                and abs(hx0 - vx0) < 3
+                and vy1 - 5 < hy0 < vy1 + 3
+                and has_head((hx1, hy1))
+            ):
+                tips = [(vx0, vy0), (hx1, hy1)]
+                axis_top = (vx0, vy0)
+                axes |= {id(v), id(h)}
+                axes |= {
+                    id(o) for o in solid if o.length < 6 and any(math.dist(e, q) < 1.5 for e in tips for q in o.points)
+                }
+                labels = [
+                    t
+                    for t in texts
+                    if t.text.strip() in ("t", "Time", "time")
+                    and math.hypot(max(0, t.left - hx1, hx1 - t.right), t.y - hy1) < 15
+                ]
+                texts = [t for t in texts if t not in labels]
+    solid = [line for line in solid if id(line) not in axes]
 
     # Texts left of where most lines start are lane names, never interval labels
     starts0 = collections.Counter(round(line.bbox[0]) for line in solid if line.bbox[2] - line.bbox[0] > 10)
@@ -295,6 +340,34 @@ def extract(svg: Path):
             intervals.remove(a)
             intervals.remove(b)
             intervals.append([a[0], min(a[1], b[1]), max(a[2], b[2]), a[3] + b[3]])
+
+    # Intervals drawn as one line through two heads pointing at each other, with the label beside them: ->| |<-
+    # Only lines and labels left over by the other styles
+    for line in solid:
+        (x0, y0), (x1, y1) = sorted([line.points[0], line.points[-1]])
+        if id(line) in interval_lines or len(line.points) > 2 or abs(y0 - y1) > 0.3 or x1 - x0 < 5:
+            continue
+        inner = []
+        for cx, cy, a in centers:
+            if abs(cy - y0) < 1 and x0 - 0.5 <= cx <= x1 + 0.5:
+                tip = max(a, key=lambda p: abs(p[0] - cx) - 2 * abs(p[1] - y0))
+                inner.append((cx, tip[0]))
+        right = [tip for cx, tip in inner if tip > cx + 1]
+        left = [tip for cx, tip in inner if tip < cx - 1]
+        if len(inner) != 2 or len(right) != 1 or len(left) != 1 or not right[0] < left[0]:
+            continue
+        taken = {id(i[0]) for i in intervals} | used_extra
+        near = [
+            t
+            for t in texts
+            if id(t) not in taken
+            and abs(t.y - y0) < 1.5 * t.size
+            and (0 <= t.left - x1 < 20 or 0 <= x0 - t.right < 20 or x0 <= t.x <= x1)
+        ]
+        if near:
+            label = min(near, key=lambda t: abs(t.y - y0) + min(abs(t.left - x1), abs(x0 - t.right)) / 10)
+            intervals.append([label, right[0], left[0], [line]])
+            interval_lines.add(id(line))
 
     # The interval is measured between the tips of the arrow heads, whatever the style of the arrows
     def tips(line):
@@ -404,6 +477,29 @@ def extract(svg: Path):
     primary = sorted((t for t in names if t.right > column - 25), key=lambda t: t.y)
     groups = [t for t in names if t.right <= column - 25]
     lanes = []
+    # One signal with its levels labelled on the left, like V_HSEH, 90 %, 10 %, V_HSEL: the labels are levels of
+    # one lane, which is named by the title of the vertical axis
+    level_labels = []
+    if (
+        len(primary) >= 2
+        and all(LEVEL.match(t.text.strip()) for t in primary)
+        and any(
+            c["x1"] - c["x0"] > 50
+            and all(c["top"] - t.size <= t.y <= c["bottom"] + t.size and c["x0"] >= t.right - 3 for t in primary)
+            for c in comps
+        )
+    ):
+        title = [
+            t
+            for t in texts
+            if axis_top and id(t) not in used and abs(t.y - axis_top[1]) < 15 and abs(t.left - axis_top[0]) < 15
+        ]
+        name = title[0].text.strip() if title else "signal"
+        used |= {id(t) for t in title}
+        level_labels = primary + groups
+        lanes.append(Lane(name, statistics.mean(t.y for t in primary), list(primary)))
+        lanes[0].labels = sorted(level_labels, key=lambda t: t.y)
+        primary, groups = [], []
     for t in primary:
         previous = lanes[-1].texts[-1] if lanes else None
         level_between = lanes and any(
@@ -487,6 +583,12 @@ def extract(svg: Path):
         return None
     for lane in lanes:
         _classify(lane)
+        if lane.labels:
+            # Level labels right of the names, like '90 %' next to the edges
+            extra = [
+                x for x in lane.texts if x not in lane.labels and LEVEL.match(x.text.strip()) and x.right <= lane.x0 + 3
+            ]
+            lane.labels = sorted(lane.labels + extra, key=lambda x: x.y)
     # Lanes drawn only as arrow marks at edges, like interrupt flags, are events at the arrows
     for lane in lanes:
         if lane.kind != "empty":
@@ -551,14 +653,35 @@ def extract(svg: Path):
                     lane.events[i] = (a, x.text.strip())
                     used.add(id(x))
                     break
+    # A circuit drawn below the diagram, like the oscillator pin of an external clock source: boxes below all
+    # lanes and intervals. It is no timing, its labels are listed apart.
+    lowest = max([line.bbox[3] for lane in lanes for line in lane.lines] + [label.y for label, _, _ in intervals])
+    below = [line for line in solid if line.bbox[1] > lowest + 8]
+
+    def box(line):
+        x0, y0, x1, y1 = line.bbox
+        return (
+            math.dist(line.points[0], line.points[-1]) < 0.5
+            and 4 <= len(line.points) <= 6
+            and x1 - x0 > 5
+            and y1 - y0 > 5
+            and all(abs(p[0] - q[0]) < 0.3 or abs(p[1] - q[1]) < 0.3 for p, q in line.segments())
+        )
+
+    circuit, circuit_texts = set(), []
+    if any(box(line) for line in below):
+        circuit = {id(line) for line in below}
+        circuit_texts = [x for x in texts if id(x) not in used and x.y - x.size / 2 > lowest + 8]
+        used |= {id(x) for x in circuit_texts}
     notes = [x for x in texts if id(x) not in used and not x.rotated]
     # Audit: how much of the drawing and the text is explained by lanes, intervals and markers
     explained = {id(line) for lane in lanes for line in lane.lines} | interval_lines | heads_ids
+    solid = [line for line in solid if id(line) not in circuit]
     total = sum(line.length for line in solid if line.length >= 2)
     ink = sum(line.length for line in solid if line.length >= 2 and id(line) in explained) / total if total else 0
     audit = dict(
         ink=round(ink, 3),
-        text=round(1 - len(notes) / max(len(texts), 1), 3),
+        text=round(1 - len(notes) / max(len(texts) - len(circuit_texts), 1), 3),
         levels=max((lane.levels for lane in lanes if lane.kind in ("digital", "clock")), default=0),
         empty=sum(lane.kind == "empty" for lane in lanes),
         agreement=min((agreement(lane) for lane in lanes if lane.kind not in ("empty", "events")), default=0),
@@ -593,12 +716,24 @@ def extract(svg: Path):
         clock=clock.name if clock else None,
         unit=f"cycles of {clock.name}, 0 = its first rising edge" if clock else "percent of the diagram width",
         lanes=[
-            dict(name=lane.name, kind=lane.kind, start=lane.start, events=[(t(x), v) for x, v in lane.events])
+            dict(
+                name=lane.name,
+                kind=lane.kind,
+                start=lane.start,
+                events=[(t(x), v) for x, v in lane.events],
+                levels=[
+                    x.text.strip()
+                    + (" (high)" if abs(x.y - lane.top) < x.size * 0.7 else "")
+                    + (" (low)" if abs(x.y - lane.bottom) < x.size * 0.7 else "")
+                    for x in lane.labels
+                ],
+            )
             for lane in lanes
         ],
         intervals=[(label.text.strip(), t(x0), t(x1)) for label, x0, x1 in intervals],
         markers=[t(x) for x in markers],
         notes=[(n.text.strip(), t(n.x), _nearest(lanes, n.y)) for n in notes],
+        circuit=[x.text.strip() for x in sorted(circuit_texts, key=lambda x: (round(x.y / 10), x.x))],
         _lanes=lanes,
         _traces=traces,
         _texts=texts,
@@ -676,7 +811,7 @@ def _subscripts(texts):
                 and not e.rotated
                 and not t.rotated
                 and e.size <= t.size
-                and -2.5 < e.left - t.right < 1.5
+                and -2.5 < e.left - t.right < 2.5
                 and 0.3 < e.y - t.y < 0.8 * t.size
             ]
             if not subs:
@@ -788,6 +923,18 @@ def _classify(lane):
     for a, b in zip(runs, runs[1:]):
         if a[2] != b[2]:
             lane.events.append(((a[1] + b[0]) / 2, b[2]))
+    # An edge before the first level, after a piece too short to be a level, like the start of a clock
+    edges = [(p, q) for p, q in segments if abs(p[1] - q[1]) > 0.5 * span]
+    y0 = top if lane.start == "1" else bottom
+    first = [
+        (p, q)
+        for p, q in edges
+        if max(p[0], q[0]) <= runs[0][0] + 0.5 and any(math.dist(e, (runs[0][0], y0)) < 1.5 for e in (p, q))
+    ]
+    if first:
+        p, q = max(first, key=lambda e: e[0][0] + e[1][0])
+        lane.events.insert(0, ((p[0] + q[0]) / 2, lane.start))
+        lane.start = "0" if lane.start == "1" else "1"
     # Edges drawn on top of each other produce duplicates
     lane.events = [e for i, e in enumerate(lane.events) if i == 0 or e[1] != lane.events[i - 1][1]]
 
@@ -887,6 +1034,8 @@ def describe(result) -> str:
             lines.append(f"{lane['name']} (analog, level 0..1): " + " ".join(f"{v}@{t}" for t, v in lane["events"]))
         else:
             lines.append(f"{lane['name']}: {lane['kind']} " + " ".join(v for _, v in lane["events"]))
+        if lane.get("levels"):
+            lines.append(f"levels of {lane['name']}, top to bottom: " + ", ".join(lane["levels"]))
     for (label, a, b), (start, end) in zip(
         result["intervals"], result.get("links", [(None, None)] * len(result["intervals"]))
     ):
@@ -913,6 +1062,8 @@ def describe(result) -> str:
     for g in groups:
         if len({n for _, n, _ in g}) > 1:
             lines.append(f"at {g[0][0]}: " + ", ".join(f"{n} {v}" for _, n, v in g))
+    if result.get("circuit"):
+        lines.append("separate drawing below the diagram (circuit or legend), labels: " + ", ".join(result["circuit"]))
     if result["markers"]:
         lines.append("markers: " + ", ".join(map(str, result["markers"])))
     for text, t, lane in result["notes"]:
