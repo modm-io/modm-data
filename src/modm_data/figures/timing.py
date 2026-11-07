@@ -59,6 +59,7 @@ class Lane:
     x0: float = 0
     x1: float = 0
     labels: list = field(default_factory=list)  # level labels on the left, top to bottom
+    spans: list = field(default_factory=list)  # vertical arrows between levels, (x, top, bottom)
 
 
 def _area(points):
@@ -369,6 +370,80 @@ def extract(svg: Path):
             intervals.append([label, right[0], left[0], [line]])
             interval_lines.add(id(line))
 
+    # Intervals drawn with half heads, one barb at each end whose tip is on the line: <-- label -->
+    def barb(end, inner, vertical=False):
+        def flip(point):
+            return (point[1], point[0]) if vertical else point
+
+        end, inner = flip(end), flip(inner)
+        for o in solid:
+            if o.length > 8 or len(o.points) != 2 or id(o) in interval_lines:
+                continue
+            p, q = flip(o.points[0]), flip(o.points[1])
+            for tip, back in ((p, q), (q, p)):
+                # The barb starts at the end and points out, or ends at the end coming from inside
+                outwards = (
+                    math.dist(back, end) < 2.5
+                    and (tip[0] - inner[0]) * (end[0] - inner[0]) > 0
+                    and abs(tip[0] - inner[0]) >= abs(end[0] - inner[0]) - 0.5
+                )
+                inwards = math.dist(tip, end) < 1 and (back[0] - end[0]) * (inner[0] - end[0]) > 0
+                if abs(tip[1] - end[1]) < 0.4 and 0.5 < abs(back[1] - end[1]) < 3 and (outwards or inwards):
+                    return o, tip[0]
+        return None
+
+    for line in solid:
+        (x0, y0), (x1, y1) = sorted([line.points[0], line.points[-1]])
+        flat = all(abs(p[1] - y0) < 0.3 for p in line.points)
+        if id(line) in interval_lines or not flat or x1 - x0 < 5:
+            continue
+        a, b = barb((x0, y0), (x1, y1)), barb((x1, y1), (x0, y0))
+        if not a or not b:
+            continue
+        taken = {id(i[0]) for i in intervals} | used_extra
+        near = [
+            t
+            for t in texts
+            if id(t) not in taken
+            and abs(t.y - y0) < 1.5 * t.size
+            and (x0 - 5 <= t.x <= x1 + 5 or 0 <= t.left - x1 < 20 or 0 <= x0 - t.right < 20)
+        ]
+        if near:
+            label = min(near, key=lambda t: abs(t.y - y0) + abs(t.x - (x0 + x1) / 2) / 10)
+            # Labels written in pieces on one line, like 't_LSE' and '= 1/f_LSE_ext'
+            row = sorted((t for t in near if abs(t.y - label.y) < 1), key=lambda t: t.left)
+            k = row.index(label)
+            first, last = k, k
+            while first > 0 and -1 < row[first].left - row[first - 1].right < 4:
+                first -= 1
+            while last < len(row) - 1 and -1 < row[last + 1].left - row[last].right < 4:
+                last += 1
+            if last > first:
+                pieces = row[first : last + 1]
+                used_extra.update(id(t) for t in pieces)
+                label = type(label)(
+                    " ".join(t.text.strip() for t in pieces),
+                    (pieces[0].left + pieces[-1].right) / 2,
+                    label.y,
+                    pieces[0].left,
+                    pieces[-1].right,
+                    label.size,
+                    False,
+                )
+            intervals.append([label, a[1], b[1], [line]])
+            interval_lines |= {id(line), id(a[0]), id(b[0])}
+    # Vertical spans with half heads, like the amplitude of a signal: no interval in time
+    spans = []
+    for line in solid:
+        (x0, y0), (x1, y1) = sorted([line.points[0], line.points[-1]], key=lambda p: p[1])
+        straight = all(abs(p[0] - x0) < 0.3 for p in line.points)
+        if id(line) in interval_lines or not straight or y1 - y0 < 5:
+            continue
+        a, b = barb((x0, y0), (x1, y1), True), barb((x1, y1), (x0, y0), True)
+        if a and b:
+            spans.append((x0, a[1], b[1]))
+            interval_lines |= {id(line), id(a[0]), id(b[0])}
+
     # The interval is measured between the tips of the arrow heads, whatever the style of the arrows
     def tips(line):
         y = line.points[0][1]
@@ -480,24 +555,30 @@ def extract(svg: Path):
     # One signal with its levels labelled on the left, like V_HSEH, 90 %, 10 %, V_HSEL: the labels are levels of
     # one lane, which is named by the title of the vertical axis
     level_labels = []
+    title = [
+        t
+        for t in texts
+        if axis_top
+        and id(t) not in used
+        and abs(t.y - axis_top[1]) < 15
+        and max(0, t.left - axis_top[0], axis_top[0] - t.right) < 15
+    ]
+    primary_levels = [t for t in primary if t not in title]
+    # The labels may stand in two columns, like V_HSEH left of 70 %
+    levelish = primary_levels + [t for t in groups if LEVEL.match(t.text.strip())]
     if (
-        len(primary) >= 2
-        and all(LEVEL.match(t.text.strip()) for t in primary)
+        len(levelish) >= 2
+        and all(LEVEL.match(t.text.strip()) for t in primary_levels)
         and any(
             c["x1"] - c["x0"] > 50
-            and all(c["top"] - t.size <= t.y <= c["bottom"] + t.size and c["x0"] >= t.right - 3 for t in primary)
+            and all(c["top"] - t.size <= t.y <= c["bottom"] + t.size and c["x0"] >= t.right - 3 for t in levelish)
             for c in comps
         )
     ):
-        title = [
-            t
-            for t in texts
-            if axis_top and id(t) not in used and abs(t.y - axis_top[1]) < 15 and abs(t.left - axis_top[0]) < 15
-        ]
         name = title[0].text.strip() if title else "signal"
         used |= {id(t) for t in title}
-        level_labels = primary + groups
-        lanes.append(Lane(name, statistics.mean(t.y for t in primary), list(primary)))
+        level_labels = levelish
+        lanes.append(Lane(name, statistics.mean(t.y for t in levelish), list(levelish)))
         lanes[0].labels = sorted(level_labels, key=lambda t: t.y)
         primary, groups = [], []
     for t in primary:
@@ -584,6 +665,7 @@ def extract(svg: Path):
     for lane in lanes:
         _classify(lane)
         if lane.labels:
+            lane.spans = spans
             # Level labels right of the names, like '90 %' next to the edges
             extra = [
                 x for x in lane.texts if x not in lane.labels and LEVEL.match(x.text.strip()) and x.right <= lane.x0 + 3
@@ -721,12 +803,7 @@ def extract(svg: Path):
                 kind=lane.kind,
                 start=lane.start,
                 events=[(t(x), v) for x, v in lane.events],
-                levels=[
-                    x.text.strip()
-                    + (" (high)" if abs(x.y - lane.top) < x.size * 0.7 else "")
-                    + (" (low)" if abs(x.y - lane.bottom) < x.size * 0.7 else "")
-                    for x in lane.labels
-                ],
+                levels=[_level(x, lane) for x in lane.labels],
             )
             for lane in lanes
         ],
@@ -823,6 +900,23 @@ def _subscripts(texts):
             )
         result.append(t)
     return result
+
+
+def _level(label, lane):
+    """A level label, marked as the high or low level, or as the span of an arrow between two other labels."""
+    text = label.text.strip()
+    for x, top, bottom in lane.spans:
+        if label.right - 2 <= x <= label.right + 15 and top <= label.y <= bottom:
+            others = [o for o in lane.labels if o is not label]
+            if others:
+                upper = min(others, key=lambda o: abs(o.y - top)).text.strip()
+                lower = min(others, key=lambda o: abs(o.y - bottom)).text.strip()
+                return f"{text} (from {upper} to {lower})"
+    if abs(label.y - lane.top) < label.size * 0.7:
+        return text + " (high)"
+    if abs(label.y - lane.bottom) < label.size * 0.7:
+        return text + " (low)"
+    return text
 
 
 def _nearest(lanes, y):
