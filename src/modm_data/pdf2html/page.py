@@ -10,7 +10,7 @@ from collections import defaultdict
 from .table import Table
 from .figure import Figure
 from .line import CharLine
-from ..utils import Rectangle, Region
+from ..utils import Rectangle, Region, list_strip
 from ..pdf import Page as PdfPage, Character
 from anytree import Node
 
@@ -95,7 +95,11 @@ class Page(PdfPage):
             "relsize": self._line_size(line),
             "char": chr(char.unicode),
         }
-        if line.rotation:
+        # Sub- and superscript use a smaller font, characters of the full size
+        # with a shifted baseline are labels next to multi-line text instead
+        if char.height >= 0.95 * line.height:
+            pass
+        elif line.rotation:
             if char.origin.x < (line.origin - 0.25 * line.height):
                 cp["superscript"] = True
             elif char.origin.x > (line.origin + 0.15 * line.height):
@@ -230,6 +234,17 @@ class Page(PdfPage):
                         return True
             return False
 
+        def _label(line0, line1) -> bool:
+            # A label of the same font size left of a multi-line text is
+            # vertically centered on the lines, so its baseline is shifted by
+            # more than a continuation of the line would be.
+            if line0.rotation or line1.rotation:
+                return False
+            offset = abs(line0._sort_origin - line1._sort_origin)
+            return offset > rtol * line0.height and (
+                line0.bbox.right < line1.bbox.left or line1.bbox.right < line0.bbox.left
+            )
+
         # Merge lines that have overlapping bbox_lines
         merged_lines = []
         current_line = bbox_lines[0]
@@ -244,6 +259,7 @@ class Page(PdfPage):
                 # Lines of the same font size printed on top of each other are
                 # separate lines, like the numerator and denominator of a formula
                 and not (same_height and _stacked(current_line, next_line))
+                and not (same_height and _label(current_line, next_line))
             ):
                 # The next line overlaps this one, we merge the shorter line
                 # (typically super- and subscript) into the taller line. Lines
@@ -270,6 +286,28 @@ class Page(PdfPage):
                 current_line = next_line
         # append last line
         merged_lines.append(current_line)
+
+        # Prepend labels to the first line of their multi-line text
+        labeled_lines = []
+        for line in merged_lines:
+            prev = labeled_lines[-1] if labeled_lines else None
+            if (
+                prev is not None
+                and not line.rotation
+                and math.isclose(prev.height, line.height, rel_tol=0.01)
+                and 0 < line._sort_origin - prev._sort_origin < line.height
+                and line.bbox.right < prev.bbox.left
+            ):
+                # Keep the spaces between the words of the label, but not around it
+                label = sorted((c for c in line.chars if c.unicode not in {0xA, 0xD}), key=lambda c: c.origin.x)
+                label = list_strip(label, lambda c: c.unicode == 0x20)
+                chars = label + [label[-1].generated_space()] + prev.chars
+                labeled_lines[-1] = CharLine(
+                    self, chars, prev.bottom, prev.origin, prev.top, prev.height, sort_origin=prev._sort_origin
+                )
+            else:
+                labeled_lines.append(line)
+        merged_lines = labeled_lines
 
         # Sort all lines horizontally based on character origin
         sorted_lines = []
