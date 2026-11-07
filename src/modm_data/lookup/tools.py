@@ -16,7 +16,7 @@ TOOLS = (
     svd.register_map, svd.decode_register,
     docs.device_docs, docs.doc_search, docs.doc_grep, docs.doc_toc, docs.doc_section, docs.find_tables, docs.doc_table,
     docs.doc_register,
-    figures.doc_figures, figures.doc_figure,
+    figures.doc_figures, figures.doc_figure, figures.doc_figure_data,
 )
 
 # what the functions raise for wrong input, the message is meant for the user

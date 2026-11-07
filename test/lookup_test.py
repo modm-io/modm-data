@@ -326,6 +326,16 @@ class Lookups(unittest.TestCase):
             assert "region must be" in str(_raises(lambda: figures.doc_figure("RM0440", "17", image=True, region="E5")))
             docs.ARCHIVE = figures.ARCHIVE = docs.MODM_DATA / "ext/stmicro/html-archive"
 
+    def test_figure_data(self):
+        """Curves of a chart at given x, the lanes of a timing diagram and a state machine, all verified"""
+        chart = figures.doc_figure_data("DS11421", "26", x="25")
+        assert "chart, verified" in chart and re.search(r"curve max: y\(25\) = 2\.1\d", chart), chart
+        counter = figures.doc_figure_data("RM0399", "404")
+        assert "timing, verified" in counter and "cycles of CK_PSC" in counter, counter
+        assert re.search(r"at 7\.0: .*Update interrupt flag \(UIF\) ↑", counter), counter
+        tap = figures.doc_figure_data("RM0521", "381")
+        assert "graph, verified" in tap and tap.count("-->") == 32 and tap.count("|JTMS=0|") == 16, tap
+
     def test_grep(self):
         """Regex over sections, also their headings, grouped by section or chapter"""
         grep = docs.doc_grep(r"RXF?NE", doc="RM0440", by="chapter")

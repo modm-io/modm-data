@@ -51,9 +51,11 @@ docs = [
     "mkdocs>=1.5,<2",
     "mkdocs-material>=9.5,<10",
 ]
-# the MCP server of modm_data.lookup, figure images and the macOS OCR of bitmap figures
+# the MCP server of modm_data.lookup, figure images and data, and the macOS OCR of bitmap figures
 lookup = [
     "mcp>=2.3,<3",
+    "numpy>=1.26,<3",
+    "pillow>=10,<12",
     "resvg-py>=0.2,<1",
     "pyobjc-framework-Vision; sys_platform == 'darwin'",
 ]

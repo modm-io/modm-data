@@ -11,12 +11,15 @@ from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.stdio import stdio_server
 from mcp.types import ToolAnnotations
 
+from .. import figures as figure_data
+from ..figures import curves as figure_curves, graph as figure_graph, timing as figure_timing
 from ..html import markdown, tree
 from ..svd import read
 from . import core, docs, figures, headers, svd, tools
 
 # dependencies before the modules that import from them
-MODULES = (tree, markdown, read, headers, core, svd, docs, figures, tools)
+MODULES = (tree, markdown, read, figure_curves, figure_timing, figure_graph, figure_data, headers, core, svd, docs,
+           figures, tools)
 
 server = MCPServer("modm-data", instructions=(
     "Device headers: use device_header/header_devices/find_define instead of grepping modm-data/ext. "
@@ -24,7 +27,8 @@ server = MCPServer("modm-data", instructions=(
     "doc_search/find_tables (doc_grep for regexes and where something is concentrated), navigate with doc_toc, "
     "read with doc_section/doc_table instead of reading the HTML files. "
     "Figures: doc_figures finds them by caption and text, doc_figure gives their text by region and, with image=True, "
-    "a PNG of the figure or of one region of it. "
+    "a PNG of the figure or of one region of it, doc_figure_data the curves of charts (values at any x), the signals and "
+    "timing parameters of timing diagrams, and state machines and flowcharts as Mermaid graphs. "
     "Clocks: flash_latency gives the wait states per voltage. "
     "Registers: doc_register for the reference manual description, register_map/decode_register for addresses "
     "and decoding values read from a board. "

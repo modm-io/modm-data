@@ -114,13 +114,26 @@ def _pixels(path: Path) -> tuple[int, int]:
     return tuple(int(n) for n in re.findall(r"pixel(?:Width|Height): (\d+)", out))
 
 
+def _images(svg: str) -> list[tuple[str, float, float, float, float]]:
+    """(href, x, y, width, height) of the embedded bitmaps. Images placed by a matrix on the unit square, which may
+    flip or rotate them, give the bounds of the mapped square."""
+    images = []
+    for a in (dict(re.findall(r'([\w:-]+)="([^"]*)"', i)) for i in re.findall(r"<image([^>]*)>", svg)):
+        if m := re.search(r"matrix\(([^)]*)\)", a.get("transform", "")):
+            ma, mb, mc, md, me, mf = (float(v) for v in m[1].replace(",", " ").split())
+            xs, ys = [me, me + ma, me + mc, me + ma + mc], [mf, mf + mb, mf + md, mf + mb + md]
+            images.append((a["href"], min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)))
+        else:
+            images.append((a["href"], *(float(a.get(k, 0)) for k in ("x", "y", "width", "height"))))
+    return images
+
+
 def _content(path: Path, ocr: bool = True):
     """The bounding box, labels and median font size of a figure. SVGs without text that only embed a bitmap, like
     photos and mechanical drawings, get their text from OCR, without `ocr` only from the OCR cache."""
     svg = path.read_text(encoding="utf-8", errors="replace")
     box, labels, font = _parse(svg)
-    images = [(path.parent / a["href"], *(float(a.get(k, 0)) for k in ("x", "y", "width", "height")))
-              for a in (dict(re.findall(r'([\w:-]+)="([^"]*)"', i)) for i in re.findall(r"<image([^>]*)>", svg))]
+    images = [(path.parent / href, *place) for href, *place in _images(svg)]
     if images:
         x0, y0, x1, y1 = box if labels or re.search(r"<path", svg) else (math.inf, math.inf, -math.inf, -math.inf)
         box = (min(x0, *(i[1] for i in images)), min(y0, *(i[2] for i in images)),
@@ -259,8 +272,8 @@ def doc_figure(doc: str, figure: str, image: bool = False, region: str = "") -> 
     width, height = x1 - x0, y1 - y0
     svg = path.read_text(encoding="utf-8", errors="replace")
     # embedded bitmaps at their own resolution at least, below it their text is lost
-    native = max((_pixels(path.parent / a)[0] / float(w) for a, w in re.findall(r'<image[^>]*?href="([^"]+)"[^>]*?width="([\d.]+)"', svg)
-                  if (path.parent / a).exists() and float(w) > 0.3 * width), default=0)
+    native = max((_pixels(path.parent / a)[0] / w for a, _, _, w, _ in _images(svg)
+                  if (path.parent / a).exists() and w > 0.3 * width), default=0)
     zoom = min(max(FONT_PIXELS / font, native), math.sqrt(MAX_PIXELS / (width * height)), 6)
     pixels = (max(int(width * zoom), 1), max(int(height * zoom), 1))
     cropped = re.sub(r'<svg\b[^>]*>', f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{x0:.2f} {y0:.2f} {width:.2f} '
@@ -271,4 +284,23 @@ def doc_figure(doc: str, figure: str, image: bool = False, region: str = "") -> 
                                 resources_dir=str(path.parent))
     return (f"{head}" + (f", region {region.upper()}" if region else "") + f", {pixels[0]}x{pixels[1]} px",
             bytes(png))
+
+
+def doc_figure_data(doc: str, figure: str, x: str = "") -> str:
+    """The data of a figure, read from its exact geometry: the axes and curves of a characteristic chart (typical
+    values over temperature, frequency, load), the lanes of a timing diagram (edges in clock cycles, bus values,
+    timing parameters like t_su(SI) with the signal edges they measure), or a state machine or flowchart as a Mermaid
+    graph with transition labels. `x` is a comma-separated list of x values at which a chart gives the y value of every
+    curve, e.g. '25,85'. The result is checked against the drawing; an unverified result may be wrong, compare it with
+    doc_figure(image=True). Figures that are none of these kinds have no data."""
+    from ..figures import figure_data
+    name, version, (number, caption, sect, path) = _figure(doc, figure)
+    values = [float(v) for v in x.replace(";", ",").split(",") if v.strip()] if x else None
+    result = figure_data(path, caption, values)
+    head = f"{name} v{version} section {sect}, {caption or f'Figure {number}'}"
+    if result is None:
+        return head + "\nno data: not a chart, timing diagram, state machine or flowchart, see doc_figure"
+    kind, text, verified = result
+    status = "verified against the drawing" if verified else "UNVERIFIED, the check against the drawing failed"
+    return f"{head}\n{kind}, {status}\n{text}"
 
