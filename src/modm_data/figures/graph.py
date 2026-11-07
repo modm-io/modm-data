@@ -72,6 +72,41 @@ def _shape(points):
     return None
 
 
+def _join_dashes(wires, gap=3.5):
+    """Dashed connectors drawn as separate dashes: chains of three or more short pieces whose ends face each
+    other across small gaps become one wire."""
+    dashes = [w for w in wires if w.length < 8]
+    ends = [(i, k, (w.points[0], w.points[-1])[k]) for i, w in enumerate(dashes) for k in (0, 1)]
+
+    def nearest(i, k, p):
+        options = [(math.dist(p, q), j, m) for j, m, q in ends if j != i and 0.2 < math.dist(p, q) < gap]
+        return min(options)[1:] if options else None
+
+    links = {}
+    for i, k, p in ends:
+        if (other := nearest(i, k, p)) and nearest(*other, ends[2 * other[0] + other[1]][2]) == (i, k):
+            links[i, k] = other
+    joined, used = [], set()
+    for i, w in enumerate(dashes):
+        if i in used or (i, 0) in links and (i, 1) in links:
+            continue
+        # Walk from a piece with a free end along the links
+        chain = [(i, 0 if (i, 0) not in links else 1)]
+        while (step := links.get((chain[-1][0], 1 - chain[-1][1]))) and step[0] not in {c[0] for c in chain}:
+            chain.append(step)
+        if len(chain) < 3:
+            continue
+        points = []
+        for j, start in chain:
+            pts = dashes[j].points if start == 0 else dashes[j].points[::-1]
+            points += pts
+        if math.dist(points[0], points[-1]) < gap:
+            continue  # Dashed outlines of boxes and groups are no connectors
+        used.update(j for j, _ in chain)
+        joined.append(type(w)(points, w.color, True))
+    return [w for w in wires if not any(w is dashes[j] for j in used)] + joined
+
+
 def extract(svg: Path):
     texts, shapes = _parse(svg)
     texts = _subscripts([t for t in texts if t.text.strip() and not FIGURE_ID.match(t.text.strip())])
@@ -211,8 +246,15 @@ def extract(svg: Path):
             for a in heads
         )
 
+    def light(line):
+        # Shading of nodes, like the light gray slivers of gradients, is no connector
+        c = line.color.lstrip("#")
+        return len(c) == 6 and sum(int(c[k : k + 2], 16) for k in (0, 2, 4)) > 3 * 0xC8
+
     wires = [
-        line for line in lines if line.length > 2 and not outline(line) and not on_boundary(line) and not in_head(line)
+        line
+        for line in lines
+        if line.length > 2 and not outline(line) and not on_boundary(line) and not in_head(line) and not light(line)
     ]
     # Open arrow heads: two short strokes meeting at the tip, at the end of a longer wire
     short = [w for w in wires if w.length < 8 and len(w.points) == 2]
@@ -230,6 +272,7 @@ def extract(svg: Path):
                             heads.append([tip, oa, ob])
                             vheads.update((id(a), id(b)))
     wires = [w for w in wires if id(w) not in vheads]
+    wires = _join_dashes(wires)
 
     def node_near(head):
         return any(min(_boundary_distance(q, n) for q in head) < 1.5 for n in nodes)
@@ -296,7 +339,22 @@ def extract(svg: Path):
         return best[1] if best else None
 
     edges, dangling, attached = [], 0, 0
-    annotations = set()
+    annotations, legend, legend_texts, candidates_legend = set(), [], set(), []
+
+    def legend_entry(members):
+        x0, t = min(w.bbox[0] for w in members), min(w.bbox[1] for w in members)
+        r, b = max(w.bbox[2] for w in members), max(w.bbox[3] for w in members)
+        if b - t > 3 or r - x0 > 80:
+            return None
+        after = [
+            x for x in texts if id(x) not in legend_texts and 0 <= x.left - r < 15 and abs(x.y - (t + b) / 2) < x.size
+        ]
+        if not after:
+            return None
+        x = min(after, key=lambda x: x.left)
+        dashed = sum(w.length for w in members if w.dashed) > 0.5 * sum(w.length for w in members)
+        return ("dashed" if dashed else "solid", x)
+
     for members in components.values():
         # Free ends: line ends that touch no other line of the connector
         ends = []
@@ -339,6 +397,9 @@ def extract(svg: Path):
         # Double arrows between no nodes are dimension annotations, not connectors
         if len(loose) == len(ends) == 2 and all(head_at(e) for e in loose):
             annotations.add(id(members[0]))
+        elif len(loose) == len(ends) == 2 and (entry := legend_entry(members)):
+            # A short horizontal line or arrow with a text after it may explain a line style
+            candidates_legend.append((members, *entry))
         else:
             dangling += len(loose)
         if not targets and len(sources) == 2:
@@ -360,8 +421,17 @@ def extract(svg: Path):
                     if s is not t:
                         edges.append([s, t, "", members, None])
 
+    # A legend has entries of different line styles stacked at the same position, otherwise these lines dangle
+    for c in candidates_legend:
+        column = [d for d in candidates_legend if abs(min(w.bbox[0] for w in d[0]) - min(w.bbox[0] for w in c[0])) < 3]
+        if len(column) >= 2 and len({d[1] for d in column}) >= 2:
+            annotations.add(id(c[0][0]))
+            legend.append((c[1], c[2].text.strip()))
+            legend_texts.add(id(c[2]))
+        else:
+            dangling += 2
     # Edge labels: texts outside of nodes, at the connector closest to them
-    used = {id(t) for n in nodes for t in n.texts}
+    used = {id(t) for n in nodes for t in n.texts} | legend_texts
     # Group titles: texts inside a group, outside of its nodes, close to its top, like 'USART 1'
     for t in texts:
         if id(t) in used:
@@ -457,9 +527,16 @@ def extract(svg: Path):
     # The same connector found from both ends
     if not edges:
         return None
-    unique = {}
-    for s, t, label, *_ in edges:
+    unique, dashed = {}, {}
+
+    def touching(members, node):
+        # The wire of a connector that ends at a node
+        return min(members, key=lambda w: min(_boundary_distance(e, node) for e in (w.points[0], w.points[-1])))
+
+    for s, t, label, members, _ in edges:
         unique.setdefault((s.id, t.id), label)
+        # Connectors may join others, like dotted arrows onto a solid flow: the style is that of their ends
+        dashed.setdefault((s.id, t.id), touching(members, s).dashed or touching(members, t).dashed)
 
     def frame(members):
         l = min(w.bbox[0] for w in members)
@@ -477,7 +554,8 @@ def extract(svg: Path):
     connected = sum(w.length for m in counted for w in m if id(w) in in_edges)
     return dict(
         nodes=[dict(id=n.id, shape=n.shape, label=n.label) for n in sorted(nodes, key=lambda n: int(n.id[1:]))],
-        edges=[dict(source=s, target=t, label=label) for (s, t), label in unique.items()],
+        edges=[dict(source=s, target=t, label=label, dashed=dashed[s, t]) for (s, t), label in unique.items()],
+        legend=legend,
         groups=[
             dict(
                 title=g.label,
@@ -514,7 +592,9 @@ def mermaid(graph) -> str:
             lines.append("    end")
     for e in graph["edges"]:
         label = f"|{e['label'].replace('|', '/')}|" if e["label"] else ""
-        lines.append(f"    {e['source']} -->{label} {e['target']}")
+        lines.append(f"    {e['source']} {'-.->' if e.get('dashed') else '-->'}{label} {e['target']}")
+    for style, text in graph.get("legend", []):
+        lines.append(f"    %% legend: {'dashed arrow -.->' if style == 'dashed' else 'solid arrow -->'} means {text}")
     for note in graph["notes"]:
         lines.append(f"    %% note: {note}")
     return "\n".join(lines)
