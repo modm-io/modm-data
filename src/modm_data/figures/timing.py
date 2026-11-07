@@ -487,6 +487,21 @@ def extract(svg: Path):
         return None
     for lane in lanes:
         _classify(lane)
+    # Lanes drawn only as arrow marks at edges, like interrupt flags, are events at the arrows
+    for lane in lanes:
+        if lane.kind != "empty":
+            continue
+        marks = sorted(
+            {
+                round((line.bbox[0] + line.bbox[2]) / 2, 1)
+                for line in solid
+                if id(line) in interval_lines
+                and line.length < 15
+                and abs(lane.y - (line.bbox[1] + line.bbox[3]) / 2) < 0.5 * pitch
+            }
+        )
+        if marks:
+            lane.kind, lane.events = "events", [(x, "event") for x in marks]
 
     # Time base: the digital lane with the most regular rising edges is the clock
     def regular(lane):
@@ -546,7 +561,7 @@ def extract(svg: Path):
         text=round(1 - len(notes) / max(len(texts), 1), 3),
         levels=max((lane.levels for lane in lanes if lane.kind in ("digital", "clock")), default=0),
         empty=sum(lane.kind == "empty" for lane in lanes),
-        agreement=min((agreement(lane) for lane in lanes if lane.kind != "empty"), default=0),
+        agreement=min((agreement(lane) for lane in lanes if lane.kind not in ("empty", "events")), default=0),
         lanes=len(lanes),
         clock=bool(clock),
     )
@@ -687,8 +702,21 @@ def _classify(lane):
         for p, q in segments
         if abs(p[1] - q[1]) < 0.3 and abs(p[0] - q[0]) > 2.5
     ]
-    if not horizontal:
+    if not segments:
         lane.kind = "empty"
+        return
+    ys = [p[1] for s in segments for p in s]
+    lane.x0, lane.x1 = min(p[0] for s in segments for p in s), max(p[0] for s in segments for p in s)
+    if not horizontal:
+        # Sawtooth counters without flat parts are analog, other lanes without levels are empty
+        lane.top, lane.bottom = min(ys), max(ys)
+        span = lane.bottom - lane.top
+        if span > 2 and sum(abs(q[0] - p[0]) > span and abs(q[1] - p[1]) > 0.6 * span for p, q in segments) >= 2:
+            lane.kind = "analog"
+            points = sorted({(round(p[0], 1), p[1]) for line in lane.lines for p in line.points})
+            lane.events = [(x, f"{(lane.bottom - y) / span:.2f}") for x, y in points]
+        else:
+            lane.kind = "empty"
         return
     top, bottom = min(h[2] for h in horizontal), max(h[2] for h in horizontal)
     lane.top, lane.bottom = top, bottom
@@ -699,10 +727,28 @@ def _classify(lane):
     values = [t for t in lane.texts if top - 1 <= t.y <= bottom + 1 and t.left > min(h[0] for h in horizontal) - 2]
     # Ramps of analog signals are long sloped segments
     ramps = [(p, q) for p, q in sloped if abs(q[0] - p[0]) > span and abs(q[1] - p[1]) > 0.6 * span > 2]
-    if len(ramps) >= 2:
+    # Staircases of counters have many levels
+    levels = sorted({round(h[2], 1) for h in horizontal})
+    distinct = len([b for a, b in zip(levels, levels[1:]) if b - a > 1.5]) + 1
+    # one level at a time, unlike buses, which draw two levels at the same time
+    overlap = sum(
+        max(0, min(a[1], b[1]) - max(a[0], b[0]))
+        for i, a in enumerate(horizontal)
+        for b in horizontal[i + 1 :]
+        if abs(a[2] - b[2]) > 1.5
+    )
+    stairs = distinct >= 4 and overlap < 0.1 * sum(h[1] - h[0] for h in horizontal)
+    if len(ramps) >= 2 or stairs and span > 8:
         lane.kind = "analog"
         points = sorted({(round(p[0], 1), p[1]) for line in lane.lines for p in line.points})
         lane.events = [(x, f"{(bottom - y) / span:.2f}") for x, y in points]
+        return
+    # Pulses drawn as vertical ticks on a base line, like index or trigger inputs
+    ticks = sorted({round(p[0], 1) for p, q in segments if abs(p[0] - q[0]) < 0.3 and abs(p[1] - q[1]) > 4})
+    if span < 1 and ticks and min(ys) < top - 4:
+        lane.kind = "pulse"
+        lane.top, lane.bottom = min(ys), top
+        lane.events = [(x, "pulse") for x in ticks]
         return
     if span < 1:
         lane.kind = "constant"
@@ -779,6 +825,8 @@ def reconstruct(lane):
         return lines
     if lane.kind == "constant":
         return [[(x0, top), (x1, top)]]
+    if lane.kind == "pulse":
+        return [[(x0, bottom), (x1, bottom)]] + [[(x, bottom), (x, top)] for x, _ in lane.events]
     return [line.points for line in lane.lines]
 
 
@@ -831,6 +879,10 @@ def describe(result) -> str:
             )
         elif lane["kind"] == "bus":
             lines.append(f"{lane['name']} (bus): " + ", ".join(f"{v} from {t}" for t, v in lane["events"]))
+        elif lane["kind"] == "events":
+            lines.append(f"{lane['name']}: events at " + " ".join(str(t) for t, _ in lane["events"]))
+        elif lane["kind"] == "pulse":
+            lines.append(f"{lane['name']}: pulses at " + " ".join(str(t) for t, _ in lane["events"]))
         elif lane["kind"] == "analog":
             lines.append(f"{lane['name']} (analog, level 0..1): " + " ".join(f"{v}@{t}" for t, v in lane["events"]))
         else:

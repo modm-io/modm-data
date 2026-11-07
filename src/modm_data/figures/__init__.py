@@ -46,13 +46,23 @@ def _chart_text(plot, x: list[float]) -> str:
 
 
 def _timing_verified(audit: dict) -> bool:
-    return (audit["ink"] >= 0.9 and audit["text"] >= 0.8 and audit["levels"] <= 2 and audit["agreement"] >= 0.85
-            and not audit["empty"])
+    return (
+        audit["ink"] >= 0.9
+        and audit["text"] >= 0.8
+        and audit["levels"] <= 2
+        and audit["agreement"] >= 0.85
+        and not audit["empty"]
+    )
 
 
 def _graph_verified(audit: dict) -> bool:
-    return (audit["edges"] and not audit["isolated"] and not audit["dangling"] and audit["text"] >= 0.9
-            and audit["ink"] >= 0.9)
+    return (
+        audit["edges"]
+        and not audit["isolated"]
+        and not audit["dangling"]
+        and audit["text"] >= 0.9
+        and audit["ink"] >= 0.9
+    )
 
 
 def figure_data(svg: Path, caption: str = "", x: list[float] = None) -> tuple[str, str, bool] | None:
@@ -69,8 +79,13 @@ def figure_data(svg: Path, caption: str = "", x: list[float] = None) -> tuple[st
     if curves.is_chart_caption(caption) and (plot := curves.extract(svg)) and plot.curves:
         audit = curves.audit(svg) or {}
         coverage = audit.get("coverage")
-        verified = (coverage is not None and coverage >= 0.85 and audit["unexplained"] <= 0.05
-                    and not audit["unlabeled"] and not audit["duplicate_labels"])
+        verified = (
+            coverage is not None
+            and coverage >= 0.85
+            and audit["unexplained"] <= 0.05
+            and not audit["unlabeled"]
+            and not audit["duplicate_labels"]
+        )
         results.append(("chart", _chart_text(plot, x or []), verified))
     if (t := timing.extract(svg)) and any(lane["kind"] != "empty" for lane in t["lanes"]):
         results.append(("timing", timing.describe(t), _timing_verified(t["audit"])))
