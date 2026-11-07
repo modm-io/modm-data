@@ -72,6 +72,47 @@ def _shape(points):
     return None
 
 
+def _words(texts):
+    """Joins words written in pieces of one or two letters on the same baseline, like 'RE', 'A' and 'D'."""
+
+    def width(text, size):
+        # Approximate advance widths of Arial in em: the 0.5 em of the parser is too coarse for single letters
+        narrow, wide = "iljtfrI.,;:!|()[]' ", "mwMW"
+        return size * sum(0.28 if c in narrow else 0.83 if c in wide else 0.67 if c.isupper() else 0.55 for c in text)
+
+    def right(t):
+        return t.left + width(t.text, t.size) if len(t.text.strip()) <= 2 else t.right
+
+    result = []
+    for t in sorted(texts, key=lambda t: (round(t.y, 1), t.left)):
+        last = next(
+            (
+                r
+                for r in reversed(result)
+                if not r.rotated
+                and not t.rotated
+                and abs(r.y - t.y) < 0.3
+                and r.size == t.size
+                and min(len(r.text.strip()), len(t.text.strip())) <= 2
+                and -0.5 < t.left - right(r) < 0.25 * t.size
+            ),
+            None,
+        )
+        if last:
+            result[result.index(last)] = type(t)(
+                last.text.strip() + t.text.strip(),
+                (last.left + right(t)) / 2,
+                last.y,
+                last.left,
+                right(t),
+                t.size,
+                False,
+            )
+        else:
+            result.append(t)
+    return result
+
+
 def _join_dashes(wires, gap=3.5):
     """Dashed connectors drawn as separate dashes: chains of three or more short pieces whose ends face each
     other across small gaps become one wire."""
@@ -109,7 +150,7 @@ def _join_dashes(wires, gap=3.5):
 
 def extract(svg: Path):
     texts, shapes = _parse(svg)
-    texts = _subscripts([t for t in texts if t.text.strip() and not FIGURE_ID.match(t.text.strip())])
+    texts = _words(_subscripts([t for t in texts if t.text.strip() and not FIGURE_ID.match(t.text.strip())]))
 
     # Nodes: closed shapes large enough to hold text
     candidates = []
@@ -534,9 +575,16 @@ def extract(svg: Path):
         return min(members, key=lambda w: min(_boundary_distance(e, node) for e in (w.points[0], w.points[-1])))
 
     for s, t, label, members, _ in edges:
-        unique.setdefault((s.id, t.id), label)
+        # Different connectors between the same nodes are different edges, like two loops at one state
+        key = (s.id, t.id, id(members))
+        unique.setdefault(key, label)
         # Connectors may join others, like dotted arrows onto a solid flow: the style is that of their ends
-        dashed.setdefault((s.id, t.id), touching(members, s).dashed or touching(members, t).dashed)
+        dashed.setdefault(key, touching(members, s).dashed or touching(members, t).dashed)
+    # unless they say the same
+    for key in list(unique):
+        twins = [k for k in unique if k[:2] == key[:2] and k != key]
+        if any(unique[k] == unique[key] or not unique[key] and unique[k] for k in twins):
+            del unique[key]
 
     def frame(members):
         l = min(w.bbox[0] for w in members)
@@ -554,7 +602,7 @@ def extract(svg: Path):
     connected = sum(w.length for m in counted for w in m if id(w) in in_edges)
     return dict(
         nodes=[dict(id=n.id, shape=n.shape, label=n.label) for n in sorted(nodes, key=lambda n: int(n.id[1:]))],
-        edges=[dict(source=s, target=t, label=label, dashed=dashed[s, t]) for (s, t), label in unique.items()],
+        edges=[dict(source=s, target=t, label=label, dashed=dashed[s, t, m]) for (s, t, m), label in unique.items()],
         legend=legend,
         groups=[
             dict(
