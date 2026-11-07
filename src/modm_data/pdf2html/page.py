@@ -334,6 +334,7 @@ class Page(PdfPage):
             chars = sorted(line.chars, key=sort_key)
             if not line.rotation:
                 chars = self._chars_with_bullet_space(chars)
+            chars = self._chars_with_gap_spaces(chars, line.rotation)
             sorted_lines.append(
                 CharLine(
                     self,
@@ -349,6 +350,43 @@ class Page(PdfPage):
             )
 
         return sorted_lines
+
+    @staticmethod
+    def _chars_with_gap_spaces(chars: list, rotation: int) -> list:
+        # pdfium generates no spaces at the word gaps of fonts without a space
+        # glyph, so we insert them at gaps wider than the typical gap between
+        # the letters of a run of the same font, which may be letter-spaced.
+        def _span(char):
+            if not rotation:
+                return char.bbox.left, char.bbox.right
+            if rotation == 90:
+                return char.bbox.bottom, char.bbox.top
+            return -char.bbox.top, -char.bbox.bottom
+
+        runs, last, key = [], None, None
+        for index, char in enumerate(chars):
+            if char.unicode in {0x20, 0xA, 0xD}:
+                continue
+            start, stop = _span(char)
+            size = round(char.height, 1)
+            # Lines may interleave the characters of several baselines
+            baseline = round(char.origin.x if rotation else char.origin.y, 1)
+            if key != (char.font, size, baseline) or start - last > 0.5 * size:
+                runs.append((char, []))
+            else:
+                runs[-1][1].append((start - last, index))
+            key, last = (char.font, size, baseline), stop
+
+        spaces = []
+        for first, gaps in runs:
+            if not gaps or first.has_space_glyph:
+                continue
+            size = first.height
+            letter_gap = statistics.median(g for g, _ in gaps)
+            spaces += [i for g, i in gaps if g > letter_gap + 0.15 * size and chars[i - 1].unicode != 0x20]
+        for index in sorted(spaces, reverse=True):
+            chars = chars[:index] + [chars[index].generated_space()] + chars[index:]
+        return chars
 
     @staticmethod
     def _chars_with_bullet_space(chars: list) -> list:
