@@ -1,0 +1,54 @@
+diff --git a/chapter_29_hash_processor_hash.html b/chapter_29_hash_processor_hash.html
+--- a/chapter_29_hash_processor_hash.html
++++ b/chapter_29_hash_processor_hash.html
+@@ -2410,49 +2410,9 @@
+         <td>0x28- 0xF4</td>
+         <td>Reserved</td>
+         <td colspan="32">Reserved</td>
+-      </tr>
+-      <tr>
+-        <td rowspan="2">0x0F8</td>
+-        <td>HASH_CSR0</td>
+-        <td colspan="32">CS0[31:0]</td>
+-      </tr>
+-      <tr>
+-        <td>Reset value</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>0</td>
+-        <td>1</td>
+-        <td>0</td>
+       </tr>
+       <tr>
+-        <td rowspan="2">0x0F8 + <br/>0x4 * x, <br/>(x=1 to 53)<br/>Last address: <br/>0x1CC</td>
++        <td rowspan="2">0x0F8 + <br/>0x4 * x, <br/>(x=0 to 53)<br/>Last address: <br/>0x1CC</td>
+         <td>HASH_CSRx</td>
+         <td colspan="32">CSx[31:0]</td>
+       </tr>
