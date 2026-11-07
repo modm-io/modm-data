@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import gc
-from anytree import RenderTree
+import os
+import hashlib
+from anytree import RenderTree, PreOrderIter
+from lxml import etree
 from typing import Iterable
 
 from .html import format_document, write_html
@@ -13,10 +16,46 @@ from pathlib import Path
 import pypdfium2 as pp
 
 
+def _write_figures(root, html_file: Path, folder: Path, names: set):
+    """
+    Writes the vector graphics of all figures as SVG files and their bitmap
+    images in their embedded format into the folder, so that the HTML only
+    contains references to them.
+
+    The folder is shared by all HTML files of a document, which may be written
+    by separate processes that each convert their own pages. The files are
+    therefore named after the figure number and page, and the images after
+    their content, which also saves identical images only once, like the
+    hundreds of tiles of a pattern.
+    """
+    html_file, folder = Path(html_file), Path(folder)
+    for node in PreOrderIter(root, filter_=lambda n: n.name == "figure"):
+        # The page keeps the name unique, if the figure numbers start over
+        name = "figure_" + (f"{node.number}_" if node.number >= 0 else "") + f"p{node.obj._page.number}"
+        # Figures without caption and side-by-side figures share their name
+        name = next(n for n in [name] + [f"{name}_{ii}" for ii in range(1, 100)] if n not in names)
+        names.add(name)
+
+        files = []
+        for image in node.obj.images:
+            suffix, data = image.encode()
+            files.append(f"image_{hashlib.sha1(data).hexdigest()[:16]}{suffix}")
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / files[-1]).write_bytes(data)
+        if (svg := node.obj.as_svg(files)) is not None:
+            folder.mkdir(parents=True, exist_ok=True)
+            etree.ElementTree(svg).write(folder / f"{name}.svg", pretty_print=True)
+            # The SVG draws the images itself, so the HTML only references the SVG
+            files = [f"{name}.svg"]
+        relative = Path(os.path.relpath(folder, html_file.parent))
+        node._srcs = [(relative / file).as_posix() for file in dict.fromkeys(files)]
+
+
 def convert(
     doc: pp.PdfDocument,
     page_range: Iterable[int],
     output_path: Path,
+    figures_path: Path = None,
     format_chapters: bool = False,
     pretty: bool = True,
     render_html: bool = True,
@@ -70,16 +109,19 @@ def convert(
             print(RenderTree(document))
 
         if render_html:
+            names = set()
             if format_chapters:
                 for chapter in document.children:
                     if chapter.name == "chapter":
                         print(f"\nFormatting HTML for '{chapter.title}'")
-                        html = format_document(chapter)
                         output_file = f"{output_path}/chapter_{chapter._filename}.html"
+                        _write_figures(chapter, output_file, figures_path or output_path / "figures", names)
+                        html = format_document(chapter)
                         print(f"\nWriting HTML '{output_file}'")
                         write_html(html, output_file, pretty=pretty)
             else:
                 print("\nFormatting HTML")
+                _write_figures(document, output_path, figures_path or output_path.with_suffix("") / "figures", names)
                 html = format_document(document)
                 print(f"\nWriting HTML '{str(output_path)}'")
                 write_html(html, str(output_path), pretty=pretty)

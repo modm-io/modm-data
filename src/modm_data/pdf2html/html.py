@@ -27,7 +27,17 @@ def _format_html_figure(xmlnode, figurenode):
 
     xynode = etree.Element("td")
     ynode.append(xynode)
-    xynode.text = "(omitted)"
+    if srcs := getattr(figurenode, "_srcs", None):
+        for src in srcs:
+            if src.endswith(".svg"):
+                # Browsers do not load the images an SVG references when it is an <img>
+                node = etree.SubElement(xynode, "object", data=src, type="image/svg+xml")
+                # An <object> is not a void element and needs its closing tag
+                node.text = ""
+            else:
+                etree.SubElement(xynode, "img", src=src)
+    else:
+        xynode.text = "(omitted)"
 
 
 def _format_html_table(xmlnode, tablenode):

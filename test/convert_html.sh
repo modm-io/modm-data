@@ -3,7 +3,7 @@ rm -rf test/data/html/stmicro
 python3 -m modm_data.pdf2html.stmicro --html --range 21:23 \
 	--document ext/test/regression/stmicro/DS10329-v4.pdf --output test/data/html/stmicro/DS10329-v4.html &
 
-python3 -m modm_data.pdf2html.stmicro --html --page 170 \
+python3 -m modm_data.pdf2html.stmicro --html --page 170 --page 177 \
 	--document ext/test/regression/stmicro/DS10693-v10.pdf --output test/data/html/stmicro/DS10693-v10.html &
 
 # Double header line
