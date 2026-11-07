@@ -360,6 +360,37 @@ class Page(BasePage):
         Node("page", parent=first_leaf, xpos=first_leaf.xpos, number=self.number)
         return ast
 
+    def _with_labels(self, area: Rectangle, bbox: Rectangle) -> Rectangle:
+        # Labels of bit diagrams end at their leader lines, so they stick out
+        # of the drawn graphics and would otherwise be glued into the text.
+        # Labels that overlap the graphics are part of the figure too.
+        x_em = self._spacing["x_em"]
+        # Captions are never labels, even where their subscripts reach into the graphics
+        captions = {
+            id(c)
+            for line in self.charlines_in_area(area)
+            if re.match(r"\s*(Figure|Table) \d+\.", "".join(c.char for c in line.chars))
+            for c in line.chars
+        }
+        chars = [c for c in self.chars_in_area(area) if c.unicode not in {0x20, 0xA, 0xD} and id(c) not in captions]
+        graphics = bbox
+        while True:
+            grown = bbox
+            for c in chars:
+                # Labels can also stick out at the top or bottom of the graphics:
+                # their baseline or the top of their letters is inside of them.
+                # Captions just above the graphics only touch them with their
+                # descenders. Only the graphics count vertically, otherwise a
+                # label at the top would pull in the caption above it.
+                inside = graphics.bottom + 0.5 < c.origin.y < graphics.top - 0.5 or (
+                    graphics.bottom + 0.3 * (c.bbox.top - c.bbox.bottom) < c.bbox.top < graphics.top
+                )
+                if inside and bbox.left - x_em <= c.bbox.right and c.bbox.left <= bbox.right + x_em:
+                    grown = grown.joined(c.bbox)
+            if grown.isclose(bbox):
+                return bbox
+            bbox = grown
+
     def graphics_in_area(self, area: Rectangle) -> list[Table | Figure]:
         # Find all graphic clusters in this area
         em = self._spacing["y_em"]
@@ -433,7 +464,7 @@ class Page(BasePage):
                             if not self.chars_in_area(gbbox):
                                 break
                     # Generate the new bounding box which includes the caption
-                    gbbox = Rectangle(left, gbbox.bottom, right, cbbox.bottom)
+                    gbbox = self._with_labels(area, Rectangle(left, gbbox.bottom, right, cbbox.bottom))
                 elif "Table" in phrase:
                     graphic_clusters.remove(graphic)
                     gbbox, paths = graphic
@@ -487,7 +518,7 @@ class Page(BasePage):
                     name = category
                 categories.append((name, cbbox, gbbox, paths))
             else:
-                categories.append(("figure", None, gbbox, paths))
+                categories.append(("figure", None, self._with_labels(area, gbbox), paths))
 
         # Convert the objects into specialized classes
         categories.sort(key=lambda o: (-o[2].y, o[2].x))
@@ -693,7 +724,12 @@ class Page(BasePage):
                     current = Node("para", parent=current, obj=obj, xpos=current.xpos)
 
                 # Check if line is a register bit definition
-                elif with_bits and re.match(r" *([Bb]ytes? *.+? *)?B[uio]ts? *\d+", content) is not None:
+                elif (
+                    with_bits
+                    and re.match(r" *([Bb]ytes? *.+? *)?B[uio]ts? *\d+", content) is not None
+                    # A sentence starting with "Bits" inside the description column is not a new bit
+                    and not any(c.name == "bit" and xpos >= c._middle - x_em for c in current.iter_path_reverse())
+                ):
                     if obj.contains_font("Bold"):
                         # Use the bold character as delimiter
                         content_start = next(xi for xi, c in enumerate(obj.chars) if "Bold" in c.font)
