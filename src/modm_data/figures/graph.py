@@ -8,6 +8,7 @@ Connectors are all other lines, joined where they touch. A connector end with an
 touches a node is a target, the other ends touching nodes are sources. Texts outside of nodes label
 the connector closest to them."""
 
+import re
 import math
 import collections
 from dataclasses import dataclass, field
@@ -275,13 +276,21 @@ def extract(svg: Path):
     for i, w in enumerate(wires):
         components[find(i)].append(w)
 
-    def node_at(point, tip=None):
+    def node_at(point, tip=None, before=None):
         best = None
         for n in nodes:
             d = _boundary_distance(point, n)
             if tip is not None:
                 d = min(d, min(_boundary_distance(p, n) for p in tip))
-            if d < 4 or _inside(point, n.points):
+            limit = 4
+            if before is not None:
+                # Arrows that stop short of the node, but point at it
+                cx, cy = (n.bbox[0] + n.bbox[2]) / 2, (n.bbox[1] + n.bbox[3]) / 2
+                dx, dy, ex, ey = point[0] - before[0], point[1] - before[1], cx - point[0], cy - point[1]
+                norm = math.hypot(dx, dy) * math.hypot(ex, ey)
+                if norm and (dx * ex + dy * ey) / norm > 0.8:
+                    limit = 12
+            if d < limit or _inside(point, n.points):
                 if best is None or d < best[0]:
                     best = (d, n)
         return best[1] if best else None
@@ -311,7 +320,7 @@ def extract(svg: Path):
         loose, headless = [], []
         for e, w in ends:
             head = head_at(e)
-            n = node_at(e, head)
+            n = node_at(e, head, w.points[1] if e == w.points[0] else w.points[-2])
             if n is None:
                 loose.append(e)
                 continue
@@ -362,6 +371,35 @@ def extract(svg: Path):
                 g.texts.append(t)
                 used.add(id(t))
                 break
+    # Labels written on several lines are one label: lines stacked closely, overlapping horizontally
+    blocks = []
+    for t in sorted((t for t in texts if id(t) not in used), key=lambda t: (t.y, t.left)):
+        for b in blocks:
+            last = b[-1]
+            # Two complete conditions on top of each other, like JTMS=1 and JTMS=0, are two labels
+            conditions = re.fullmatch(r"\S+\s*=\s*\S+", t.text.strip()) and re.fullmatch(
+                r"\S+\s*=\s*\S+", last.text.strip()
+            )
+            if (
+                0 < t.y - last.y < 1.35 * t.size
+                and min(t.right, last.right) - max(t.left, last.left) > -0.5 * t.size
+                and not conditions
+            ):
+                b.append(t)
+                break
+        else:
+            blocks.append([t])
+    joined = []
+    for b in blocks:
+        if len(b) == 1:
+            joined.append(b[0])
+        else:
+            text = " ".join(t.text.strip() for t in b)
+            left, right = min(t.left for t in b), max(t.right for t in b)
+            joined.append(
+                type(b[0])(text, (left + right) / 2, sum(t.y for t in b) / len(b), left, right, b[0].size, False)
+            )
+    texts = [t for t in texts if id(t) in used] + joined
     notes = []
     # Each text goes to the closest connector, then to the branch of the source for connectors shared
     # by several edges. Texts closest to a connector are placed first, and a connector that already has
