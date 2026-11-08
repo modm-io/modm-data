@@ -1,5 +1,5 @@
 """STM32 CMSIS device headers and the devices that use them, from modm-data."""
-import json, os, re, sqlite3
+import json, os, re, sqlite3, threading
 from collections import defaultdict
 from functools import cache
 from pathlib import Path
@@ -13,10 +13,14 @@ DB = MODM_DATA / "ext/modm-data/devices.db"
 HEADERS = MODM_DATA / "ext/stmicro/header"
 
 
-@cache
+_connections = threading.local()
+
+
 def _devices() -> sqlite3.Connection:
-    """devices.db, read-only and shared by all calls (and the threads of the MCP server)"""
-    return sqlite3.connect(f"file:{DB}?mode=ro", uri=True, check_same_thread=False)
+    """devices.db, read-only, one connection per thread since the MCP server runs tool calls in parallel"""
+    if getattr(_connections, "db", None) is None:
+        _connections.db = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    return _connections.db
 
 
 @cache

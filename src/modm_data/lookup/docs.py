@@ -28,7 +28,8 @@ REGISTER = re.compile(r"\(([A-Z][A-Z0-9]*(?:x|y|n)?[A-Za-z0-9]*_[A-Za-z0-9_]+)\)
 # the programming manuals name core registers without the peripheral, e.g. (HFSR) or (CFSR; UFSR+BFSR+MMFSR)
 REGISTER_BARE = re.compile(r"\(([A-Z][A-Z0-9]{2,}x?)(?:;[^)]*)?\)")
 CORE_KINDS = ("DS", "RM", "ES", "PM")
-_lock, _checked, _open = threading.Lock(), [0.0], {}
+# a connection per thread, the MCP server runs tool calls in parallel and one connection mixes up their rows
+_lock, _checked, _open = threading.Lock(), [0.0], threading.local()
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -172,11 +173,11 @@ def _db() -> sqlite3.Connection:
             _checked[0] = time.time()
         # one connection as long as the index file stays the same, a rebuild replaces the file
         key = (target, target.stat().st_ino)
-        if _open.get("key") != key:
-            if "db" in _open:
-                _open["db"].close()
-            _open.update(key=key, db=sqlite3.connect(f"file:{target}?mode=ro", uri=True, check_same_thread=False))
-        return _open["db"]
+    if getattr(_open, "key", None) != key:
+        if getattr(_open, "db", None) is not None:
+            _open.db.close()
+        _open.key, _open.db = key, sqlite3.connect(f"file:{target}?mode=ro", uri=True)
+    return _open.db
 
 
 def _meta(path: Path) -> dict:
