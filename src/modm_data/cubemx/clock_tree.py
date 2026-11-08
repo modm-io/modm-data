@@ -414,20 +414,31 @@ def bus_peripherals(parameters: dict, nodes: dict) -> dict[str, list[str]]:
 
 
 # ================================ PERIPHERALS ================================
-# Listed as IPs but not clocked peripherals: the clock controller itself, the
-# system and pin configuration entries and the generic DMA entry, whose real
-# instances are listed separately as DMA1 and DMA2
+# Listed as IPs but not clocked peripherals: the clock controller itself and
+# the system and pin configuration entries
 _NOT_CLOCKED = {"RCC", "SYS", "GPIO", "NVIC", "DEBUG", "MEMORYMAP", "BOOTPATH", "PWR"}
 
-# The tree and the MCU description do not always spell a peripheral the same
+# The tree, the MCU description and the RCC enable bits of the header do not
+# always spell a peripheral the same, for example, the STM32H7 enables DAC1
+# with DAC12EN, ETH with ETH1MACEN and USB_OTG_FS with USB2OTGFSEN
 _ALIASES = {
-    "HDMI_CEC": "CEC",
-    "QUADSPI": "QSPI",
-    "OCTOSPI1": "OCTOSPI",
-    "USB_DRD_FS": "USB",
-    "USB_OTG_FS": "USB_OTG",
-    "USB_OTG_HS": "USB_OTG",
-    "SUBGHZ": "SUBGHZSPI",
+    "HDMI_CEC": ("CEC",),
+    "QUADSPI": ("QSPI",),
+    "OCTOSPI1": ("OCTOSPI",),
+    # The 48 MHz clock of the STM32L4 and STM32WB, after the own mux of a device
+    "USB": ("CK48",),
+    "USB_DRD_FS": ("USB", "CK48"),
+    "USB_OTG_FS": ("USB_OTG", "USB", "OTGFS", "USB2OTGFS", "OTG", "CK48"),
+    "USB_OTG_HS": ("USB_OTG", "USB", "OTGHS", "USB1OTGHS"),
+    "SUBGHZ": ("SUBGHZSPI",),
+    # The MCU description lists one DMA where the header enables DMA1
+    "DMA": ("DMA1",),
+    "DAC1": ("DAC12",),
+    "ETH": ("ETH1MAC", "ETHMAC"),
+    "JPEG": ("JPGDEC",),
+    "COMP1": ("COMP12", "COMP"),
+    "COMP2": ("COMP12", "COMP"),
+    "VREFBUF": ("VREF",),
 }
 
 # RCC spells its enable registers several ways: AHBENR, AHB1ENR, APBENR1,
@@ -477,8 +488,11 @@ def _spellings(name: str) -> tuple[list[str], list[str]]:
              both start with `TIM`.
     """
     upper = name.upper()
-    exact = [upper] + ([alias] if (alias := _ALIASES.get(upper)) and alias != upper else [])
-    loose = [s for s in (re.sub(r"\d+$", "", e) for e in exact) if s and s not in exact]
+    exact = list(dict.fromkeys([upper, *_ALIASES.get(upper, ())]))
+    # Only the instance number of the peripheral itself is dropped, CK48 is not CK
+    number = re.search(r"\d+$", upper)
+    loose = [e[: -len(number[0])] for e in exact if e.endswith(number[0])] if number else []
+    loose = [s for s in loose if s and s not in exact]
     return exact, list(dict.fromkeys(loose))
 
 
@@ -508,9 +522,27 @@ def attach_peripherals(nodes: dict, buses: dict, header_buses: dict, instances: 
         if found:
             bus_node[bus] = sorted(found, key=len)[0]
 
+    def timer_output(bus: str) -> str:
+        """The output of the x1/x2 timer multiplier behind the prescaler of a bus output."""
+        prescalers = [i["from"] for i in nodes[bus]["inputs"] if i["from"] in nodes]
+        found = {
+            output
+            for prescaler in prescalers
+            for mul in nodes[prescaler]["outputs"]
+            if nodes.get(mul, {}).get("kind") == "mul"
+            for output in nodes[mul]["outputs"]
+            if nodes.get(output, {}).get("kind") == "output"
+        }
+        return found.pop() if len(found) == 1 else None
+
+    # The STM32H7 calls its timer clocks Tim1Output and Tim2Output, which are
+    # the outputs of a multiplier and not the own clock of TIM1 and TIM2
+    timers = {
+        name for name in outputs if any(nodes.get(i["from"], {}).get("kind") == "mul" for i in nodes[name]["inputs"])
+    }
     muxed = {}
     for name in outputs:
-        if name.lower().endswith("output"):
+        if name.lower().endswith("output") and name not in timers:
             for spelling in sum(_spellings(name[: -len("output")].rstrip("_")), []):
                 muxed.setdefault(spelling, name)
 
@@ -519,6 +551,14 @@ def attach_peripherals(nodes: dict, buses: dict, header_buses: dict, instances: 
         for spelling in names:
             if spelling in muxed:
                 return muxed[spelling]
+        # A timer runs from the x1/x2 multiplier of the bus its enable bit is in,
+        # whatever CubeMX lists: the STM32H7 lists TIM1 for the APB1 timer clock
+        for spelling in names:
+            if not re.fullmatch(r"TIM\d+", spelling):
+                continue
+            for bus, group in header_buses.items():
+                if bus in bus_node and spelling in group and (output := timer_output(bus_node[bus])):
+                    return output
         for spelling in names:
             for node, group in buses.items():
                 if spelling in {g.upper() for g in group}:

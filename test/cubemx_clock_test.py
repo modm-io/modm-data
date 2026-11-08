@@ -91,13 +91,45 @@ class CubeMxClockTest(unittest.TestCase):
     def test_spellings(self):
         self.assertEqual(_spellings("USART2"), (["USART2"], ["USART"]))
         self.assertEqual(_spellings("HDMI_CEC"), (["HDMI_CEC", "CEC"], []))
-        self.assertEqual(_spellings("USB"), (["USB"], []))
+        self.assertEqual(_spellings("USB"), (["USB", "CK48"], []))
+
+    def test_attach_timers_to_the_multiplier_of_their_bus(self):
+        # The STM32H7 lists TIM1 for the APB1 timer clock and TIM2 for the APB2 one
+        def node(kind, inputs=(), outputs=()):
+            return {"kind": kind, "inputs": [{"from": i} for i in inputs], "outputs": list(outputs)}
+
+        nodes = {
+            "D2PPRE1": node("div", outputs=["APB1Output", "Tim1Mul"]),
+            "D2PPRE2": node("div", outputs=["APB2Output", "Tim2Mul"]),
+            "APB1Output": node("output", ["D2PPRE1"]),
+            "APB2Output": node("output", ["D2PPRE2"]),
+            "Tim1Mul": node("mul", ["D2PPRE1"], ["Tim1Output"]),
+            "Tim2Mul": node("mul", ["D2PPRE2"], ["Tim2Output"]),
+            "Tim1Output": node("output", ["Tim1Mul"]),
+            "Tim2Output": node("output", ["Tim2Mul"]),
+        }
+        attached = attach_peripherals(
+            nodes,
+            {"Tim1Output": ["TIM1", "TIM8"], "Tim2Output": ["TIM2"]},
+            {"APB1": ["TIM2", "TIM3", "USART2"], "APB2": ["TIM1", "TIM8"]},
+            {"TIM1", "TIM2", "TIM3", "TIM8", "USART2"},
+        )
+        self.assertEqual(
+            attached,
+            {
+                "TIM1": "Tim2Output",
+                "TIM2": "Tim1Output",
+                "TIM3": "Tim1Output",
+                "TIM8": "Tim2Output",
+                "USART2": "APB1Output",
+            },
+        )
 
     def test_attach_peripherals(self):
         nodes = {
-            "APBOutput": {"kind": "output", "outputs": []},
-            "USART1output": {"kind": "output", "outputs": []},
-            "TimPrescOut1": {"kind": "output", "outputs": []},
+            "APBOutput": {"kind": "output", "inputs": [], "outputs": []},
+            "USART1output": {"kind": "output", "inputs": [], "outputs": []},
+            "TimPrescOut1": {"kind": "output", "inputs": [], "outputs": []},
         }
         # The tree muxes USART1 and lists the timers, everything else is on a bus
         attached = attach_peripherals(
