@@ -323,6 +323,11 @@ def resolve(nodes: dict, parameters: dict, context: dict, signals: dict | None =
                     the one named after the signal, `<signal>Freq_Value`.
     """
     for node in nodes.values():
+        # Some elements name two parameters, for example, the STM32F4 RTC mux
+        # RCC_RTC_Clock_Source,RCC_RTC_Clock_SourceVirtual, and the first declared one counts
+        if "," in node.get("param", ""):
+            names = [p.strip() for p in node["param"].split(",")]
+            node["param"] = next((p for p in names if p in parameters), names[0])
         declarations = parameters.get(node.get("param", ""))
         if declarations is None:
             continue
