@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import re
+import json
 import logging
+from pathlib import Path
 from functools import cached_property
 from anytree import RenderTree
 from .page import Page as StmPage
@@ -87,6 +89,15 @@ class Document(PdfDocument):
                     destinations[page_index].add(tuple(location))
             pp.raw.FPDF_ClosePage(page)
         return destinations
+
+    def save_destinations(self, path: Path):
+        """Saves the link destinations, so that the conversions of the chapters do not search them again."""
+        Path(path).write_text(json.dumps({index: sorted(d, key=str) for index, d in self.destinations.items()}))
+
+    def load_destinations(self, path: Path):
+        """Loads the link destinations saved by `save_destinations()`."""
+        destinations = json.loads(Path(path).read_text())
+        self.destinations = {int(index): {tuple(d) for d in dests} for index, dests in destinations.items()}
 
     def link_target(self, link) -> str | None:
         """

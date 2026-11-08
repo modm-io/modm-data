@@ -25,6 +25,7 @@ def main():
     parser.add_argument("--html", action="store_true")
     parser.add_argument("--parallel", action="store_true")
     parser.add_argument("--figures", type=Path)
+    parser.add_argument("--destinations", type=Path)
     parser.add_argument("--chapters", action="store_true")
     parser.add_argument("--tags", action="store_true")
     parser.add_argument("--all", action="store_true")
@@ -61,12 +62,15 @@ def main():
             for toc in doc.toc:
                 if toc.level == 0 and not toc.title.startswith("Table"):
                     print(toc.page_index, toc.title, file=logfile)
+            # The links into a chapter mostly come from other chapters, so they are searched only once
+            destinations = log.with_suffix(".destinations.json")
+            doc.save_destinations(destinations)
             calls = []
             for p0, p1, filename in doc.chapters:
                 call = (
                     f"python3 -m modm_data.pdf2html.stmicro "
                     f"--document {args.document} --range {p0 + 1}:{p1} --html "
-                    f"--figures {output_dir}/figures "
+                    f"--figures {output_dir}/figures --destinations {destinations} "
                     f"--output {output_dir}/{filename}"
                 )
                 calls.append(call + f" >> {log} 2>&1")
@@ -81,6 +85,9 @@ def main():
 
             return patch(doc, data, output_dir)
         return False
+
+    if args.destinations:
+        doc.load_destinations(args.destinations)
 
     return convert(
         doc,
