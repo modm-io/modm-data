@@ -83,9 +83,14 @@ def _condition(gate: list) -> str:
     return f" {'&' if kind == 'and' else '|'} ".join(parts)
 
 
+def _short(text: str, limit: int = 160) -> str:
+    # the STM32H7 PLL limits hold if any of ~30 kernel clocks uses the PLL
+    return text if len(text) <= limit else text[: limit - 5] + " ...)"
+
+
 def _variants(variants: list[dict], prefix: str) -> str:
     return " | ".join(
-        (f"if {_condition(v['when'])}: " if "when" in v else "else ")
+        (f"if {_short(_condition(v['when']))}: " if "when" in v else "else ")
         + _span(v.get(f"{prefix}min"), v.get(f"{prefix}max"))
         for v in variants
     )
@@ -125,7 +130,8 @@ def _line(name: str, node: dict, macros: bool = False) -> str:
             prefix = os.path.commonprefix([d["macro"] for d in node["domain"]])
             if macros and all(d["macro"] == f"{prefix}{d['factor']:g}" for d in node["domain"]):
                 # RCC_PLLP_DIV2..RCC_PLLP_DIV32 as one pattern
-                parts.append(f"{_numbers([d['factor'] for d in node['domain']])} as {prefix}<n>")
+                numbers = _numbers([d["factor"] for d in node["domain"]])
+                parts.append(f"{numbers} as {prefix}<n>" if prefix else numbers)
             elif macros:
                 parts.append(", ".join(f"{d['factor']:g}={d['macro']}" for d in node["domain"]))
             else:
