@@ -27,8 +27,9 @@ def _tree(partname: str) -> dict:
 def _device(device: str) -> tuple[str, list[str]]:
     """The CubeMX part name for a device prefix, e.g. 'g071rbt6' is STM32G071RBTx, and all that match"""
     name = "STM32" + normalize(device).split("@")[0].upper()
-    # CubeMX names the temperature range x, so the ordering code is cut until something matches
-    for length in range(len(name), len("STM32F0") - 1, -1):
+    # CubeMX names the temperature range x, so the ordering code is cut until something matches, but not
+    # into the line: 'wba52cg' must not end up at the STM32WB05
+    for length in range(len(name), max(len(name) - 4, len("STM32F0")) - 1, -1):
         if found := _partnames(name[:length]):
             return found[0], found
     raise ValueError(f"no CubeMX device matches '{device}'")
