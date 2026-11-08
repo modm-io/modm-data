@@ -26,7 +26,7 @@ from html import unescape
 
 from ..utils import XmlReader
 
-_TOKEN = re.compile(r"\s*(?:(?P<op>[!&|()=])|(?P<word>[\w.]+))")
+_TOKEN = re.compile(r"\s*(?:(?P<op>[!&|()=<>])|(?P<word>[\w.]+))")
 
 
 def tokenize(expression: str) -> list[str]:
@@ -36,6 +36,9 @@ def tokenize(expression: str) -> list[str]:
     while position < len(expression):
         match = _TOKEN.match(expression, position)
         if not match:
+            # A truncated expression would mean something else entirely
+            if expression[position:].strip():
+                raise ValueError(f"Cannot parse '{expression}' at {position}")
             break
         position = match.end()
         tokens.append(match.group("op") or match.group("word"))
@@ -91,12 +94,23 @@ class Parser:
         if self.peek() == "=":
             self.take()
             return ("eq", token, self.take())
+        if self.peek() in ("<", ">"):
+            # Only the supply voltage is compared, for example, VDD_VALUE<1.8
+            operator = self.take()
+            if self.peek() == "=":
+                operator += self.take()
+            return ("cmp", token, operator, self.take())
         return ("var", token)
 
 
 def parse(expression: str) -> tuple:
     """:return: The expression as a nested tuple of operators and operands."""
-    return Parser(tokenize(expression)).parse()
+    try:
+        return Parser(tokenize(expression)).parse()
+    except ValueError:
+        # Arithmetic like (SYSCLKFreq_VALUE/2) < 10000000 is beyond the grammar,
+        # so the whole expression is unknown rather than wrongly truncated
+        return ("const", None)
 
 
 _PACKAGE = re.compile(
@@ -134,6 +148,8 @@ def evaluate(node: tuple, context: dict) -> bool:
     if kind == "eq":
         left = context.get(node[1])
         return left == node[2] if isinstance(left, str) else None
+    if kind == "cmp":
+        return None
     if kind == "not":
         inner = evaluate(node[1], context)
         return None if inner is None else not inner
@@ -157,19 +173,24 @@ def holds(expression: str, context: dict) -> bool:
         return True
 
 
-def to_json(node: tuple) -> list:
+def to_json(node: tuple, context: dict | None = None) -> list:
     """
+    :param context: The device properties, which replace every subexpression
+                    the device decides with a constant, so that only the
+                    configuration dependent identifiers remain.
     :return: The parsed expression as nested lists, so that a solver can
              evaluate it against a live configuration instead of the extractor
              having to flatten it into a shape that only covers some cases.
     """
+    if context is not None and (value := evaluate(node, context)) is not None:
+        return ["const", value]
     kind = node[0]
     if kind in ("and", "or"):
-        return [kind, to_json(node[1]), to_json(node[2])]
+        return [kind, to_json(node[1], context), to_json(node[2], context)]
     if kind == "not":
-        return [kind, to_json(node[1])]
-    if kind == "eq":
-        return ["eq", node[1], node[2]]
+        return [kind, to_json(node[1], context)]
+    if kind in ("eq", "cmp"):
+        return list(node)
     if kind == "var":
         return ["var", node[1]]
     return ["const", node[1]]

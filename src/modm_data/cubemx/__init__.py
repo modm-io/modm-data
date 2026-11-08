@@ -5,7 +5,7 @@
 # STMicro STM32CubeMX Database
 """
 
-from .clock_tree import clock_tree_from_partname
+from .clock_tree import clock_tree_from_partname, evaluate as evaluate_clock_tree
 from .device_data import (
     devices_from_family,
     devices_from_prefix,

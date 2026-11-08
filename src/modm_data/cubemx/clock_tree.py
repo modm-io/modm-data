@@ -25,10 +25,11 @@ parameter declarations are gated by conditions that the MCU description
 answers, see `modm_data.cubemx.conditions`.
 """
 
-import re
+import difflib
 import logging
-from functools import cache
+import re
 from collections import defaultdict
+from functools import cache
 
 from ..utils import XmlReader
 from . import conditions
@@ -155,7 +156,7 @@ def select(declarations: list[dict], context: dict) -> tuple[dict, list]:
             rule = {"factor": _default(declaration["min"])}
             if declaration["when"]:
                 try:
-                    gates = [conditions.to_json(conditions.parse(gate)) for gate in declaration["when"]]
+                    gates = [conditions.to_json(conditions.parse(gate), context) for gate in declaration["when"]]
                 except Exception:
                     return live[0], []
                 rule["when"] = gates[0] if len(gates) == 1 else ["and", *gates]
@@ -164,6 +165,49 @@ def select(declarations: list[dict], context: dict) -> tuple[dict, list]:
         if len({rule["factor"] for rule in rules}) > 1 and any("when" not in r for r in rules):
             return live[0], rules
     return live[0], []
+
+
+def limits(declarations: list[dict], context: dict) -> tuple[dict, list]:
+    """
+    The frequency limits of a signal often depend on the configuration, most of
+    all on the voltage scale, and the declaration without a condition is the
+    fallback for when the element is not in use:
+
+        <RefParameter Name="VCOOutputFreq_Value" Min="96000000" Max="344000000">
+            <Condition Expression="scale1 &amp; (PLLUsed=1)"/>
+        <RefParameter Name="VCOOutputFreq_Value" Min="96000000" Max="128000000">
+
+    The first declaration whose condition is not false applies, so an unknown
+    condition like `PLLUsed=1` counts as satisfied: the limit matters only
+    while the element is in use anyway.
+
+    :return: The static limits, which span all variants that have one, so
+             what the device can do in its best configuration, and the
+             variants in file order, which are empty unless they disagree.
+    """
+    variants = []
+    for declaration in declarations:
+        if not all(conditions.holds(gate, context) for gate in declaration["when"]):
+            continue
+        variant = {k: v for k in ("min", "max") if k in declaration and (v := _default(declaration[k])) is not None}
+        if declaration["when"]:
+            try:
+                gates = [conditions.to_json(conditions.parse(gate), context) for gate in declaration["when"]]
+            except Exception:
+                continue
+            variant["when"] = gates[0] if len(gates) == 1 else ["and", *gates]
+        variants.append(variant)
+        if "when" not in variant:
+            break
+    if not variants:
+        return {}, []
+    static = {}
+    for key, pick in (("min", min), ("max", max)):
+        if values := [v[key] for v in variants if key in v]:
+            static[key] = pick(values)
+    if len({(v.get("min"), v.get("max")) for v in variants}) < 2:
+        return static, []
+    return static, variants
 
 
 # =================================== TREE ====================================
@@ -241,8 +285,43 @@ def read_tree(drawing: str, context: dict) -> tuple[dict, int]:
     return nodes, dropped
 
 
-def resolve(nodes: dict, parameters: dict, context: dict):
-    """Fills in the numeric domain and the limits of every node from its parameter."""
+@cache
+def read_signals(drawing: str) -> dict[str, str]:
+    """
+    :return: The parameter that bounds each signal of the drawing, for example,
+             `PLLCLK` -> `PLLRCLKFreq_Value` on the STM32G0.
+    """
+    plugin = XmlReader(_CLOCK_PATH / f"{drawing}.xml")
+    signals = {}
+    for signal in plugin.query("//Signals/Signal"):
+        # Some name a second parameter or null after a comma, the first one bounds it
+        if (name := signal.get("id")) and (parameter := (signal.get("refParameter") or "").split(",")[0].strip()):
+            signals[name] = parameter
+    return signals
+
+
+def _mux_default(node: dict, default: str) -> str:
+    """
+    The default of a mux is not always one of its inputs: the STM32G0 defaults
+    USART1 to `RCC_USART1CLKSOURCE_PCLK2` but names the input
+    `RCC_USART1CLKSOURCE_PCLK1`, since it has only one APB.
+
+    :return: The default, or the input macro closest to it.
+    """
+    macros = [i["macro"] for i in node["inputs"] if i.get("macro")]
+    if not macros or default in macros:
+        return default
+    close = difflib.get_close_matches(default, macros, n=1, cutoff=0.8)
+    return close[0] if close else macros[0]
+
+
+def resolve(nodes: dict, parameters: dict, context: dict, signals: dict | None = None):
+    """
+    Fills in the numeric domain and the limits of every node from its parameter.
+
+    :param signals: The parameter of each signal, see `read_signals`, and else
+                    the one named after the signal, `<signal>Freq_Value`.
+    """
     for node in nodes.values():
         declarations = parameters.get(node.get("param", ""))
         if declarations is None:
@@ -250,10 +329,17 @@ def resolve(nodes: dict, parameters: dict, context: dict):
         parameter, rules = select(declarations, context)
         if rules:
             node["rules"] = rules
-        for key in ("min", "max"):
-            # A limit can be a formula over other parameters rather than a number
-            if key in parameter and (limit := _default(parameter[key])) is not None:
-                node[key] = limit
+        if node["kind"] in ("fixed", "varied", "output"):
+            # The limits of a frequency, which may depend on the voltage scale
+            static, variants = limits(declarations, context)
+            node.update(static)
+            if variants:
+                node["limits"] = variants
+        else:
+            for key in ("min", "max"):
+                # A limit can be a formula over other parameters rather than a number
+                if key in parameter and (limit := _default(parameter[key])) is not None:
+                    node[key] = limit
         if node["kind"] in ("fixed", "varied"):
             number = _default(parameter["default"])
             key = "value" if node["kind"] == "fixed" else "default"
@@ -262,7 +348,18 @@ def resolve(nodes: dict, parameters: dict, context: dict):
                 node[key] = 0.0
             else:
                 node[key] = number
-        elif node["kind"] in ("div", "mul"):
+        elif node["kind"] == "choice":
+            # The MSI ranges are labeled in their unit, for example, 100 KHz
+            scale = {"khz": 1e3, "mhz": 1e6}.get(parameter.get("unit", "").lower(), 1)
+            domain = [
+                {"value": _number(v["label"]) * scale, "macro": v["macro"]}
+                for v in parameter.get("values", ())
+                if _number(v["label"]) is not None
+            ]
+            node["domain"] = domain
+            if found := [d for d in domain if d["macro"] == parameter["default"]]:
+                node["default"] = found[0]["value"]
+        elif node["kind"] in ("div", "mul", "mulfrac", "frac"):
             if values := parameter.get("values"):
                 domain = [{"factor": _number(v["label"]), "macro": v["macro"]} for v in values]
                 node["domain"] = [d for d in domain if d["factor"]]
@@ -277,18 +374,24 @@ def resolve(nodes: dict, parameters: dict, context: dict):
                 node["default"] = found[0]["factor"]
         elif node["kind"] == "mux":
             # The refValue already sits on each input, only the default is missing
-            node["default"] = parameter.get("default", "")
+            node["default"] = _mux_default(node, parameter.get("default", ""))
 
     # The PLL limits hang off the signal, not the element, for example, the
     # VCOInput of PLLM is bounded by VCOInputFreq_Value, not by the PLLM parameter
     for node in nodes.values():
         for signal in node.get("signals", ()):
-            if (declarations := parameters.get(f"{signal}Freq_Value")) is None:
+            parameter = (signals or {}).get(signal, f"{signal}Freq_Value")
+            # A source is bounded by its own parameter already
+            if parameter == node.get("param") or (declarations := parameters.get(parameter)) is None:
                 continue
-            limits = select(declarations, context)[0]
-            for key in ("min", "max"):
-                if key in limits and (limit := _default(limits[key])) is not None:
-                    node.setdefault(f"out_{key}", limit)
+            static, variants = limits(declarations, context)
+            for key, limit in static.items():
+                node.setdefault(f"out_{key}", limit)
+            if variants:
+                node.setdefault(
+                    "out_limits",
+                    [{(f"out_{k}" if k != "when" else k): v for k, v in variant.items()} for variant in variants],
+                )
 
 
 def bus_peripherals(parameters: dict, nodes: dict) -> dict[str, list[str]]:
@@ -459,7 +562,12 @@ def _semaphores(parameters: dict) -> dict[str, dict]:
 def _options(nodes: dict, parameters: dict, semaphores: dict) -> dict[str, str]:
     """:return: The parameters that a derivation rule tests but no node stands for."""
     wanted, bound = set(), {node["param"] for node in nodes.values() if "param" in node}
-    stack = [rule.get("when") for node in nodes.values() for rule in node.get("rules", ())]
+    stack = [
+        rule.get("when")
+        for node in nodes.values()
+        for key in ("rules", "limits", "out_limits")
+        for rule in node.get(key, ())
+    ]
     while stack:
         gate = stack.pop()
         if not isinstance(gate, list):
@@ -493,7 +601,7 @@ def clock_tree_from_partname(partname: str) -> dict:
     parameters = read_parameters(rcc)
     context = conditions.context_of(device_file)
     nodes, dropped = read_tree(drawing, context)
-    resolve(nodes, parameters, context)
+    resolve(nodes, parameters, context, read_signals(drawing))
     buses = bus_peripherals(parameters, nodes)
 
     instances = peripherals_of(device_file)
@@ -513,3 +621,221 @@ def clock_tree_from_partname(partname: str) -> dict:
         "clocks": attached,
         "unattached": sorted(instances - set(attached)),
     }
+
+
+# ================================= EVALUATION =================================
+def _test(gate: list, settings: dict, semaphores: dict) -> bool:
+    """
+    Tests a rule condition against the parameter settings. An identifier that
+    neither a setting nor a semaphore answers is false: `USBUsed_ForRCC` holds
+    only when the configuration says that USB is in use.
+    """
+    kind = gate[0]
+    if kind == "const":
+        return bool(gate[1])
+    if kind == "eq":
+        return settings.get(gate[1]) == gate[2]
+    if kind == "cmp":
+        try:
+            left, right = float(settings[gate[1]]), float(gate[3])
+        except (KeyError, ValueError):
+            return False
+        return {"<": left < right, ">": left > right, "<=": left <= right, ">=": left >= right}.get(gate[2], False)
+    if kind == "var":
+        if (flag := semaphores.get(gate[1])) and flag["param"] in settings:
+            return settings[flag["param"]] == flag["macro"]
+        return settings.get(gate[1], "").lower() in ("1", "true")
+    values = [_test(g, settings, semaphores) for g in gate[1:]]
+    if kind == "not":
+        return not values[0]
+    return all(values) if kind == "and" else any(values)
+
+
+def identifiers(tree: dict) -> set[str]:
+    """:return: Every identifier that the rules and limits of the tree test."""
+    names, stack = (
+        set(),
+        [
+            rule.get("when")
+            for node in tree["nodes"].values()
+            for key in ("rules", "limits", "out_limits")
+            for rule in node.get(key, ())
+        ],
+    )
+    while stack:
+        gate = stack.pop()
+        if isinstance(gate, list) and gate:
+            if gate[0] in ("var", "eq", "cmp"):
+                names.add(gate[1])
+            else:
+                stack += gate[1:]
+    return names
+
+
+def _frequency(text: str) -> float:
+    """:return: A frequency like `8000000`, `8M`, `8 MHz` or `32.768k` in Hz."""
+    match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*([kKmMgG]?)(?:[hH][zZ])?\s*", text)
+    if not match:
+        raise ValueError(f"not a frequency: '{text}'")
+    return float(match[1]) * {"": 1, "k": 1e3, "m": 1e6, "g": 1e9}[match[2].lower()]
+
+
+def _setting(name: str, node: dict, value: str):
+    """
+    :param value: A macro, the name of an input node or its signal for a mux,
+                  a factor for a divider or multiplier, a frequency for a source.
+    :return: The macro of the chosen mux input, or the factor or frequency.
+    """
+    value = str(value).strip()
+    lower = value.lower()
+    if node["kind"] == "mux":
+        for input in node["inputs"]:
+            macro = input.get("macro", "")
+            names = (macro.lower(), input["from"].lower(), input["signal"].lower())
+            if lower in names or (macro and macro.lower().endswith("_" + lower)):
+                return macro or input["from"]
+        choices = ", ".join(i.get("macro") or i["from"] for i in node["inputs"])
+        raise ValueError(f"{name} has no input '{value}', choose from {choices}")
+    if node["kind"] == "choice":
+        for option in node.get("domain", ()):
+            if lower == option["macro"].lower():
+                return option["value"]
+        frequency = _frequency(value)
+        if node.get("domain") and frequency not in {o["value"] for o in node["domain"]}:
+            raise ValueError(
+                f"{name} cannot be {value}, choose from " + ", ".join(f"{o['value']:g}" for o in node["domain"])
+            )
+        return frequency
+    if node["kind"] in ("fixed", "varied"):
+        return _frequency(value)
+    for option in node.get("domain", ()):
+        if lower == option["macro"].lower() or _number(value) == option["factor"]:
+            return option["factor"]
+    if "range" in node and (number := _number(value)) is not None:
+        low, high = node["range"]
+        if not low <= number <= high:
+            raise ValueError(f"{name} must be within {low}..{high}, not {value}")
+        return number
+    choices = ", ".join(f"{o['factor']:g}" for o in node.get("domain", ())) or "nothing, it is fixed"
+    raise ValueError(f"{name} cannot be '{value}', choose from {choices}")
+
+
+def evaluate(tree: dict, config: dict[str, str] | None = None) -> dict[str, dict]:
+    """
+    The frequency of every node for one configuration, with everything that the
+    configuration does not set at its default.
+
+    :param tree: The clock tree, see `clock_tree_from_partname`.
+    :param config: The settings by node or parameter name, see `_setting`, for
+                   example, `{"PLLN": "20", "SysClkSource": "PLLR"}`. Options
+                   that no node stands for take the macro as given, for
+                   example, `{"PWR_Regulator_Voltage_Scale": "SCALE2"}`, and so
+                   do the flags that rules test, for example, `{"USBUsed_ForRCC": "1"}`.
+    :return: The `freq`uency in Hz of every node, None if it has none, its
+             `setting`, whether it is `used` by an output through the chosen
+             mux inputs, and the limits it violates as `errors`.
+    """
+    nodes, semaphores = tree["nodes"], tree["semaphores"]
+    by_param = {node["param"]: name for name, node in nodes.items() if "param" in node}
+    chosen, settings = {}, dict(tree["options"])
+    for key, value in (config or {}).items():
+        if key in nodes:
+            chosen[key] = _setting(key, nodes[key], value)
+        elif key in by_param:
+            chosen[by_param[key]] = _setting(by_param[key], nodes[by_param[key]], value)
+        elif key in tree["options"] or key in identifiers(tree):
+            # An option or a flag like USB_OTG_FSUsed_ForRCC=1 that a rule tests,
+            # options also by the end of their macro, for example, SCALE2
+            value = str(value).strip()
+            macros = [f["macro"] for f in semaphores.values() if f["param"] == key]
+            settings[key] = next(
+                (m for m in macros if m.lower() == value.lower() or m.lower().endswith("_" + value.lower())), value
+            )
+        else:
+            raise ValueError(f"unknown node or parameter '{key}'")
+
+    def setting(name: str, node: dict):
+        if name in chosen:
+            return chosen[name]
+        return node.get("value", node.get("default"))
+
+    # The macro every parameter stands at, which the derivation rules test
+    for name, node in nodes.items():
+        if "param" not in node or (value := setting(name, node)) is None:
+            continue
+        if node["kind"] == "mux":
+            settings[node["param"]] = value
+        else:
+            found = [d["macro"] for d in node.get("domain", ()) if d.get("factor", d.get("value")) == value]
+            settings[node["param"]] = found[0] if found else f"{value:g}"
+
+    def factor(name: str, node: dict) -> float:
+        for rule in node.get("rules", ()):
+            if "when" in rule and _test(rule["when"], settings, semaphores):
+                return rule["factor"]
+        defaults = [rule["factor"] for rule in node.get("rules", ()) if "when" not in rule]
+        return defaults[0] if defaults and name not in chosen else setting(name, node)
+
+    result = {}
+
+    def freq_of(name: str) -> float:
+        if name in result:
+            return result[name]["freq"]
+        node = nodes[name]
+        result[name] = {"freq": None}  # breaks cycles
+        kind, sources = node["kind"], [i["from"] for i in node["inputs"] if i["from"] in nodes]
+        value, freq = setting(name, node), None
+        if kind in ("fixed", "varied", "choice"):
+            freq = value
+        elif kind == "mux":
+            picked = [i["from"] for i in node["inputs"] if value in (i.get("macro"), i["from"])]
+            freq = freq_of(picked[0]) if picked and picked[0] in nodes else None
+        elif kind == "mulfrac":
+            inputs = [s for s in sources if nodes[s]["kind"] != "frac"]
+            fraction = sum(setting(s, nodes[s]) or 0 for s in sources if nodes[s]["kind"] == "frac")
+            if inputs and (f := freq_of(inputs[0])) is not None and value is not None:
+                freq = f * (value + fraction / 8192)
+        elif kind in ("div", "mul"):
+            if sources and (f := freq_of(sources[0])) is not None and (k := factor(name, node)):
+                freq = f / k if kind == "div" else f * k
+        elif kind in ("output", "peripheral") and sources:
+            freq = freq_of(sources[0])
+        result[name] = {"freq": freq, "setting": value, "used": False, "errors": []}
+        return freq
+
+    for name in nodes:
+        freq_of(name)
+
+    # What an output or peripheral draws from through the chosen mux inputs
+    stack = [name for name, node in nodes.items() if node["kind"] in ("output", "peripheral")]
+    while stack:
+        name = stack.pop()
+        if result[name]["used"]:
+            continue
+        result[name]["used"] = True
+        node = nodes[name]
+        for input in node["inputs"]:
+            if input["from"] in nodes and (
+                node["kind"] != "mux" or result[name]["setting"] in (input.get("macro"), input["from"])
+            ):
+                stack.append(input["from"])
+
+    def check(name: str, freq: float, static: dict, variants: list, prefix: str):
+        bounds = static
+        for variant in variants:
+            if "when" not in variant or _test(variant["when"], settings, semaphores):
+                bounds = variant
+                break
+        low, high = bounds.get(f"{prefix}min"), bounds.get(f"{prefix}max")
+        if low is not None and freq < low * (1 - 1e-9):
+            result[name]["errors"].append(f"{freq:g} < {low:g}")
+        if high is not None and freq > high * (1 + 1e-9):
+            result[name]["errors"].append(f"{freq:g} > {high:g}")
+
+    for name, node in nodes.items():
+        if (freq := result[name]["freq"]) is None or not result[name]["used"]:
+            continue
+        if node["kind"] in ("fixed", "varied", "output"):
+            check(name, freq, node, node.get("limits", ()), "")
+        check(name, freq, node, node.get("out_limits", ()), "out_")
+    return result

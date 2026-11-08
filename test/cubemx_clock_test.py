@@ -4,7 +4,16 @@
 import unittest
 
 from modm_data.cubemx import conditions
-from modm_data.cubemx.clock_tree import select, attach_peripherals, header_buses, _score, _spellings
+from modm_data.cubemx.clock_tree import (
+    _mux_default,
+    _score,
+    _spellings,
+    attach_peripherals,
+    evaluate,
+    header_buses,
+    limits,
+    select,
+)
 
 
 class _Header:
@@ -108,6 +117,97 @@ class CubeMxClockTest(unittest.TestCase):
         self.assertNotIn("SDMMC1", attached)
         self.assertEqual(nodes["USART2"], {**nodes["USART2"], "kind": "peripheral", "via": "APBOutput"})
         self.assertEqual(nodes["TimPrescOut1"]["outputs"], ["TIM2"])
+
+    def test_comparisons_and_arithmetic(self):
+        self.assertEqual(conditions.parse("VDD_VALUE&lt; 1.8"), ("cmp", "VDD_VALUE", "<", "1.8"))
+        # Arithmetic is beyond the grammar, so the condition is unknown instead of truncated
+        self.assertEqual(conditions.parse("A & ((SYSCLKFreq_VALUE/2) < 10000000)"), ("const", None))
+        self.assertTrue(conditions.holds("A & ((SYSCLKFreq_VALUE/2) < 10000000)", self.CONTEXT))
+        # The device decides DIE410, the configuration decides scale1
+        self.assertEqual(
+            conditions.to_json(conditions.parse("scale1 & DIE410"), self.CONTEXT),
+            ["and", ["var", "scale1"], ["const", True]],
+        )
+
+    def test_limits_depend_on_the_voltage_scale(self):
+        # The STM32G0 VCO declarations, in file order
+        declarations = [
+            {"min": "96000000", "max": "344000000", "when": ["scale1 &amp; (PLLUsed=1)"]},
+            {"min": "96000000", "max": "128000000", "when": []},
+        ]
+        static, variants = limits(declarations, self.CONTEXT)
+        # The static limits span what the device can do at its best
+        self.assertEqual(static, {"min": 96e6, "max": 344e6})
+        self.assertEqual(variants[0]["when"], ["and", ["var", "scale1"], ["eq", "PLLUsed", "1"]])
+        self.assertEqual(variants[1], {"min": 96e6, "max": 128e6})
+        # Equal limits need no variants
+        self.assertEqual(limits(declarations[1:], self.CONTEXT), ({"min": 96e6, "max": 128e6}, []))
+
+    def test_mux_default_is_an_input(self):
+        node = {"inputs": [{"macro": "RCC_USART1CLKSOURCE_PCLK1"}, {"macro": "RCC_USART1CLKSOURCE_SYSCLK"}]}
+        self.assertEqual(_mux_default(node, "RCC_USART1CLKSOURCE_PCLK2"), "RCC_USART1CLKSOURCE_PCLK1")
+        self.assertEqual(_mux_default(node, "RCC_USART1CLKSOURCE_SYSCLK"), "RCC_USART1CLKSOURCE_SYSCLK")
+
+    def test_evaluate(self):
+        source = lambda **kw: {"inputs": [], "outputs": [], "signals": [], **kw}
+        nodes = {
+            "HSI": source(kind="fixed", param="HSI_VALUE", value=16e6),
+            "HSE": source(kind="varied", param="HSE_VALUE", default=8e6, min=4e6, max=48e6),
+            "Mux": source(
+                kind="mux",
+                param="SYSCLKSource",
+                default="SRC_HSI",
+                inputs=[
+                    {"from": "HSI", "signal": "HSI", "macro": "SRC_HSI"},
+                    {"from": "PLLN", "signal": "VCO", "macro": "SRC_PLL"},
+                ],
+            ),
+            "PLLN": source(
+                kind="mul",
+                param="PLLN",
+                range=[8, 86],
+                default=8.0,
+                inputs=[{"from": "HSE", "signal": "HSE"}],
+                out_max=344e6,
+                out_limits=[{"out_max": 344e6, "when": ["var", "scale1"]}, {"out_max": 128e6}],
+            ),
+            "APB": source(
+                kind="div",
+                param="APBDiv",
+                default=1.0,
+                inputs=[{"from": "Mux", "signal": "S"}],
+                domain=[{"factor": 1.0, "macro": "DIV1"}, {"factor": 2.0, "macro": "DIV2"}],
+            ),
+            "Tim": source(
+                kind="mul",
+                param="TimMul",
+                default=2.0,
+                inputs=[{"from": "APB", "signal": "P"}],
+                rules=[{"factor": 2.0}, {"factor": 1.0, "when": ["eq", "APBDiv", "DIV1"]}],
+            ),
+            "TimOut": source(kind="output", inputs=[{"from": "Tim", "signal": "T"}], max=64e6),
+        }
+        tree = {
+            "nodes": nodes,
+            "options": {"VOS": "VOS_SCALE1"},
+            "semaphores": {"scale1": {"param": "VOS", "macro": "VOS_SCALE1"}},
+        }
+        result = evaluate(tree)
+        self.assertEqual(result["TimOut"]["freq"], 16e6)
+        self.assertFalse(result["PLLN"]["used"])
+        result = evaluate(tree, {"Mux": "PLL", "PLLN": "16", "APB": "2", "HSE": "8 MHz"})
+        self.assertEqual(result["Mux"]["freq"], 128e6)
+        # The timer runs at twice the APB clock, which is too fast
+        self.assertEqual(result["TimOut"]["freq"], 128e6)
+        self.assertEqual(result["TimOut"]["errors"], ["1.28e+08 > 6.4e+07"])
+        self.assertEqual(result["PLLN"]["errors"], [])
+        # The VCO is capped lower outside of scale 1
+        result = evaluate(tree, {"Mux": "PLL", "PLLN": "20", "VOS": "VOS_SCALE2"})
+        self.assertEqual(result["PLLN"]["errors"], ["1.6e+08 > 1.28e+08"])
+        with self.assertRaises(ValueError):
+            evaluate(tree, {"PLLN": "100"})
+        with self.assertRaises(ValueError):
+            evaluate(tree, {"Nope": "1"})
 
 
 if __name__ == "__main__":
