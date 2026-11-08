@@ -33,6 +33,9 @@ class CubeMxClockTest(unittest.TestCase):
         self.assertTrue(conditions.evaluate(conditions.parse("!ADC2_Exist"), self.CONTEXT))
         self.assertFalse(conditions.evaluate(conditions.parse("DIE420"), self.CONTEXT))
         self.assertFalse(conditions.evaluate(conditions.parse("STM32F101"), self.CONTEXT))
+        # The line STM32H745/755 is spelled STM32H745_755, and a device not of that line is not
+        self.assertFalse(conditions.evaluate(conditions.parse("STM32H745_755"), self.CONTEXT))
+        self.assertIsNone(conditions.evaluate(conditions.parse("STM32_WPAN"), self.CONTEXT))
         # The configuration answers these, so they stay unknown but do not drop the element
         self.assertIsNone(conditions.evaluate(conditions.parse("SysSourcePLL"), self.CONTEXT))
         self.assertTrue(conditions.holds("SysSourcePLL", self.CONTEXT))

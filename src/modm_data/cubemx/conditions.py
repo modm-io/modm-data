@@ -117,7 +117,8 @@ _PACKAGE = re.compile(
     r"^(LQFP|UFQFPN|VFQFPN|TSSOP|WLCSP|EWLCSP|LFBGA|UFBGA|TFBGA|LGA|BGA|CSP|SO|SOP|DIP|QFN)\d+[A-Z]*$"
 )
 # A bare part or line token, for example, STM32F101, STM32G0x0_Value_line, STM32WBAx5
-_LINE = re.compile(r"^STM32[A-Z0-9]+(_Value_[Ll]ine)?$", re.I)
+# and STM32H745_755 for the line STM32H745/755
+_LINE = re.compile(r"^STM32[A-Z0-9]+(_[A-Z0-9]+)?(_Value_[Ll]ine)?$", re.I)
 _DIE = re.compile(r"^DIE\d+$")
 
 
@@ -203,8 +204,9 @@ def context_of(device_file: XmlReader) -> dict:
     - `DIE460` from the die, which selects between silicon revisions.
     - `LQFP48` from the package, since a smaller package bonds out less.
     - `ADC1_Exist` and `ADC_Exist` from every IP the device has.
-    - `STM32G0x0_Value_line` from the product line, whose spaces become
-      underscores, for example, `Line="STM32G0x0 Value line"`.
+    - `STM32G0x0_Value_line` from the product line, whose spaces and slashes
+      become underscores, for example, `Line="STM32G0x0 Value line"` or
+      `Line="STM32H745/755"`.
     - `STM32F103` and every other prefix of the order code, since the
       conditions of the STM32F1 name the bare part number.
 
@@ -214,7 +216,8 @@ def context_of(device_file: XmlReader) -> dict:
     context = {}
     for key in ("Package", "Line", "Family", "RefName"):
         if value := device_file.tree.get(key):
-            context[value.replace(" ", "_")] = True
+            # The conditions spell the line STM32H743/753 as STM32H743_753
+            context[value.replace(" ", "_").replace("/", "_")] = True
             context[key] = value
     if reference := device_file.tree.get("RefName"):
         for length in range(len("STM32F1"), len(reference) + 1):

@@ -824,7 +824,11 @@ def evaluate(tree: dict, config: dict[str, str] | None = None) -> dict[str, dict
         bounds = static
         for variant in variants:
             if "when" not in variant or _test(variant["when"], settings, semaphores):
-                bounds = variant
+                # The fallback without limits stands for an element not in use,
+                # but this one is, for example, PLLP feeding the ADC on the STM32G0
+                # without the ADCUsed_ForRCC flag, so the static limits apply
+                if any(key in variant for key in (f"{prefix}min", f"{prefix}max")):
+                    bounds = variant
                 break
         low, high = bounds.get(f"{prefix}min"), bounds.get(f"{prefix}max")
         if low is not None and freq < low * (1 - 1e-9):
