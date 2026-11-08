@@ -778,6 +778,9 @@ class Page(BasePage):
 
                 elif parent_name(current) not in {"caption", "bit", "area"}:
                     current = unindent(xpos, current, newlines)
+                    # A line after a list unindents out of the list, but only a paragraph is formatted
+                    if current.name != "para":
+                        current = Node("para", parent=current, obj=obj, xpos=xpos if current.is_root else current.xpos)
 
                 # Add the actual line
                 Node("line", parent=current, obj=obj, xpos=xpos, start=content_start, str=content[content_start:50])

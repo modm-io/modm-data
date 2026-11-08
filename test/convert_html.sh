@@ -23,7 +23,7 @@ python3 -m modm_data.pdf2html.stmicro --html --range 91:92 \
 
 
 # Multiple thick lines and repeated headers without correct pagination
-python3 -m modm_data.pdf2html.stmicro --html --range 90:93 \
+python3 -m modm_data.pdf2html.stmicro --html --range 90:93 --page 562 \
 	--document ext/test/regression/stmicro/RM0090-v19.pdf --output test/data/html/stmicro/RM0090-v19.html &
 
 # Broken table header line partial boldness >50%
