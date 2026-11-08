@@ -94,7 +94,7 @@ def _index_document(db, name: str, version: str, folder: Path):
                               number[2] if number else None, caption, section, rel, t.start(), t.end(3) + len("</table>"),
                               t.end(), rows))
             db.execute("INSERT INTO table_fts (rowid, caption, header) VALUES (?, ?, ?)", (cur.lastrowid, caption, header))
-            if number and number[1].lower() == "figure" and (svg := re.search(r'<img src="([^"]+\.svg)"', t[0])):
+            if number and number[1].lower() == "figure" and (svg := re.search(r'<(?:img src|object data)="([^"]+\.svg)"', t[0])):
                 db.execute("INSERT INTO figure_fts (rowid, caption, text) VALUES (?, ?, ?)",
                            (cur.lastrowid, caption, _figure_text(file.parent / svg[1])))
 

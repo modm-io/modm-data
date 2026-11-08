@@ -28,7 +28,7 @@ def _figures(db, name: str) -> list[tuple[str, str, str, Path | None]]:
             (name,)):
         if file not in chapters:
             chapters[file] = (ARCHIVE / file).read_text(encoding="utf-8", errors="replace")
-        svg = re.search(r'<img src="([^"]+\.svg)"', chapters[file][start:stop])
+        svg = re.search(r'<(?:img src|object data)="([^"]+\.svg)"', chapters[file][start:stop])
         result.append((number, caption, section, (ARCHIVE / file).parent / svg[1] if svg else None))
     return result
 
