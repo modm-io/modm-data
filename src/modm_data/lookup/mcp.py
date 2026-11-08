@@ -15,11 +15,13 @@ from .. import figures as figure_data
 from ..figures import curves as figure_curves, graph as figure_graph, timing as figure_timing
 from ..html import markdown, tree
 from ..svd import read
-from . import core, docs, figures, headers, svd, tools
+from .. import cubemx
+from ..cubemx import clock_tree as cubemx_clock_tree, conditions as cubemx_conditions
+from . import clocks, core, docs, figures, headers, svd, tools
 
 # dependencies before the modules that import from them
 MODULES = (tree, markdown, read, figure_curves, figure_timing, figure_graph, figure_data, headers, core, svd, docs,
-           figures, tools)
+           figures, cubemx_conditions, cubemx_clock_tree, cubemx, clocks, tools)
 
 server = MCPServer("modm-data", instructions=(
     "Device headers: use device_header/header_devices/find_define instead of grepping modm-data/ext. "
@@ -29,7 +31,8 @@ server = MCPServer("modm-data", instructions=(
     "Figures: doc_figures finds them by caption and text, doc_figure gives their text by region and, with image=True, "
     "a PNG of the figure or of one region of it, doc_figure_data the curves of charts (values at any x), the signals and "
     "timing parameters of timing diagrams, and state machines and flowcharts as Mermaid graphs. "
-    "Clocks: flash_latency gives the wait states per voltage. "
+    "Clocks: flash_latency gives the wait states per voltage, clock_tree the CubeMX clock tree with domains, limits, "
+    "the clock of every peripheral and, with config, the frequencies of a configuration. "
     "Registers: doc_register for the reference manual description, register_map/decode_register for addresses "
     "and decoding values read from a board. "
     "The same functions are a CLI: python -m modm_data.lookup <tool> --help. "

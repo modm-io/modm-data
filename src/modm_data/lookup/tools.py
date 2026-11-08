@@ -8,11 +8,11 @@ import inspect
 import re
 import sqlite3
 
-from . import docs, figures, headers, svd
+from . import clocks, docs, figures, headers, svd
 
 TOOLS = (
     headers.device_header, headers.header_devices, headers.find_define, headers.device_condition,
-    headers.peripheral_buses, headers.flash_latency,
+    headers.peripheral_buses, headers.flash_latency, clocks.clock_tree,
     svd.register_map, svd.decode_register,
     docs.device_docs, docs.doc_search, docs.doc_grep, docs.doc_toc, docs.doc_section, docs.find_tables, docs.doc_table,
     docs.doc_register,
