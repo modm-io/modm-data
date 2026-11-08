@@ -146,10 +146,24 @@ def evaluate(node: tuple, context: dict) -> bool:
         return node[1]
     if kind == "var":
         return context.get(node[1], _closed_world(node[1]))
-    if kind == "eq":
+    if kind in ("eq", "cmp"):
         left = context.get(node[1])
-        return left == node[2] if isinstance(left, str) else None
-    if kind == "cmp":
+        if isinstance(left, str):
+            return left == node[2] if kind == "eq" else None
+        # A frequency the caller tests, for example, HCLKFreq_Value=24000000
+        if isinstance(left, (int, float)) and not isinstance(left, bool):
+            try:
+                right = float(node[2] if kind == "eq" else node[3])
+            except ValueError:
+                return None
+            operator = "=" if kind == "eq" else node[2]
+            return {
+                "=": left == right,
+                "<": left < right,
+                ">": left > right,
+                "<=": left <= right,
+                ">=": left >= right,
+            }.get(operator)
         return None
     if kind == "not":
         inner = evaluate(node[1], context)

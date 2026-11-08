@@ -84,6 +84,8 @@ def read_parameters(rcc_version: str) -> dict[str, list[dict]]:
                     # A bare identifier in a condition is a semaphore, which is
                     # true when its parameter stands at the value declaring it
                     **({"semaphore": value.get("Semaphore")} if value.get("Semaphore") else {}),
+                    # A value the configuration rules out, for example, a voltage scale too slow for SYSCLK
+                    **({"disabled": True} if value.get("Action") == "Disable" else {}),
                 }
                 for value in values
             ]
@@ -592,6 +594,117 @@ def attach_peripherals(nodes: dict, buses: dict, header_buses: dict, instances: 
     return attached
 
 
+# =============================== VOLTAGE SCALES ===============================
+# The clocks whose maximum depends on the voltage scale
+_SCALED = ("HCLKFreq_Value", "SYSCLKFreq_VALUE", "CpuClockFreq_Value")
+
+
+def _thresholds(declarations: list[dict], variable: str) -> set[float]:
+    """:return: The numbers that the conditions of the declarations compare the variable with."""
+    numbers, stack = set(), [conditions.parse(g) for d in declarations for g in d["when"]]
+    while stack:
+        node = stack.pop()
+        if node[0] in ("eq", "cmp") and node[1] == variable:
+            try:
+                numbers.add(float(node[2] if node[0] == "eq" else node[3]))
+            except ValueError:
+                pass
+        elif node[0] in ("and", "or", "not"):
+            stack += node[1:]
+    return numbers
+
+
+def scale_limits(parameters: dict, context: dict) -> dict[str, dict[str, float]]:
+    """
+    CubeMX does not bound the clocks by the voltage scale directly, but it
+    knows the limits through two other parameters: the flash latency, whose
+    declarations hold up to a frequency per scale,
+
+        <RefParameter Name="FLatency" DefaultValue="FLASH_LATENCY_4">
+            <Condition Expression="(scale1 &amp; ((HCLKFreq_Value &lt; 150000000)|(HCLKFreq_Value= 150000000)))"/>
+
+    and the voltage scale itself, whose declarations list the scales a band of
+    frequencies allows, the first declaration that holds deciding:
+
+        <RefParameter Name="PWR_Regulator_Voltage_Scale">
+            <Condition Expression="(SYSCLKFreq_VALUE &lt;= 150000000) &amp; (SYSCLKFreq_VALUE &gt; 100000000)"/>
+            <PossibleValue Action="Disable" Value="PWR_REGULATOR_VOLTAGE_SCALE3"/>
+
+    Both are sampled at every number they compare a clock with, with all core
+    clocks at that frequency and each system clock source in turn, since the
+    STM32L5 and STM32WL pick the scale by the source too. The highest frequency
+    that a scale allows with any source is its limit.
+
+    :return: The maximum frequency per voltage scale macro per clock parameter.
+    """
+    live = lambda name: [d for d in parameters.get(name, ()) if all(conditions.holds(g, context) for g in d["when"])]
+    scales = live("PWR_Regulator_Voltage_Scale")
+    # The semaphores of the scales and of the system clock sources, as the conditions spell them
+    flags = {v["semaphore"]: v["macro"] for d in scales for v in d.get("values", ()) if "semaphore" in v}
+    macros = sorted({v["macro"] for d in scales for v in d.get("values", ())})
+    sources = sorted({v["semaphore"] for d in live("SYSCLKSource") for v in d.get("values", ()) if "semaphore" in v})
+    result = {}
+    for name in ("FLatency", "PWR_Regulator_Voltage_Scale"):
+        declarations = live(name)
+        if name == "FLatency":
+            # Only the declarations per scale, the others test the supply
+            declarations = [d for d in declarations if any(re.search(rf"\b{f}\b", g) for f in flags for g in d["when"])]
+        variables = [v for v in _SCALED if _thresholds(declarations, v)]
+        if not variables:
+            continue
+        points = set().union(*(_thresholds(declarations, v) for v in variables))
+        # Just below and at every threshold, and well beyond the last one
+        samples = sorted({*points, *(p - 1 for p in points), max(points) * 2})
+        parsed = [[conditions.parse(g) for g in d["when"]] for d in declarations]
+
+        def allowed(x: float, macro: str, source: str) -> bool:
+            values = {**context, **dict.fromkeys(_SCALED + ("HCLK3Freq_Value",), x)}
+            values |= {f: m == macro for f, m in flags.items()} | {s: s == source for s in sources}
+            for declaration, gates in zip(declarations, parsed):
+                results = [conditions.evaluate(g, values) for g in gates]
+                if None in results or False in results:
+                    # Undecidable counts as not holding, another source may decide it
+                    continue
+                if name == "FLatency":
+                    return True
+                return any(v["macro"] == macro and not v.get("disabled") for v in declaration["values"])
+            return name != "FLatency"
+
+        for macro in macros:
+            passed = [x for x in samples if any(allowed(x, macro, s) for s in sources or [None])]
+            # Never allowed means the parameter does not test the clocks for this scale
+            if passed and passed[-1] != samples[-1]:
+                for variable in variables:
+                    limits = result.setdefault(variable, {})
+                    limits[macro] = min(limits.get(macro, passed[-1]), passed[-1])
+    return result
+
+
+def _add_limit(node: dict, key: str, variant: dict):
+    """Puts a limit before the others of a node, so it wins whenever its condition holds."""
+    prefix = "out_" if key == "out_limits" else ""
+    if key not in node:
+        static = {k: node[k] for k in (f"{prefix}min", f"{prefix}max") if k in node}
+        node[key] = [static] if static else []
+    node[key].insert(0, variant)
+    # The static limits span the variants again
+    for bound, pick in (("min", min), ("max", max)):
+        if values := [v[prefix + bound] for v in node[key] if prefix + bound in v]:
+            node[prefix + bound] = pick(values)
+
+
+def add_scale_limits(nodes: dict, limits: dict[str, dict[str, float]]):
+    """Bounds the clock nodes by the voltage scale limits, see `scale_limits`."""
+    by_param = {node["param"]: name for name, node in nodes.items() if "param" in node}
+    for variable, scales in limits.items():
+        if (name := by_param.get(variable)) is None:
+            continue
+        node = nodes[name]
+        for macro, limit in sorted(scales.items(), key=lambda item: -item[1]):
+            if limit < node.get("max", float("inf")):
+                _add_limit(node, "limits", {"max": limit, "when": ["eq", "PWR_Regulator_Voltage_Scale", macro]})
+
+
 # ================================ CORRECTIONS ================================
 # CubeMX writes RCC.FamilyName=M into every project, all board .ioc files of
 # the board manager included, while the STM32F4 modes files default to TM,
@@ -600,7 +713,7 @@ _OPTIONS = {"FamilyName": "M"}
 
 
 def _scale(n: int) -> list:
-    return ["var", f"scale{n}"]
+    return ["eq", "PWR_Regulator_Voltage_Scale", f"PWR_REGULATOR_VOLTAGE_SCALE{n}"]
 
 
 # Frequency limits that the documents set and CubeMX misses or gets wrong, as
@@ -608,23 +721,21 @@ def _scale(n: int) -> list:
 # CubeMX, so it wins whenever its condition holds, and `key` is `limits` for
 # the frequency of an output and `out_limits` for the output of a divider.
 _LIMITS = (
-    # RM0444 4.1.4 Dynamic voltage scaling management: up to 16 MHz in Range 2
-    (r"STM32G0", "SysCLKOutput", "limits", {"max": 16e6, "when": _scale(2)}),
-    # RM0351 5.1.8 Dynamic voltage scaling management: up to 26 MHz in Range 2
-    (r"STM32L4", "SysCLKOutput", "limits", {"max": 26e6, "when": _scale(2)}),
+    # RM0444 4.1.4 Dynamic voltage scaling management: up to 16 MHz in Range 2. The RCC file of the
+    # STM32G07x/G08x allows 26 MHz, those of the other STM32G0 16 MHz, see `scale_limits`
+    (r"STM32G0[78]", "AHBOutput", "limits", {"max": 16e6, "when": _scale(2)}),
     # DS10198 and DS11585 6.3.18 ADC characteristics (Table 76 of DS10198): fADC from 0.14 MHz, not 1.4 MHz
     (r"STM32L4[7-9A]", "ADCoutput", "limits", {"min": 0.14e6, "max": 26e6, "when": _scale(2)}),
     (r"STM32L4[7-9A]", "ADCoutput", "limits", {"min": 0.14e6, "max": 80e6}),
     # DS5319 5.3.8 Table 27 PLL characteristics: fPLL_OUT from 16 MHz
     (r"STM32F103", "PLLMUL", "out_limits", {"out_min": 16e6, "out_max": 72e6}),
-    # DS11929 6.3.12 Table 64 PLL, PLLSAI1 characteristics: P, Q and R up to 16 MHz in Range 2, not 26 MHz,
-    # and RM0434 5.1.6 Dynamic voltage scaling management: up to 16 MHz in Range 2
-    (r"STM32WB[35]5", "PLLP", "out_limits", {"out_min": 2e6, "out_max": 16e6, "when": _scale(2)}),
-    (r"STM32WB[35]5", "PLLQ", "out_limits", {"out_min": 8e6, "out_max": 16e6, "when": _scale(2)}),
-    (r"STM32WB[35]5", "PLLR", "out_limits", {"out_min": 8e6, "out_max": 16e6, "when": _scale(2)}),
-    (r"STM32WB[35]5", "SysCLKOutput", "limits", {"max": 16e6, "when": _scale(2)}),
-    # DS12110 7.3.1 Table 112 General operating conditions: fCPU, fHCLK and fPCLK per VOS,
-    # CubeMX only caps them for VOS0
+    # DS11929 6.3.12 Table 64 PLL, PLLSAI1 characteristics: P, Q and R up to 16 MHz in Range 2, not 26 MHz
+    (r"STM32WB[35]", "PLLP", "out_limits", {"out_min": 2e6, "out_max": 16e6, "when": _scale(2)}),
+    (r"STM32WB[35]", "PLLQ", "out_limits", {"out_min": 8e6, "out_max": 16e6, "when": _scale(2)}),
+    (r"STM32WB[35]", "PLLR", "out_limits", {"out_min": 8e6, "out_max": 16e6, "when": _scale(2)}),
+    # DS12110 7.3.1 Table 112 General operating conditions: fCPU, fHCLK and fPCLK per VOS. CubeMX
+    # caps only HCLK, at 225 MHz for VOS1..3 like the flash latency table of RM0433, while the
+    # STM32H72x/H73x file follows its datasheet
     *(
         (r"STM32H7(42|43|50|53)", node, "limits", {"max": limit, "when": _scale(vos)})
         for node, limits in (
@@ -648,16 +759,7 @@ def correct(nodes: dict, options: dict, partname: str):
     for pattern, name, key, variant in _LIMITS:
         if not re.match(pattern, partname) or name not in nodes:
             continue
-        node = nodes[name]
-        prefix = "out_" if key == "out_limits" else ""
-        if key not in node:
-            static = {k: node[k] for k in (f"{prefix}min", f"{prefix}max") if k in node}
-            node[key] = [static] if static else []
-        node[key].insert(0, variant)
-        # The static limits span the variants again
-        for bound, pick in (("min", min), ("max", max)):
-            if values := [v[prefix + bound] for v in node[key] if prefix + bound in v]:
-                node[prefix + bound] = pick(values)
+        _add_limit(nodes[name], key, variant)
 
 
 # ================================== DEVICE ===================================
@@ -734,6 +836,7 @@ def clock_tree_from_partname(partname: str) -> dict:
     attached = attach_peripherals(nodes, buses, header_buses(header) if header else {}, instances)
 
     semaphores = _semaphores(parameters)
+    add_scale_limits(nodes, scale_limits(parameters, context))
     options = _options(nodes, parameters, semaphores)
     correct(nodes, options, partname)
     return {

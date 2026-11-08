@@ -13,6 +13,7 @@ from modm_data.cubemx.clock_tree import (
     evaluate,
     header_buses,
     limits,
+    scale_limits,
     select,
 )
 
@@ -246,17 +247,53 @@ class CubeMxClockTest(unittest.TestCase):
             evaluate(tree, {"Nope": "1"})
 
     def test_corrections(self):
-        nodes = {"SysCLKOutput": {"kind": "output", "max": 64e6}, "PLLR": {"kind": "div", "out_max": 64e6}}
+        nodes = {"AHBOutput": {"kind": "output", "max": 64e6}, "PLLR": {"kind": "div", "out_max": 64e6}}
         options = {"FamilyName": "TM"}
         correct(nodes, options, "STM32G071RBTx")
-        # Range 2 caps SYSCLK at 16 MHz, RM0444 4.1.4
-        self.assertEqual(nodes["SysCLKOutput"]["limits"], [{"max": 16e6, "when": ["var", "scale2"]}, {"max": 64e6}])
-        self.assertEqual(nodes["SysCLKOutput"]["max"], 64e6)
+        # Range 2 caps HCLK at 16 MHz, RM0444 4.1.4
+        scale2 = ["eq", "PWR_Regulator_Voltage_Scale", "PWR_REGULATOR_VOLTAGE_SCALE2"]
+        self.assertEqual(nodes["AHBOutput"]["limits"], [{"max": 16e6, "when": scale2}, {"max": 64e6}])
+        self.assertEqual(nodes["AHBOutput"]["max"], 64e6)
         self.assertEqual(options, {"FamilyName": "M"})
         # Another device keeps its limits
-        nodes = {"SysCLKOutput": {"kind": "output", "max": 64e6}}
+        nodes = {"AHBOutput": {"kind": "output", "max": 64e6}}
         correct(nodes, {}, "STM32C031C6Tx")
-        self.assertEqual(nodes, {"SysCLKOutput": {"kind": "output", "max": 64e6}})
+        self.assertEqual(nodes, {"AHBOutput": {"kind": "output", "max": 64e6}})
+
+    def test_scale_limits(self):
+        macro = "PWR_REGULATOR_VOLTAGE_SCALE{}".format
+        value = lambda n, disabled=False: {
+            "macro": macro(n),
+            "semaphore": f"scale{n}",
+            **({"disabled": True} if disabled else {}),
+        }
+        parameters = {
+            # The STM32H5 lists the scales per band of SYSCLK and disables the slow ones
+            "PWR_Regulator_Voltage_Scale": [
+                {
+                    "values": [value(3), value(2), value(1)],
+                    "when": ["(SYSCLKFreq_VALUE &lt;100000000) | (SYSCLKFreq_VALUE =100000000)"],
+                },
+                {
+                    "values": [value(3, True), value(2), value(1)],
+                    "when": ["(SYSCLKFreq_VALUE &lt;= 150000000) &amp; (SYSCLKFreq_VALUE &gt;100000000)"],
+                },
+                {"values": [value(3, True), value(2, True), value(1)], "when": ["SYSCLKFreq_VALUE &gt; 150000000"]},
+            ],
+            # The STM32G4 lets the flash latency hold up to a frequency per scale
+            "FLatency": [
+                {
+                    "values": [],
+                    "when": [
+                        "(scale1 &amp; (HCLKFreq_Value &lt;= 150000000))|(scale2 &amp; (HCLKFreq_Value &lt;= 26000000))"
+                    ],
+                },
+                {"values": [], "when": ["VDD_VALUE &gt; 1.8 &amp; (HCLKFreq_Value &lt;= 8000000)"]},
+            ],
+        }
+        limits = scale_limits(parameters, self.CONTEXT)
+        self.assertEqual(limits["SYSCLKFreq_VALUE"], {macro(3): 100e6, macro(2): 150e6})
+        self.assertEqual(limits["HCLKFreq_Value"], {macro(1): 150e6, macro(2): 26e6})
 
 
 if __name__ == "__main__":
