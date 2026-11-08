@@ -26,6 +26,10 @@ python3 -m modm_data.pdf2html.stmicro --html --range 91:92 \
 python3 -m modm_data.pdf2html.stmicro --html --range 90:93 --page 562 \
 	--document ext/test/regression/stmicro/RM0090-v19.pdf --output test/data/html/stmicro/RM0090-v19.html &
 
+# Table of contents with list of tables heading and entry split across pages
+python3 -m modm_data.pdf2html.stmicro --html --range 39:40 --range 42:43 \
+	--document ext/test/regression/stmicro/RM0090-v19.pdf --output test/data/html/stmicro/RM0090-v19-toc.html &
+
 # Broken table header line partial boldness >50%
 python3 -m modm_data.pdf2html.stmicro --html --page 893 \
 	--document ext/test/regression/stmicro/RM0313-v6.pdf --output test/data/html/stmicro/RM0313-v6.html &

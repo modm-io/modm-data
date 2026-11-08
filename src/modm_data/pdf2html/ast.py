@@ -150,6 +150,28 @@ def normalize_paragraphs(document: Node) -> Node:
     return document
 
 
+def normalize_toc(document: Node) -> Node:
+    """Joins the tables of contents of consecutive pages and the entries split across them."""
+    for toc in anytree.search.findall(document, filter_=lambda n: n.name == "toc"):
+        index = toc.parent.children.index(toc)
+        if not index or (previous := toc.parent.children[index - 1]).name != "toc":
+            continue
+        last, first = previous.children[-1], toc.children[0]
+        if last.target is None and first.marker is None:
+            last.title = f"{last.title} {first.title}".strip()
+            if last._chars and first._chars:
+                last._chars.append(last._chars[-1][:2] + (" ",))
+            last._chars += first._chars
+            last.target = first.target
+            # Keep the page marker
+            for child in first.children:
+                child.parent = last
+            first.parent = None
+        previous.children += toc.children
+        toc.parent = None
+    return document
+
+
 def normalize_lines(document: Node) -> Node:
     paras = anytree.search.findall(document, filter_=lambda n: n.name == "para")
     for para in paras:

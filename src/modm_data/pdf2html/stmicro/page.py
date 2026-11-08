@@ -8,13 +8,20 @@ from collections import defaultdict
 from ..table import Table
 from ..figure import Figure
 from ..line import CharLine
-from ...utils import HLine, VLine, Rectangle
+from ...utils import HLine, VLine, Rectangle, list_strip
 from ...pdf import Image
 from ..page import Page as BasePage
 from anytree import Node
 
 
 _LOGGER = logging.getLogger(__name__)
+
+# The page header of the table of contents and the lists of tables and figures
+_TOC_PAGE = re.compile(r"(\S+ )?(Contents|List of (tables|figures))( \S+)?")
+# Dot leaders and the page number at the end of an entry
+_TOC_TARGET = re.compile(r"[.…\s]*(\d+)$")
+# The number of a section, appendix, table or figure at the start of an entry
+_TOC_MARKER = re.compile(r"((?:Figure|Table) \d+|Appendix [A-Z]|[A-Z](?:\.\d+)+|\d+(?:\.\d+)*)\.? +")
 
 
 def is_compatible(document) -> bool:
@@ -332,10 +339,8 @@ class Page(BasePage):
         return self.text_in_named_area("top", check_length=False)
 
     @cached_property
-    def is_relevant(self) -> bool:
-        if any(c in self.top for c in {"Contents", "List of ", "Index"}):
-            return False
-        return True
+    def is_toc(self) -> bool:
+        return _TOC_PAGE.fullmatch(self.top.strip()) is not None
 
     @property
     def content_ast(self) -> list:
@@ -354,7 +359,10 @@ class Page(BasePage):
             )
             with_graphics = order_page != self.index
         for area in self._areas["content"]:
-            ast.append(self.ast_in_area(area, with_graphics=with_graphics))
+            if self.is_toc:
+                ast.append(self.toc_in_area(area))
+            else:
+                ast.append(self.ast_in_area(area, with_graphics=with_graphics))
         # Add a page node to the first leaf to keep track of where a page starts
         first_leaf = next((n for n in iter(ast[0].descendants) if n.is_leaf), ast[0])
         Node("page", parent=first_leaf, xpos=first_leaf.xpos, number=self.number)
@@ -576,6 +584,86 @@ class Page(BasePage):
                 objects.append(table)
 
         return objects
+
+    def toc_in_area(self, area: Rectangle) -> Node:
+        """
+        Splits the entries of a table of contents or list of tables or figures
+        into their number, title and page number without the dot leaders.
+        Entries span several lines until the line with the page number, an
+        entry without page number continues on the next page.
+        """
+        root = Node("area", obj=area, xpos=int(area.left), page=self)
+        # The characters of the entry text as (line, char, string) for the formatting
+        toc, lines, chars, text = None, [], [], ""
+        charlines = [line for line in self.charlines_in_area(area) if line.content.strip()]
+        # The page numbers are right aligned, the titles wrap before them
+        right_x = max((c.bbox.right for line in charlines for c in line.chars if c.char.strip()), default=0)
+
+        def _target(line):
+            if (target := _TOC_TARGET.search(text)) is None:
+                return None
+            # Usually dot leaders, but some have only one dot or none at all
+            if target.group(0).count(".") + target.group(0).count("…") >= 2:
+                return target
+            last = next(c for c in reversed(line.chars) if c.char.strip())
+            if last.bbox.right >= right_x - self._spacing["x_em"] / 2:
+                return target
+            return None
+
+        def _entry(target):
+            nonlocal toc, lines, chars, text
+            if toc is None:
+                toc = Node("toc", parent=root, obj=lines[0], xpos=round(lines[0].bbox.left))
+            start, end = 0, len(text) if target is None else target.start()
+            marker = None
+            if (match := _TOC_MARKER.match(text[:end])) is not None:
+                marker, start = match.group(1), match.end()
+            target = None if target is None else target.group(1)
+            Node(
+                "entry",
+                parent=toc,
+                obj=lines[0],
+                xpos=toc.xpos,
+                marker=marker,
+                title=text[start:end],
+                target=target,
+                _chars=chars[start:end],
+            )
+            lines, chars, text = [], [], ""
+
+        for line in charlines:
+            content = line.content.strip()
+            linesize = self._line_size(line)
+            if not lines and linesize.startswith("h") and not _TOC_MARKER.match(content):
+                if _TOC_TARGET.search(content) is None:
+                    # The title of the table of contents or of the lists
+                    size = linesize[1]
+                    xpos = round(line.bbox.left)
+                    head = Node(f"head{size}", parent=root, obj=line, xpos=xpos, size=size, marker=None)
+                    para = Node("para", parent=head, obj=line, xpos=xpos)
+                    Node("line", parent=para, obj=line, xpos=xpos, start=0, str=content[:50])
+                    toc = None
+                    continue
+            if lines and re.match(r"(Figure|Table) \d+\. ", content):
+                # The previous caption ends without right aligned page number
+                _entry(_TOC_TARGET.search(text) if re.search(r"\s\d+$", text) else None)
+            if len(lines) >= 5:
+                # Entries never get that long, this is the text after the table of contents
+                below = Rectangle(area.left, area.bottom, area.right, lines[0].bbox.top + 1)
+                for child in self.ast_in_area(below).children:
+                    child.parent = root
+                return root
+            lines.append(line)
+            # Long part numbers wrap after a slash without space
+            if chars and chars[-1][2] != "/":
+                chars.append(chars[-1][:2] + (" ",))
+            chars += list_strip([(line, c, s) for c in line.chars for s in c.char], lambda c: not c[2].strip())
+            text = "".join(c[2] for c in chars)
+            if (target := _target(line)) is not None:
+                _entry(target)
+        if lines:
+            _entry(None)
+        return root
 
     def ast_in_area(
         self,

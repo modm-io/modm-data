@@ -13,6 +13,7 @@ from ..ast import (
     normalize_headings,
     normalize_registers,
     normalize_tables,
+    normalize_toc,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ def _debug(func, indata, debug=0):
 
 
 def _normalize_document(document):
+    document = _debug(normalize_toc, document)
     document = _debug(normalize_lines, document)
     document = _debug(normalize_captions, document)
     document = _debug(normalize_lists, document)

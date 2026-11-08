@@ -144,7 +144,6 @@ def _format_char(node, state, chars, ignore):
 
 def _format_lines(textnode, ignore, with_newlines, with_start):
     char_props = textnode.root._page._char_properties
-    formatn = anytree.Node("format")
     chars = []
     for line in textnode.children:
         if line.name == "line":
@@ -156,7 +155,11 @@ def _format_lines(textnode, ignore, with_newlines, with_start):
                 char = char_props(line.obj, line.obj.chars[-1])
                 char["char"] = "\n"
                 chars.append(char)
+    return _format_chars(chars, ignore)
 
+
+def _format_chars(chars, ignore):
+    formatn = anytree.Node("format")
     chars = list_strip(chars, lambda c: c["char"] in {" ", "\n"})
     # Whitespace at the end of a formatted run belongs to the following text,
     # otherwise "<b>NAME </b>Text" becomes "NAMEText" when the tags are stripped
@@ -203,7 +206,10 @@ def _format_html_fmt(xmlnode, treenode, tail=False):
 
 
 def _format_html_text(xmlnode, treenode, ignore=None, with_newlines=False, with_start=True):
-    fmttree = _format_lines(treenode, ignore or set(), with_newlines, with_start)
+    _format_html_tree(xmlnode, _format_lines(treenode, ignore or set(), with_newlines, with_start))
+
+
+def _format_html_tree(xmlnode, fmttree):
     tail = False
     fmtnode = xmlnode
     for child in fmttree.children:
@@ -261,6 +267,21 @@ def _format_html(xmlnode, treenode, ignore_formatting=None, with_newlines=False,
         else:
             current = etree.Element("ol")
         xmlnode.append(current)
+
+    elif treenode.name == "toc":
+        current = etree.SubElement(xmlnode, "table", {"class": "toc"})
+
+    elif treenode.name == "entry":
+        current = etree.SubElement(xmlnode, "tr")
+        # Empty cells need their closing tag
+        etree.SubElement(current, "td").text = treenode.marker or ""
+        title = etree.SubElement(current, "td")
+        title.text = ""
+        # Keep the sub- and superscripts, the bold chapters and underlined links carry no meaning
+        char_props = treenode.root._page._char_properties
+        chars = [char_props(line, char) | {"char": c} for line, char, c in treenode._chars]
+        _format_html_tree(title, _format_chars(chars, {"bold", "italic", "underline"}))
+        etree.SubElement(current, "td").text = treenode.target or ""
 
     elif treenode.name == "element":
         current = etree.Element("li")
