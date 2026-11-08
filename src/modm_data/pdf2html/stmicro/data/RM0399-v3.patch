@@ -1,33 +1,31 @@
 diff --git a/chapter_2_memory_and_bus_architecture.html b/chapter_2_memory_and_bus_architecture.html
-index 1325c548..1bd8ff79 100644
 --- a/chapter_2_memory_and_bus_architecture.html
 +++ b/chapter_2_memory_and_bus_architecture.html
-@@ -12648,7 +12648,7 @@
+@@ -12653,7 +12653,7 @@
          <td>RTC &amp; BKP registers</td>
          <td class="tl">
            <i>
--            <u>Section 49.6: RTC registers</u>
-+            <u>Section 49.6.21: RTC registers</u>
+-            <a href="chapter_49_real_time_clock_rtc.html#section49.6">Section 49.6: RTC registers</a>
++            <a href="chapter_49_real_time_clock_rtc.html#section49.6.21">Section 49.6.21: RTC registers</a>
            </i>
          </td>
        </tr>
-@@ -12846,7 +12846,7 @@
+@@ -12851,7 +12851,7 @@
          <td>GPV</td>
          <td class="tl">
            <i>
--            <u>Section 2.2.4: AXI interconnect registers</u>
-+            <u>Section 2.2.5: AXI interconnect registers</u>
+-            <a href="chapter_2_memory_and_bus_architecture.html#section2.2.4">Section 2.2.4: AXI interconnect registers</a>
++            <a href="chapter_2_memory_and_bus_architecture.html#section2.2.5">Section 2.2.5: AXI interconnect registers</a>
            </i>
          </td>
        </tr>
 diff --git a/chapter_9_reset_and_clock_control_rcc.html b/chapter_9_reset_and_clock_control_rcc.html
-index cf61ff91..eaee81c8 100644
 --- a/chapter_9_reset_and_clock_control_rcc.html
 +++ b/chapter_9_reset_and_clock_control_rcc.html
-@@ -10664,13 +10664,15 @@
-     </table>
+@@ -10613,13 +10613,15 @@
+     <a id="page481"></a>
      <h4 id="section9.7.38">9.7.38 RCC reset status register (RCC_RSR)</h4>
-     <p>Each CPU has dedicated flags in order to check the reset status of the circuit. Please refer <br/>to <i><u>Section 9.4.4: Reset source identification</u></i> for additional information.</p>
+     <p>Each CPU has dedicated flags in order to check the reset status of the circuit. Please refer <br/>to <i><a href="chapter_9_reset_and_clock_control_rcc.html#section9.4.4">Section 9.4.4: Reset source identification</a></i> for additional information.</p>
 -    <p>
 -      <b>Register Name Address Offset Reset Value</b>
 -    </p>
