@@ -9,6 +9,7 @@ from modm_data.cubemx.clock_tree import (
     _score,
     _spellings,
     attach_peripherals,
+    correct,
     evaluate,
     header_buses,
     limits,
@@ -243,6 +244,19 @@ class CubeMxClockTest(unittest.TestCase):
             evaluate(tree, {"PLLN": "100"})
         with self.assertRaises(ValueError):
             evaluate(tree, {"Nope": "1"})
+
+    def test_corrections(self):
+        nodes = {"SysCLKOutput": {"kind": "output", "max": 64e6}, "PLLR": {"kind": "div", "out_max": 64e6}}
+        options = {"FamilyName": "TM"}
+        correct(nodes, options, "STM32G071RBTx")
+        # Range 2 caps SYSCLK at 16 MHz, RM0444 4.1.4
+        self.assertEqual(nodes["SysCLKOutput"]["limits"], [{"max": 16e6, "when": ["var", "scale2"]}, {"max": 64e6}])
+        self.assertEqual(nodes["SysCLKOutput"]["max"], 64e6)
+        self.assertEqual(options, {"FamilyName": "M"})
+        # Another device keeps its limits
+        nodes = {"SysCLKOutput": {"kind": "output", "max": 64e6}}
+        correct(nodes, {}, "STM32C031C6Tx")
+        self.assertEqual(nodes, {"SysCLKOutput": {"kind": "output", "max": 64e6}})
 
 
 if __name__ == "__main__":

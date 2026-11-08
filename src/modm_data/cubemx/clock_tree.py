@@ -592,6 +592,74 @@ def attach_peripherals(nodes: dict, buses: dict, header_buses: dict, instances: 
     return attached
 
 
+# ================================ CORRECTIONS ================================
+# CubeMX writes RCC.FamilyName=M into every project, all board .ioc files of
+# the board manager included, while the STM32F4 modes files default to TM,
+# which caps SYSCLK at 84 MHz and selects the TIMPRE rules of other devices
+_OPTIONS = {"FamilyName": "M"}
+
+
+def _scale(n: int) -> list:
+    return ["var", f"scale{n}"]
+
+
+# Frequency limits that the documents set and CubeMX misses or gets wrong, as
+# (part name regex, node, key, variant). The variant goes before those of
+# CubeMX, so it wins whenever its condition holds, and `key` is `limits` for
+# the frequency of an output and `out_limits` for the output of a divider.
+_LIMITS = (
+    # RM0444 4.1.4 Dynamic voltage scaling management: up to 16 MHz in Range 2
+    (r"STM32G0", "SysCLKOutput", "limits", {"max": 16e6, "when": _scale(2)}),
+    # RM0351 5.1.8 Dynamic voltage scaling management: up to 26 MHz in Range 2
+    (r"STM32L4", "SysCLKOutput", "limits", {"max": 26e6, "when": _scale(2)}),
+    # DS10198 and DS11585 6.3.18 ADC characteristics (Table 76 of DS10198): fADC from 0.14 MHz, not 1.4 MHz
+    (r"STM32L4[7-9A]", "ADCoutput", "limits", {"min": 0.14e6, "max": 26e6, "when": _scale(2)}),
+    (r"STM32L4[7-9A]", "ADCoutput", "limits", {"min": 0.14e6, "max": 80e6}),
+    # DS5319 5.3.8 Table 27 PLL characteristics: fPLL_OUT from 16 MHz
+    (r"STM32F103", "PLLMUL", "out_limits", {"out_min": 16e6, "out_max": 72e6}),
+    # DS11929 6.3.12 Table 64 PLL, PLLSAI1 characteristics: P, Q and R up to 16 MHz in Range 2, not 26 MHz,
+    # and RM0434 5.1.6 Dynamic voltage scaling management: up to 16 MHz in Range 2
+    (r"STM32WB[35]5", "PLLP", "out_limits", {"out_min": 2e6, "out_max": 16e6, "when": _scale(2)}),
+    (r"STM32WB[35]5", "PLLQ", "out_limits", {"out_min": 8e6, "out_max": 16e6, "when": _scale(2)}),
+    (r"STM32WB[35]5", "PLLR", "out_limits", {"out_min": 8e6, "out_max": 16e6, "when": _scale(2)}),
+    (r"STM32WB[35]5", "SysCLKOutput", "limits", {"max": 16e6, "when": _scale(2)}),
+    # DS12110 7.3.1 Table 112 General operating conditions: fCPU, fHCLK and fPCLK per VOS,
+    # CubeMX only caps them for VOS0
+    *(
+        (r"STM32H7(42|43|50|53)", node, "limits", {"max": limit, "when": _scale(vos)})
+        for node, limits in (
+            ("SysCLKOutput", (400e6, 300e6, 200e6)),
+            ("AHBOutput", (200e6, 150e6, 100e6)),
+            ("APB1Output", (100e6, 75e6, 50e6)),
+            ("APB2Output", (100e6, 75e6, 50e6)),
+            ("APB3Output", (100e6, 75e6, 50e6)),
+            ("APB4Output", (100e6, 75e6, 50e6)),
+        )
+        for vos, limit in zip((1, 2, 3), limits)
+    ),
+)
+
+
+def correct(nodes: dict, options: dict, partname: str):
+    """Applies the corrections of the CubeMX data to the clock tree of a device."""
+    for name, value in _OPTIONS.items():
+        if name in options:
+            options[name] = value
+    for pattern, name, key, variant in _LIMITS:
+        if not re.match(pattern, partname) or name not in nodes:
+            continue
+        node = nodes[name]
+        prefix = "out_" if key == "out_limits" else ""
+        if key not in node:
+            static = {k: node[k] for k in (f"{prefix}min", f"{prefix}max") if k in node}
+            node[key] = [static] if static else []
+        node[key].insert(0, variant)
+        # The static limits span the variants again
+        for bound, pick in (("min", min), ("max", max)):
+            if values := [v[prefix + bound] for v in node[key] if prefix + bound in v]:
+                node[prefix + bound] = pick(values)
+
+
 # ================================== DEVICE ===================================
 def _semaphores(parameters: dict) -> dict[str, dict]:
     """:return: The parameter and value that each semaphore identifier stands for."""
@@ -622,7 +690,19 @@ def _options(nodes: dict, parameters: dict, semaphores: dict) -> dict[str, str]:
         elif gate[0] == "var" and gate[1] in semaphores:
             wanted.add(semaphores[gate[1]]["param"])
         stack += gate[1:]
-    return {name: parameters[name][0]["default"] for name in sorted(wanted - bound) if name in parameters}
+    options = {}
+    for name in sorted(wanted - bound):
+        if name not in parameters:
+            continue
+        default = parameters[name][0]["default"]
+        if not default:
+            # The STM32U5 and STM32WB leave the voltage scale empty, so take the
+            # fastest, which is the lowest number, PWR_REGULATOR_VOLTAGE_SCALE1
+            values = [v["macro"] for d in parameters[name] for v in d.get("values", ())]
+            number = lambda m: int(found[0]) if (found := re.search(r"\d+$", m)) else 1 << 16
+            default = min(values, key=number) if values else ""
+        options[name] = default
+    return options
 
 
 def clock_tree_from_partname(partname: str) -> dict:
@@ -654,6 +734,8 @@ def clock_tree_from_partname(partname: str) -> dict:
     attached = attach_peripherals(nodes, buses, header_buses(header) if header else {}, instances)
 
     semaphores = _semaphores(parameters)
+    options = _options(nodes, parameters, semaphores)
+    correct(nodes, options, partname)
     return {
         "device": partname,
         "tree": drawing,
@@ -662,7 +744,7 @@ def clock_tree_from_partname(partname: str) -> dict:
         "dropped": dropped,
         "busIP": buses,
         "semaphores": semaphores,
-        "options": _options(nodes, parameters, semaphores),
+        "options": options,
         "clocks": attached,
         "unattached": sorted(instances - set(attached)),
     }
