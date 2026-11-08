@@ -342,6 +342,61 @@ class Page(BasePage):
     def is_toc(self) -> bool:
         return _TOC_PAGE.fullmatch(self.top.strip()) is not None
 
+    def _link_target(self, char) -> str | None:
+        if char.objlink is not None and (target := self.pdf.link_target(char.objlink)):
+            return target
+        return None if char.weblink is None else char.weblink.url
+
+    def anchor_at(self, xpos: float | None, ypos: float | None) -> str:
+        """The HTML id of the link destination at this position."""
+        return self._destination(xpos, ypos)[0]
+
+    def _destination(self, xpos: float | None, ypos: float | None) -> tuple[str, CharLine | None]:
+        """
+        The HTML id of the heading, table or figure at this position. Other
+        destinations, like footnotes, get an id from their line, which is
+        returned too, so that it can be added to the HTML. Without a line
+        the destination falls back to the id of the page.
+        """
+        if self.rotation:
+            # Like the characters, the position is rotated into the page orientation
+            ypos = None if xpos is None else self.height - xpos
+        if ypos is None:
+            return (f"page{self.number}", None)
+        x_em, y_em = self._spacing["x_em"], self._spacing["y_em"]
+        # The destination is usually at the top of the line, sometimes a little above or below
+        lines = [
+            line
+            for area in self._areas["content"]
+            for line in self.charlines_in_area(area)
+            if line.content.strip() and abs(line.bbox.top - ypos) <= 2 * y_em
+        ]
+        lines.sort(key=lambda line: abs(line.bbox.top - ypos))
+        for line in lines:
+            content, bold = line.content, "Bold" in line.chars[0].font
+            linesize = self._line_size(line)
+            # The same heading and caption detection as in ast_in_area
+            if linesize.startswith("h1") or (
+                linesize.startswith("h") and line.bbox.left < (self._spacing["x_content"] + 2 * x_em) and bold
+            ):
+                if (match := re.match(r"^ *(\d+(\.\d+)?(\.\d+)?) *", content)) is not None:
+                    return (f"section{match.group(1)}", None)
+            elif bold and (match := re.match(r" *([Tt]able|[Ff]igure) ?(\d+)\.? ?", content)) is not None:
+                return (f"{match.group(1).lower()}{match.group(2)}", None)
+        if lines:
+            return (f"page{self.number}-{round(lines[0].bbox.top)}", lines[0])
+        return (f"page{self.number}", None)
+
+    @cached_property
+    def _line_anchors(self) -> dict[int, str]:
+        """The ids of the link destinations on this page by the characters of their lines."""
+        anchors = {}
+        for location in self.pdf.destinations.get(self.index, ()):
+            anchor, line = self._destination(*location)
+            if line is not None:
+                anchors.update((id(c), anchor) for c in line.chars)
+        return anchors
+
     @property
     def content_ast(self) -> list:
         ast = []
@@ -365,7 +420,10 @@ class Page(BasePage):
                 ast.append(self.ast_in_area(area, with_graphics=with_graphics))
         # Add a page node to the first leaf to keep track of where a page starts
         first_leaf = next((n for n in iter(ast[0].descendants) if n.is_leaf), ast[0])
-        Node("page", parent=first_leaf, xpos=first_leaf.xpos, number=self.number)
+        # Destinations in figures or on lines without HTML element fall back to the page
+        used = {n._anchor for area in ast for n in area.descendants if getattr(n, "_anchor", None)}
+        anchors = sorted(set(self._line_anchors.values()) - used)
+        Node("page", parent=first_leaf, xpos=first_leaf.xpos, number=self.number, _anchors=anchors)
         return ast
 
     def _with_labels(self, area: Rectangle, bbox: Rectangle) -> Rectangle:
@@ -871,7 +929,16 @@ class Page(BasePage):
                         current = Node("para", parent=current, obj=obj, xpos=xpos if current.is_root else current.xpos)
 
                 # Add the actual line
-                Node("line", parent=current, obj=obj, xpos=xpos, start=content_start, str=content[content_start:50])
+                anchor = next((a for c in obj.chars if (a := self._line_anchors.get(id(c)))), None)
+                Node(
+                    "line",
+                    parent=current,
+                    obj=obj,
+                    xpos=xpos,
+                    start=content_start,
+                    str=content[content_start:50],
+                    _anchor=anchor,
+                )
 
                 ypos = obj.origin
 

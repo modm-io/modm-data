@@ -28,6 +28,15 @@ class Page(PdfPage):
     def _unicode_filter(self, code: int) -> int:
         return code
 
+    def _link_target(self, char) -> str | None:
+        """The URL of the link of the character."""
+        if char.objlink is not None:
+            if char.objlink.page_index >= 0:
+                return f"#page{char.objlink.page_index + 1}"
+            if char.objlink.url:
+                return char.objlink.url
+        return None if char.weblink is None else char.weblink.url
+
     @cached_property
     def _spacing(self) -> dict[str, float]:
         content = 0.1
@@ -90,7 +99,7 @@ class Page(PdfPage):
             "subscript": False,
             "bold": any(frag in char.font for frag in {"Bold"}),
             "italic": any(frag in char.font for frag in {"Italic", "Oblique"}),
-            "underline": (char.objlink or char.weblink) is not None,
+            "link": self._link_target(char),
             "size": round(line.height),
             "relsize": self._line_size(line),
             "char": chr(char.unicode),
@@ -152,6 +161,8 @@ class Page(PdfPage):
         """
         if rtol is None:
             rtol = self._spacing["sc"]
+        # The lines keep the characters, which must know their links by then
+        self._link_characters()
         # Split all chars into lines based on rounded origin
         origin_lines_y = defaultdict(list)
         origin_lines_x = defaultdict(list)
@@ -457,7 +468,6 @@ class Page(PdfPage):
         :param with_graphics: search for graphics in the area.
         :return: list of content objects sorted top to bottom.
         """
-        self._link_characters()
         areas = self.graphic_bboxes_in_area(area, with_graphics)
         objects = []
         for narea, obj in areas:

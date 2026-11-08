@@ -1,7 +1,6 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
-import re
 import tqdm
 import logging
 import argparse
@@ -59,26 +58,16 @@ def main():
             print(doc.page_count, doc.metadata, doc.is_tagged, file=logfile)
             output_dir = output_path.parent / output_path.stem
             output_dir.mkdir(parents=True, exist_ok=True)
-            dests = [(0, "introduction")]
             for toc in doc.toc:
                 if toc.level == 0 and not toc.title.startswith("Table"):
-                    title = toc.title.lower().strip("0123456789").strip()
-                    title = re.sub(r"[\(\)/®&\n\r,;:™'’\"]", "", title)
-                    title = re.sub(r"[ -]", "_", title)
-                    title = re.sub(r"_+", "_", title)
-                    title = title.replace("²", "2")
-                    if not any(c in toc.title for c in {"Contents", "List of ", "Index"}):
-                        dests.append((toc.page_index, title))
                     print(toc.page_index, toc.title, file=logfile)
-            dests.append((doc.page_count, None))
-            ranges = [(p0, p1, t0) for (p0, t0), (p1, t1) in zip(dests, dests[1:]) if p0 != p1]
             calls = []
-            for ii, (p0, p1, title) in enumerate(ranges):
+            for p0, p1, filename in doc.chapters:
                 call = (
                     f"python3 -m modm_data.pdf2html.stmicro "
                     f"--document {args.document} --range {p0 + 1}:{p1} --html "
                     f"--figures {output_dir}/figures "
-                    f"--output {output_dir}/chapter_{ii}_{title}.html"
+                    f"--output {output_dir}/{filename}"
                 )
                 calls.append(call + f" >> {log} 2>&1")
                 print(call, file=logfile)

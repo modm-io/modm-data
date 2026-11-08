@@ -7,6 +7,30 @@ import pypdfium2 as pp
 from ..utils import Rectangle
 
 
+def link_destination(pdf: pp.PdfDocument, link: pp.raw.FPDF_LINK) -> tuple[int, float | None, float | None]:
+    """The page index and position of the destination of a raw link, a page index of -1 for external links."""
+    dest = _destination(pdf, link)
+    if not dest:
+        return (-1, None, None)
+    return (pp.raw.FPDFDest_GetDestPageIndex(pdf, dest), *_location(dest))
+
+
+def _destination(pdf, link):
+    if not (dest := pp.raw.FPDFLink_GetDest(pdf, link)):
+        action = pp.raw.FPDFLink_GetAction(link)
+        if action and pp.raw.FPDFAction_GetType(action) == pp.raw.PDFACTION_GOTO:
+            dest = pp.raw.FPDFAction_GetDest(pdf, action)
+    return dest
+
+
+def _location(dest) -> tuple[float | None, float | None]:
+    has_x, has_y, has_zoom = pp.raw.FPDF_BOOL(), pp.raw.FPDF_BOOL(), pp.raw.FPDF_BOOL()
+    x, y, zoom = pp.raw.FS_FLOAT(), pp.raw.FS_FLOAT(), pp.raw.FS_FLOAT()
+    if not pp.raw.FPDFDest_GetLocationInPage(dest, has_x, has_y, has_zoom, x, y, zoom):
+        return (None, None)
+    return (x.value if has_x.value else None, y.value if has_y.value else None)
+
+
 class ObjLink:
     """
     An internal reference to other objects by an identifier giving the bounding
@@ -20,7 +44,8 @@ class ObjLink:
         :param link: Raw link object.
         """
         self._page = page
-        self._dest = pp.raw.FPDFLink_GetDest(page.pdf, link)
+        self._dest = _destination(page.pdf, link)
+        self._action = pp.raw.FPDFLink_GetAction(link)
 
         bbox = pp.raw.FS_RECTF()
         assert pp.raw.FPDFLink_GetAnnotRect(link, bbox)
@@ -32,8 +57,25 @@ class ObjLink:
 
     @cached_property
     def page_index(self) -> int:
-        """0-indexed page number of the link destination."""
+        """0-indexed page number of the link destination, -1 for external links."""
+        if not self._dest:
+            return -1
         return pp.raw.FPDFDest_GetDestPageIndex(self._page.pdf, self._dest)
+
+    @cached_property
+    def location(self) -> tuple[float | None, float | None]:
+        """Position of the link destination on its unrotated page, if it has one."""
+        return _location(self._dest) if self._dest else (None, None)
+
+    @cached_property
+    def url(self) -> str | None:
+        """The URL of an external link."""
+        if not self._action or pp.raw.FPDFAction_GetType(self._action) != pp.raw.PDFACTION_URI:
+            return None
+        length = pp.raw.FPDFAction_GetURIPath(self._page.pdf, self._action, None, 0)
+        cbuffer = ctypes.create_string_buffer(length)
+        pp.raw.FPDFAction_GetURIPath(self._page.pdf, self._action, cbuffer, length)
+        return cbuffer.value.decode("utf-8", errors="replace").strip() or None
 
     def __repr__(self) -> str:
         return f"Obj({self.page_index})"

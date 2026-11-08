@@ -258,6 +258,13 @@ def normalize_registers(document: Node) -> Node:
     return document
 
 
+def _remove_merged(table: Node, merged: Node):
+    # The pages starting in the merged table now start at the table
+    for page in anytree.search.findall(merged, filter_=lambda n: n.name == "page"):
+        page.parent = table
+    merged.parent = None
+
+
 def normalize_tables(document: Node) -> Node:
     content_tables = defaultdict(list)
     register_tables = []
@@ -312,17 +319,17 @@ def normalize_tables(document: Node) -> Node:
         for table in tables[1:]:
             print(f"T{table.obj._page.number} ", end="")
             if tables[0].obj.append_bottom(table.obj):
-                table.parent = None
+                _remove_merged(tables[0], table)
     # Merge all register tables by appending to the right
     for tables in register_tables:
         for table in tables[1:]:
             if tables[0].obj.append_side(table.obj, expand=True):
-                table.parent = None
+                _remove_merged(tables[0], table)
     # Merge all bits tables by appending at the bottom
     for tables in bits_tables:
         for table in tables[1:]:
             if tables[0].obj.append_bottom(table.obj, merge_headers=False):
-                table.parent = None
+                _remove_merged(tables[0], table)
 
     return document
 

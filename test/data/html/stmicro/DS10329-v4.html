@@ -4,6 +4,7 @@
     <link rel="stylesheet" href="../style.css"/>
   </head>
   <body>
+    <a id="page21"></a>
     <h2 id="section7">7 Register description</h2>
     <p>The device contains a set of registers which are used to control its behavior and to retrieve <br/>humidity and temperature data. The register address, made up of 7 bits, is used to identify <br/>and to read/write the data, through the serial interfaces.</p>
     <h3 id="section7.1">7.1 WHO_AM_I (0Fh)</h3>
@@ -62,11 +63,11 @@
       </tr>
       <tr>
         <td>[5:3]</td>
-        <td>AVGT2-0: To select the numbers of averaged temperature samples (2 - 256), see <i><u>Table 16</u></i>.</td>
+        <td>AVGT2-0: To select the numbers of averaged temperature samples (2 - 256), see <i><a href="chapter_7_register_description.html#table16">Table 16</a></i>.</td>
       </tr>
       <tr>
         <td>[2:0]</td>
-        <td class="tl">AVGH2-0: To select the numbers of averaged humidity samples (4 - 512), see <i><u>Table 16</u></i>.</td>
+        <td class="tl">AVGH2-0: To select the numbers of averaged humidity samples (4 - 512), see <i><a href="chapter_7_register_description.html#table16">Table 16</a></i>.</td>
       </tr>
     </table>
     <table id="table16">
@@ -154,6 +155,7 @@
     <ol>
       <li value="1">Default configuration</li>
     </ol>
+    <a id="page22"></a>
     <h3 id="section7.3">7.3 CTRL_REG1 (20h)</h3>
     <p>Control register 1</p>
     <table class="rt">
@@ -202,7 +204,7 @@
     <p>The <b>PD</b> bit is used to turn on the device. The device is in power-down mode when PD = &#8216;0&#8217; <br/>(default value after boot). The device is active when PD is set to &#8216;1&#8217;.</p>
     <p>The <b>BDU</b> bit is used to inhibit the output register update between the reading of the upper <br/>and lower register parts. In default mode (BDU = &#8216;0&#8217;), the lower and upper register parts are <br/>updated continuously. If it is not certain whether the read will be faster than output data rate, <br/>it is recommended to set the BDU bit to &#8216;1&#8217;. In this way, after the reading of the lower (upper) <br/>register part, the content of that output register is not updated until the upper (lower) part is <br/>read also.</p>
     <p>This feature prevents the reading of LSB and MSB related to different samples.</p>
-    <p>The ODR1 and ODR0 bits permit changes to the output data rates of humidity and <br/>temperature samples.The default value corresponds to a &#8220;one-shot&#8221; configuration for both <br/>humidity and temperature output. ODR1 and ODR0 can be configured as described in <br/><i><u>Table 17</u></i>.</p>
+    <p>The ODR1 and ODR0 bits permit changes to the output data rates of humidity and <br/>temperature samples.The default value corresponds to a &#8220;one-shot&#8221; configuration for both <br/>humidity and temperature output. ODR1 and ODR0 can be configured as described in <br/><i><a href="chapter_7_register_description.html#table17">Table 17</a></i>.</p>
     <table id="table17">
       <caption>
         <b>Table 17. Output data rate configuration</b>
@@ -237,6 +239,7 @@
         <td>12.5 Hz</td>
       </tr>
     </table>
+    <a id="page23"></a>
     <h3 id="section7.4">7.4 CTRL_REG2 (21h)</h3>
     <p>Control register 2</p>
     <table class="rt">
@@ -286,7 +289,7 @@
     </table>
     <p>The <b>BOOT</b> bit is used to refresh the content of the internal registers stored in the Flash <br/>memory block. At device power-up, the content of the Flash memory block is transferred to <br/>the internal registers related to trimming functions to permit good behavior of the device <br/>itself. If, for any reason, the content of the trimming registers is modified, it is sufficient to <br/>use this bit to restore the correct values. When the BOOT bit is set to &#8216;1&#8217; the content of the <br/>internal Flash is copied inside the corresponding internal registers and is used to calibrate <br/>the device. These values are factory trimmed and are different for every device. They permit <br/>good behavior of the device and normally they should not be changed. At the end of the <br/>boot process, the BOOT bit is set again to &#8216;0&#8217;.</p>
     <p>The <b>ONE_SHOT</b> bit is used to start a new conversion. In this situation a single acquisition of <br/>temperature and humidity is started when the ONE_SHOT bit is set to &#8216;1&#8217;. At the end of <br/>conversion the new data are available in the output registers, the STATUS_REG[0] and <br/>STATUS_REG[1] bits are set to &#8216;1&#8217; and the ONE_SHOT bit comes back to &#8216;0&#8217; by hardware.</p>
-    <p>The <b>Heater</b> bit is used to control an internal heating element, that can effectively be used to <br/>speed up the sensor recovery time in case of condensation. The heater can be operated <br/>only by an external controller, which means that it has to be switched on/off directly by FW. <br/>Humidity and temperature output should not be read during the heating cycle; valid data can <br/>be read out once the heater has been turned off, after the completion of the heating cycle. <br/>Typical power consumption related to V<sub>DD</sub> is described in <i><u>Table 18</u></i>.</p>
+    <p>The <b>Heater</b> bit is used to control an internal heating element, that can effectively be used to <br/>speed up the sensor recovery time in case of condensation. The heater can be operated <br/>only by an external controller, which means that it has to be switched on/off directly by FW. <br/>Humidity and temperature output should not be read during the heating cycle; valid data can <br/>be read out once the heater has been turned off, after the completion of the heating cycle. <br/>Typical power consumption related to V<sub>DD</sub> is described in <i><a href="chapter_7_register_description.html#table18">Table 18</a></i>.</p>
     <table id="table18">
       <caption>
         <b>Table 18. Typical power consumption with heater ON</b>

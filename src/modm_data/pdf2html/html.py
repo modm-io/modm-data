@@ -10,6 +10,25 @@ from .ast import normalize_lines, normalize_lists, normalize_paragraphs
 _LOGGER = logging.getLogger(__name__)
 
 
+def _format_html_id(xmlnode, anchor):
+    # Elements with an id get an empty anchor in front of them instead
+    if xmlnode.get("id") is None:
+        xmlnode.set("id", anchor)
+    else:
+        node = etree.Element("a", id=anchor)
+        node.text = ""
+        xmlnode.addprevious(node)
+
+
+def _format_html_page(xmlnode, pagenode):
+    # Links fall back to the page, so every page needs an id, even where its
+    # first element already has one or it starts with a table or figure
+    _format_html_id(xmlnode, f"page{pagenode.number}")
+    for anchor in getattr(pagenode, "_anchors", ()):
+        _format_html_id(xmlnode, anchor)
+    print(f"{pagenode.number}.", end="", flush=True)
+
+
 def _format_html_figure(xmlnode, figurenode):
     tnode = etree.Element("table")
     tnode.set("width", f"{int(figurenode._width * 50)}%")
@@ -38,6 +57,8 @@ def _format_html_figure(xmlnode, figurenode):
                 etree.SubElement(xynode, "img", src=src)
     else:
         xynode.text = "(omitted)"
+    for pagenode in (c for c in figurenode.children if c.name == "page"):
+        _format_html_page(tnode, pagenode)
 
 
 def _format_html_table(xmlnode, tablenode):
@@ -54,6 +75,8 @@ def _format_html_table(xmlnode, tablenode):
         tnode.set("class", "rt")
     if tablenode.obj._type == "bitfield":
         tnode.set("class", "bt")
+    for pagenode in (c for c in tablenode.children if c.name == "page"):
+        _format_html_page(tnode, pagenode)
 
     # Cells are ordered (y, x) positions
     ypos = -1
@@ -105,7 +128,7 @@ def _format_char(node, state, chars, ignore):
         "subscript": False,
         "italic": False,
         "bold": False,
-        "underline": False,
+        "link": None,
     }
     if state is None:
         state = NOFMT
@@ -131,14 +154,15 @@ def _format_char(node, state, chars, ignore):
             node.children[-1].chars += char["char"]
         return (True, node, state)
     else:
-        disable = [key for key, value in diffs.items() if not value]
+        # A link directly followed by another link must be closed first
+        disable = [key for key, value in diffs.items() if not value or state[key]]
         if disable:
-            state[node.name] = False
+            state[node.name] = NOFMT.get(node.name, False)
             return (False, node.parent, state)
         else:
             enable = [key for key, value in diffs.items() if value][0]
-            fmtnode = anytree.Node(enable, parent=node)
-            state[enable] = True
+            fmtnode = anytree.Node(enable, parent=node, value=char[enable])
+            state[enable] = char[enable]
             return (False, fmtnode, state)
 
 
@@ -165,8 +189,11 @@ def _format_chars(chars, ignore):
     # otherwise "<b>NAME </b>Text" becomes "NAMEText" when the tags are stripped
     for prev, char, succ in zip(chars, chars[1:], chars[2:]):
         if char["char"] == " ":
-            for key in ("superscript", "subscript", "bold", "italic", "underline"):
+            for key in ("superscript", "subscript", "bold", "italic"):
                 char[key] = prev[key] and succ[key] and succ["char"] != "\n"
+            # Only the same link continues across the space
+            if not (prev["link"] == succ["link"] and succ["char"] != "\n"):
+                char["link"] = None
     state = None
     node = formatn
     while chars:
@@ -182,7 +209,7 @@ def _format_html_fmt(xmlnode, treenode, tail=False):
         "subscript": "sub",
         "italic": "i",
         "bold": "b",
-        "underline": "u",
+        "link": "a",
         "newline": "br",
     }
     # print(xmlnode, treenode)
@@ -198,6 +225,8 @@ def _format_html_fmt(xmlnode, treenode, tail=False):
         if tail:
             xmlnode = xmlnode.getparent()
         subnode = etree.SubElement(xmlnode, CONV[treenode.name])
+        if treenode.name == "link":
+            subnode.set("href", treenode.value)
         tail = False
         iternode = subnode
         for child in treenode.children:
@@ -229,7 +258,7 @@ def _format_html(xmlnode, treenode, ignore_formatting=None, with_newlines=False,
         if treenode.marker:
             current.set("id", f"section{treenode.marker}")
         xmlnode.append(current)
-        ignore_formatting = ignore_formatting | {"bold", "italic", "underline"}
+        ignore_formatting = ignore_formatting | {"bold", "italic", "link"}
 
     elif treenode.name in {"para"}:
         current = etree.Element("p")
@@ -242,11 +271,12 @@ def _format_html(xmlnode, treenode, ignore_formatting=None, with_newlines=False,
 
     elif treenode.name == "text":
         _format_html_text(xmlnode, treenode, ignore_formatting, with_newlines, with_start)
+        # Link destinations that are not a heading, table or figure
+        for anchor in dict.fromkeys(a for c in treenode.children if (a := getattr(c, "_anchor", None))):
+            _format_html_id(xmlnode, anchor)
 
     elif treenode.name == "page":
-        if not current.get("id"):
-            current.set("id", f"page{treenode.number}")
-        print(f"{treenode.number}.", end="", flush=True)
+        _format_html_page(current, treenode)
         return
 
     elif treenode.name == "table":
@@ -277,10 +307,10 @@ def _format_html(xmlnode, treenode, ignore_formatting=None, with_newlines=False,
         etree.SubElement(current, "td").text = treenode.marker or ""
         title = etree.SubElement(current, "td")
         title.text = ""
-        # Keep the sub- and superscripts, the bold chapters and underlined links carry no meaning
+        # Keep the sub- and superscripts and the links, the bold chapters carry no meaning
         char_props = treenode.root._page._char_properties
         chars = [char_props(line, char) | {"char": c} for line, char, c in treenode._chars]
-        _format_html_tree(title, _format_chars(chars, {"bold", "italic", "underline"}))
+        _format_html_tree(title, _format_chars(chars, {"bold", "italic"}))
         etree.SubElement(current, "td").text = treenode.target or ""
 
     elif treenode.name == "element":
