@@ -733,6 +733,16 @@ _LIMITS = (
     (r"STM32WB[35]", "PLLP", "out_limits", {"out_min": 2e6, "out_max": 16e6, "when": _scale(2)}),
     (r"STM32WB[35]", "PLLQ", "out_limits", {"out_min": 8e6, "out_max": 16e6, "when": _scale(2)}),
     (r"STM32WB[35]", "PLLR", "out_limits", {"out_min": 8e6, "out_max": 16e6, "when": _scale(2)}),
+    # RM0477 7.8.12 RCC_PLL1DIVR1 and DS14359 6.3.11 Table 64: VCOH from 192 to 836 MHz, CubeMX says 400 to 1600 MHz
+    *(
+        (
+            r"STM32H7[RS]",
+            f"DIVN{n}",
+            "out_limits",
+            {"out_min": 192e6, "out_max": 836e6, "when": ["eq", f"PLL{n}_VCO_SEL", "RCC_PLL_VCO_HIGH"]},
+        )
+        for n in (1, 2, 3)
+    ),
     # DS12110 7.3.1 Table 112 General operating conditions: fCPU, fHCLK and fPCLK per VOS. CubeMX
     # caps only HCLK, at 225 MHz for VOS1..3 like the flash latency table of RM0433, while the
     # STM32H72x/H73x file follows its datasheet
