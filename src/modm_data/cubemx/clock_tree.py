@@ -421,9 +421,9 @@ def bus_peripherals(parameters: dict, nodes: dict) -> dict[str, list[str]]:
 
 
 # ================================ PERIPHERALS ================================
-# Listed as IPs but not clocked peripherals: the clock controller itself and
-# the system and pin configuration entries
-_NOT_CLOCKED = {"RCC", "SYS", "GPIO", "NVIC", "DEBUG", "MEMORYMAP", "BOOTPATH", "PWR"}
+# Listed as IPs but not clocked peripherals: the clock controller itself, the
+# system and pin configuration entries and the parts of the Cortex core
+_NOT_CLOCKED = {"RCC", "SYS", "SYS_S", "GPIO", "NVIC", "DEBUG", "MEMORYMAP", "BOOTPATH", "PWR", "SAU", "GIC", "SYS_M4"}
 
 # The tree, the MCU description and the RCC enable bits of the header do not
 # always spell a peripheral the same, for example, the STM32H7 enables DAC1
@@ -431,6 +431,8 @@ _NOT_CLOCKED = {"RCC", "SYS", "GPIO", "NVIC", "DEBUG", "MEMORYMAP", "BOOTPATH", 
 _ALIASES = {
     "HDMI_CEC": ("CEC",),
     "QUADSPI": ("QSPI",),
+    "QUADSPI1": ("QUADSPI", "QSPI"),
+    "GTZC": ("GTZC1",),
     "OCTOSPI1": ("OCTOSPI",),
     # The 48 MHz clock of the STM32L4 and STM32WB, after the own mux of a device
     "USB": ("CK48",),
@@ -445,8 +447,23 @@ _ALIASES = {
     "JPEG": ("JPGDEC",),
     "COMP1": ("COMP12", "COMP"),
     "COMP2": ("COMP12", "COMP"),
-    "VREFBUF": ("VREF",),
+    "VREFBUF": ("VREF", "SYSCFG"),
+    # Generated from the TIM16 and TIM17 outputs, with their clock
+    "IRTIM": ("TIM16",),
+    # The tamper registers share the clock enable of the RTC registers
+    "TAMP": ("RTCAPB",),
+    # The STM32U5 enables both camera interfaces with one bit, and the FMC as FSMC
+    "DCMI": ("DCMI_PSSI",),
+    "PSSI": ("DCMI_PSSI",),
+    "FMC": ("FSMC",),
 }
+
+# Families without an own enable bit clock the comparators and operational
+# amplifiers with the system configuration controller, so SYSCFG is a fallback
+_PATTERNS = (
+    (re.compile(r"COMP\d+"), ("COMP12", "COMP", "SYSCFG")),
+    (re.compile(r"OPAMP\d+"), ("OPAMP", "SYSCFG")),
+)
 
 # RCC spells its enable registers several ways: AHBENR, AHB1ENR, APBENR1,
 # APB1ENR and, on the STM32H7, APB1LENR and APB1HENR for the two halves of one
@@ -484,6 +501,35 @@ def header_buses(header) -> dict[str, list[str]]:
     return {bus: sorted(names) for bus, names in sorted(buses.items())}
 
 
+_BASE_BUS = re.compile(r"\b(?:(?P<domain>D\d)_)?(?P<bus>AHB|APB)(?P<index>\d*)[LH]?PERIPH_BASE")
+# The domains of the STM32H7 number their buses differently than RCC
+_DOMAINS = {("D1", "AHB1"): "AHB3", ("D1", "APB1"): "APB3", ("D3", "AHB1"): "AHB4", ("D3", "APB1"): "APB4"}
+
+
+def base_buses(header) -> dict[str, str]:
+    """
+    The bus of every peripheral by its base address, which is how the header
+    derives it, for example, `ICACHE_BASE_NS (AHB1PERIPH_BASE_NS + 0x10400UL)`.
+    This is the last resort for blocks without a clock enable bit.
+
+    :return: The bus of each `<NAME>_BASE` macro, by NAME.
+    """
+    buses = {}
+    for macro, value in header.macros.items():
+        if not (match := re.fullmatch(r"(\w+?)_BASE(?:_NS)?", macro)):
+            continue
+        for _ in range(4):
+            if found := _BASE_BUS.search(value):
+                bus = found["bus"] + found["index"]
+                buses.setdefault(match[1], _DOMAINS.get((found["domain"], bus), bus))
+                break
+            # follow an alias of another base address
+            if not (alias := re.search(r"\b(\w+_BASE(?:_NS)?)\b", value)) or alias[1] not in header.macros:
+                break
+            value = header.macros[alias[1]]
+    return buses
+
+
 def _spellings(name: str) -> tuple[list[str], list[str]]:
     """
     The clock tree muxes a group (`ADCoutput`) where the device lists instances
@@ -495,7 +541,11 @@ def _spellings(name: str) -> tuple[list[str], list[str]]:
              both start with `TIM`.
     """
     upper = name.upper()
-    exact = list(dict.fromkeys([upper, *_ALIASES.get(upper, ())]))
+    # TrustZone devices list GTZC_NS and GTZC_S, the header enables GTZC1
+    names = [upper, *([stem, stem + "1"] if (stem := re.sub(r"_N?S$", "", upper)) != upper else [])]
+    extra = [a for name in names for a in _ALIASES.get(name, ())]
+    extra += [a for pattern, aliases in _PATTERNS if pattern.fullmatch(upper) for a in aliases]
+    exact = list(dict.fromkeys([*names, *extra]))
     # Only the instance number of the peripheral itself is dropped, CK48 is not CK
     number = re.search(r"\d+$", upper)
     loose = [e[: -len(number[0])] for e in exact if e.endswith(number[0])] if number else []
@@ -503,7 +553,9 @@ def _spellings(name: str) -> tuple[list[str], list[str]]:
     return exact, list(dict.fromkeys(loose))
 
 
-def attach_peripherals(nodes: dict, buses: dict, header_buses: dict, instances: set) -> dict[str, str]:
+def attach_peripherals(
+    nodes: dict, buses: dict, header_buses: dict, instances: set, base_buses: dict | None = None
+) -> dict[str, str]:
     """
     Adds one leaf node per peripheral instance, wired to whatever clocks it.
 
@@ -515,12 +567,14 @@ def attach_peripherals(nodes: dict, buses: dict, header_buses: dict, instances: 
     :param buses: The peripherals per bus output node, see `bus_peripherals`.
     :param header_buses: The peripherals per bus, see `header_buses`.
     :param instances: The peripherals the device has, see `peripherals_of`.
+    :param base_buses: The bus of each peripheral by its base address, see `base_buses`.
     :return: The node that clocks each peripheral.
     """
     # Which tree node stands for a bus of the header, for example, APB1 -> APBOutput
     outputs = [name for name, node in nodes.items() if node["kind"] == "output"]
+    base_buses = base_buses or {}
     bus_node = {}
-    for bus in header_buses:
+    for bus in {*header_buses, *base_buses.values()}:
         found = [name for name in outputs if name.upper().startswith(bus.upper())]
         if not found:
             # A device with one APB answers to APB1 and APB2 alike
@@ -574,6 +628,14 @@ def attach_peripherals(nodes: dict, buses: dict, header_buses: dict, instances: 
             for bus, group in header_buses.items():
                 if bus in bus_node and spelling in {g.upper() for g in group}:
                     return bus_node[bus]
+        # A block without an enable bit runs from the bus of its address, for
+        # example, the STM32U5 ICACHE or the STM32H7 RAMECC1..3
+        for spelling in names:
+            found = [
+                b for n, b in sorted(base_buses.items()) if n == spelling or re.fullmatch(rf"{spelling}(\d|_\w+)", n)
+            ]
+            if found and found[0] in bus_node:
+                return bus_node[found[0]]
         return None
 
     attached = {}
@@ -843,7 +905,9 @@ def clock_tree_from_partname(partname: str) -> dict:
 
     instances = peripherals_of(device_file)
     header = header_from_partname(partname)
-    attached = attach_peripherals(nodes, buses, header_buses(header) if header else {}, instances)
+    attached = attach_peripherals(
+        nodes, buses, header_buses(header) if header else {}, instances, base_buses(header) if header else {}
+    )
 
     semaphores = _semaphores(parameters)
     add_scale_limits(nodes, scale_limits(parameters, context))

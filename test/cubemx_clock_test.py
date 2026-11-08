@@ -9,6 +9,7 @@ from modm_data.cubemx.clock_tree import (
     _score,
     _spellings,
     attach_peripherals,
+    base_buses,
     correct,
     evaluate,
     header_buses,
@@ -89,6 +90,33 @@ class CubeMxClockTest(unittest.TestCase):
             header_buses(_Header(macros)),
             {"AHB": ["DMA1", "GPIOA"], "APB1": ["DAC12", "FDCAN", "I2C2"], "APB2": ["USART1"]},
         )
+
+    def test_blocks_without_enable_bit(self):
+        nodes = {
+            "APB2Output": {"kind": "output", "inputs": [], "outputs": []},
+            "AHBOutput": {"kind": "output", "inputs": [], "outputs": []},
+        }
+        attached = attach_peripherals(
+            nodes,
+            {},
+            {"APB2": ["SYSCFG"], "AHB": ["GTZC1"]},
+            {"COMP1", "GTZC_NS", "ICACHE", "RAMECC"},
+            {"ICACHE": "AHB1", "RAMECC1": "AHB3"},
+        )
+        # COMP1 through SYSCFG, GTZC_NS by GTZC1EN, the others by their address
+        self.assertEqual(
+            attached, {"COMP1": "APB2Output", "GTZC_NS": "AHBOutput", "ICACHE": "AHBOutput", "RAMECC": "AHBOutput"}
+        )
+
+    def test_base_buses(self):
+        macros = {
+            "PERIPH_BASE": "(0x40000000UL)",
+            "AHB1PERIPH_BASE_NS": "(PERIPH_BASE_NS + 0x00020000UL)",
+            "ICACHE_BASE_NS": "(AHB1PERIPH_BASE_NS + 0x10400UL)",
+            "RAMECC1_BASE": "(D1_AHB1PERIPH_BASE + 0x9000UL)",
+            "ALIAS_BASE": "ICACHE_BASE_NS",
+        }
+        self.assertEqual(base_buses(_Header(macros)), {"ICACHE": "AHB1", "RAMECC1": "AHB3", "ALIAS": "AHB1"})
 
     def test_spellings(self):
         self.assertEqual(_spellings("USART2"), (["USART2"], ["USART"]))
