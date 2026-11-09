@@ -34,9 +34,8 @@ class Table:
                 if _touches(line.p0.x, line.p0.y) or _touches(line.p1.x, line.p0.y):
                     return False
                 return any(
-                    abs(o.left - line.p0.x) < 1
-                    and abs(o.right - line.p1.x) < 1
-                    and o.bottom - 1 < line.p0.y < o.top + 1
+                    # an overline drawn in pieces is joined, its pieces lie inside it
+                    o.left - 1 < line.p0.x and line.p1.x < o.right + 1 and o.bottom - 1 < line.p0.y < o.top + 1
                     for o in page._overlines
                 )
 

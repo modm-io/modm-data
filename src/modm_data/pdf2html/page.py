@@ -104,24 +104,43 @@ class Page(PdfPage):
             # Table borders and other rules end at a vertical line, overlines end at nothing
             return any(v.left - 1 < x < v.right + 1 and v.bottom - 1 < y < v.top + 1 for v in verticals)
 
-        for bbox in boxes:
-            if not (0 < bbox.height < 1.5 and bbox.width > 1):
-                continue
+        def _aligned(bbox, chars):
+            # The line starts and ends on glyph edges, it may end on a trailing space
+            return any(abs(c.bbox.left - bbox.left) < 1 for c in chars) and any(
+                abs(c.bbox.right - bbox.right) < 1 for c in chars
+            )
+
+        # Underlines are often drawn in pieces per word and space, join pieces that touch end to end
+        lines = []
+        for b in sorted((b for b in boxes if 0 < b.height < 1.5 and b.width > 1), key=lambda b: (round(b.y), b.left)):
+            if lines and abs(lines[-1].y - b.y) < 0.3 and b.left - lines[-1].right < 1:
+                last = lines[-1]
+                b = Rectangle(last.left, min(last.bottom, b.bottom), max(last.right, b.right), max(last.top, b.top))
+                lines[-1] = b
+            else:
+                lines.append(b)
+
+        y_em = self._spacing["y_em"]
+        for bbox in lines:
             if _touches_vertical(bbox.left, bbox.y) or _touches_vertical(bbox.right, bbox.y):
                 continue
-            area = Rectangle(bbox.left - 1, bbox.bottom - self._spacing["y_em"], bbox.right + 1, bbox.bottom)
-            # The overline may end on a trailing space
-            chars = [c for c in self.chars_in_area(area) if c.unicode not in {0xA, 0xD}]
+            below = Rectangle(bbox.left - 1, bbox.bottom - y_em, bbox.right + 1, bbox.bottom)
+            chars = [c for c in self.chars_in_area(below) if c.unicode not in {0xA, 0xD}]
             glyphs = [c for c in chars if c.unicode != 0x20]
             if not glyphs:
                 continue
             # The overline sits right above the glyphs, a rule above text has a larger gap
             if bbox.bottom - max(c.bbox.top for c in glyphs) > 0.25 * max(c.bbox.height for c in glyphs):
                 continue
-            if any(abs(c.bbox.left - bbox.left) < 1 for c in chars) and any(
-                abs(c.bbox.right - bbox.right) < 1 for c in chars
-            ):
-                overlines.append(bbox)
+            if not _aligned(bbox, chars):
+                continue
+            # An underline of the text line above can sit just as close to the next line, but it lies inside the
+            # character boxes above, which reach down to the descent of the font
+            above = Rectangle(bbox.left - 1, bbox.top, bbox.right + 1, bbox.top + y_em)
+            uchars = [c for c in self.chars_in_area(above) if c.unicode not in {0xA, 0xD}]
+            if _aligned(bbox, uchars) and min(c.bbox.bottom for c in uchars) < bbox.top:
+                continue
+            overlines.append(bbox)
         return overlines
 
     def _is_overlined(self, char) -> bool:
