@@ -382,16 +382,31 @@ class Page(BasePage):
         content, bold = line.content, "Bold" in line.chars[0].font
         linesize = self._line_size(line)
         # The same heading and caption detection as in ast_in_area
-        if linesize.startswith("h1") or (
-            linesize.startswith("h")
-            and line.bbox.left < (self._spacing["x_content"] + 2 * self._spacing["x_em"])
-            and bold
+        if (
+            linesize.startswith("h1")
+            or (
+                linesize.startswith("h")
+                and line.bbox.left < (self._spacing["x_content"] + 2 * self._spacing["x_em"])
+                and bold
+            )
+            or self._is_numbered_heading(line)
         ):
-            if (match := re.match(r"^ *(\d+(\.\d+)?(\.\d+)?) *", content)) is not None:
+            if (match := re.match(r"^ *(\d+(?:\.\d+)*) *", content)) is not None:
                 return f"section{match.group(1)}"
         elif bold and (match := re.match(r" *([Tt]able|[Ff]igure) ?(\d+)\.? ?", content)) is not None:
             return f"{match.group(1).lower()}{match.group(2)}"
         return None
+
+    def _is_numbered_heading(self, line: CharLine) -> bool:
+        """
+        A bold line in the margin left of the text that starts with a section number like "30.4.2 Title" is a
+        heading, even when ST set it smaller than the other headings to fit a long title.
+        """
+        return (
+            line.bbox.left < self._spacing["x_content"] - self._spacing["x_em"]
+            and "Bold" in line.chars[0].font
+            and re.match(r" *\d+(\.\d+)+ +[A-Z]", line.content) is not None
+        )
 
     @cached_property
     def named_ids(self) -> set[str]:
@@ -850,13 +865,17 @@ class Page(BasePage):
                 # Check if line is a heading, which may be multi-line, so we must
                 # be careful not to nest them, but group them properly
                 # Headings are always inserted into the root note!
-                if linesize.startswith("h1") or (
-                    linesize.startswith("h") and xpos < (spacing_content + 2 * x_em) and "Bold" in obj.chars[0].font
+                if (
+                    linesize.startswith("h1")
+                    or (
+                        linesize.startswith("h") and xpos < (spacing_content + 2 * x_em) and "Bold" in obj.chars[0].font
+                    )
+                    or (with_graphics and self._is_numbered_heading(obj))
                 ):
-                    if (match := re.match(r"^ *(\d+(\.\d+)?(\.\d+)?) *", content)) is not None:
+                    if (match := re.match(r"^ *(\d+(?:\.\d+)*) *", content)) is not None:
                         start = min(len(match.group(0)), len(obj.chars) - 1)
                         marker = match.group(1)
-                        size = marker.count(".") + 2
+                        size = min(marker.count(".") + 2, 6)
                     else:
                         start = 0
                         marker = None
