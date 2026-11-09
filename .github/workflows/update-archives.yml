@@ -81,6 +81,15 @@ jobs:
           git count-objects -vH
           git push origin main
 
+      # Metrics of the conversion quality, they never fail the job, see the headers of test/html_check*.py
+      - name: Check HTML Archive
+        if: always()
+        continue-on-error: true
+        run: |
+          for check in tables figures; do
+            python3 test/html_check_${check}.py ext/stmicro/html-archive log/check/${check}
+          done
+
       - name: Upload HTML logs
         if: always()
         uses: actions/upload-artifact@v4
