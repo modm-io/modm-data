@@ -42,6 +42,8 @@ class Page(pp.PdfPage):
         self._links = None
         self._weblinks = None
         self._linked = False
+        # The font metrics and matrix of each text object, which all its characters share
+        self._text_objects = {}
 
         _LOGGER.debug(f"Loading: {index}")
 

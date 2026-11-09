@@ -120,38 +120,51 @@ class Character:
         # placed by the text matrix, so that it also works for rotated text.
         # The loose box of pdfium is not suitable, since its definition changed
         # between versions and its height depends on the font metrics.
-        tight = self._text.get_charbox(self._index)
         obj = pp.raw.FPDFText_GetTextObject(self._text, self._index)
-        size = pp.raw.FPDFText_GetFontSize(self._text, self._index)
-        if not obj or not size or pp.raw.FPDFText_IsGenerated(self._text, self._index):
-            return tight
-        font = pp.raw.FPDFTextObj_GetFont(obj)
-        ascent, descent, width = ctypes.c_float(), ctypes.c_float(), ctypes.c_float()
-        pp.raw.FPDFFont_GetAscent(font, size, ascent)
-        pp.raw.FPDFFont_GetDescent(font, size, descent)
-        if ascent.value == descent.value:
-            return tight
+        if not obj or pp.raw.FPDFText_IsGenerated(self._text, self._index):
+            return self._text.get_charbox(self._index)
+        # All characters of a text object share its font, size and matrix
+        key = (ctypes.cast(obj, ctypes.c_void_p).value, pp.raw.FPDFText_GetFontSize(self._text, self._index))
+        if (info := self._page._text_objects.get(key)) is None:
+            info = self._page._text_objects[key] = self._text_object(obj, key[1])
+        if info is None:
+            return self._text.get_charbox(self._index)
+        font, size, y0, y1, m, widths = info
 
-        m = pp.raw.FS_MATRIX()
         ox, oy = ctypes.c_double(), ctypes.c_double()
-        assert pp.raw.FPDFText_GetMatrix(self._text, self._index, m)
         assert pp.raw.FPDFText_GetCharOrigin(self._text, self._index, ox, oy)
         ox, oy = ox.value, oy.value
 
-        # Split the font size above and below the baseline like the font does
-        scale = size / (ascent.value - descent.value)
-        y0, y1 = descent.value * scale, ascent.value * scale
-        x1 = 0
-        if pp.raw.FPDFFont_GetGlyphWidth(font, self.unicode, size, width):
-            x1 = width.value
+        if (x1 := widths.get(self.unicode)) is None:
+            width = ctypes.c_float()
+            x1 = widths[self.unicode] = (
+                width.value if pp.raw.FPDFFont_GetGlyphWidth(font, self.unicode, size, width) else 0
+            )
         if not x1 and (norm := m.a * m.a + m.b * m.b):
             # The width lookup fails for characters without a reverse unicode
             # mapping, so we use the extent of the glyph along the baseline.
+            tight = self._text.get_charbox(self._index)
             x1 = max(((x - ox) * m.a + (y - oy) * m.b) / norm for x in tight[::2] for y in tight[1::2])
 
         xs = [ox + m.a * x + m.c * y for x in (0, x1) for y in (y0, y1)]
         ys = [oy + m.b * x + m.d * y for x in (0, x1) for y in (y0, y1)]
         return min(xs), min(ys), max(xs), max(ys)
+
+    def _text_object(self, obj, size: float):
+        """The font, size, vertical extent and matrix shared by the characters of a text object."""
+        if not size:
+            return None
+        font = pp.raw.FPDFTextObj_GetFont(obj)
+        ascent, descent = ctypes.c_float(), ctypes.c_float()
+        pp.raw.FPDFFont_GetAscent(font, size, ascent)
+        pp.raw.FPDFFont_GetDescent(font, size, descent)
+        if ascent.value == descent.value:
+            return None
+        m = pp.raw.FS_MATRIX()
+        assert pp.raw.FPDFText_GetMatrix(self._text, self._index, m)
+        # Split the font size above and below the baseline like the font does
+        scale = size / (ascent.value - descent.value)
+        return font, size, descent.value * scale, ascent.value * scale, m, {}
 
     def generated_space(self) -> "Character":
         """
