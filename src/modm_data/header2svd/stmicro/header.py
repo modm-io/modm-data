@@ -82,6 +82,11 @@ class Header(CmsisHeader):
             vectors = [
                 {"position": int(str(i["value"]).replace(" ", "")), "name": i["name"][:-5]} for i in interrupt_enum
             ]
+            # Some headers alias the handler name of a vector to another handler, which renames the user's handler
+            # (STM32H7: COMP -> COMP1, STM32F302/F303: USBWakeUp -> USBWakeUp_RMP, STM32F373: USBWakeUp -> CEC)
+            for vector in vectors:
+                if alias := re.fullmatch(r"(\w+)_IRQHandler", self.macros.get(f"{vector['name']}_IRQHandler", "")):
+                    vector["alias"] = alias.group(1)
             self._cache["vectors"] = vectors
         return self._cache["vectors"]
 
