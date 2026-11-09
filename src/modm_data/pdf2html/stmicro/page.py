@@ -597,7 +597,26 @@ class Page(BasePage):
                 objects.append(figure)
             elif "table" in otype:
                 xlines, ylines, yhlines = [], [], []
+                # Swatches of a color key "<square> = Same feature" are drawn left of a "=" that starts the line
+                swatches = []
+                size = 2 * self._spacing["y_em"]
+                for line in self.charlines_in_area(graphics_bbox):
+                    glyphs = [c for c in line.chars if c.unicode not in {0x20, 0xA, 0xD}]
+                    for left, char in zip([None] + glyphs, glyphs):
+                        if char.char == "=" and (left is None or char.bbox.left - left.bbox.right > size):
+                            mid = char.bbox.midpoint.y
+                            swatches.append(
+                                Rectangle(char.bbox.left - size, mid - size / 2, char.bbox.left, mid + size / 2)
+                            )
                 for path in graphics_paths:
+                    if any(
+                        path.bbox.left > s.left - 1
+                        and path.bbox.right < s.right + 1
+                        and path.bbox.bottom > s.bottom - 1
+                        and path.bbox.top < s.top + 1
+                        for s in swatches
+                    ):
+                        continue
                     if self._template == "blue_gray" or "_lines" in otype:
                         if self._colors(path.stroke) == "gray" or "_lines" in otype:
                             # Intercell paths in gray
