@@ -83,6 +83,9 @@ def convert(
 
         if show_tree or render_html or show_ast:
             areas = page.content_ast
+            # The ids of the link destinations on this page, while its lines are built
+            if collect := getattr(doc, "collect_page", None):
+                collect(page)
             if show_ast:
                 print()
                 for area in areas:

@@ -61,6 +61,9 @@ class Document(PdfDocument):
         self._anchors = {}
         # The ids of the headings, tables and figures on each page
         self._named = {}
+        # Chapter conversions write placeholders for their links and collect the ids of their own pages instead
+        self._deferred = False
+        self._collected = {}
 
     @cached_property
     def chapters(self) -> list[tuple[int, int, str]]:
@@ -115,28 +118,45 @@ class Document(PdfDocument):
             for index, anchors, named in pool.imap_unordered(_resolve_page, indices, chunksize=4):
                 self._add_page_anchors(index, anchors, named)
 
-    def save_destinations(self, path: Path):
+    def save_destinations(self, path: Path, resolve: bool = True):
         """
         Saves the link destinations and their ids, so that the conversions of
-        the chapters neither search nor resolve them again.
+        the chapters neither search nor resolve them again. Without resolving,
+        the chapters resolve the destinations on their own pages, see
+        `resolve_deferred_links()`.
         """
-        self.resolve_anchors()
+        if resolve:
+            self.resolve_anchors()
         destinations = {
-            index: [[*location, self._anchors[(index, location)]] for location in sorted(dests, key=str)]
+            index: [[*location, self._anchors.get((index, location))] for location in sorted(dests, key=str)]
             for index, dests in self.destinations.items()
         }
         named = {index: sorted(ids) for index, ids in self._named.items()}
-        Path(path).write_text(json.dumps({"destinations": destinations, "named": named}))
+        Path(path).write_text(json.dumps({"destinations": destinations, "named": named, "deferred": not resolve}))
 
     def load_destinations(self, path: Path):
         """Loads the link destinations and their ids saved by `save_destinations()`."""
         data = json.loads(Path(path).read_text())
+        self._deferred = data.get("deferred", False)
         destinations = data["destinations"]
         self._named.update((int(index), set(ids)) for index, ids in data["named"].items())
         self.destinations = {int(index): {(x, y) for x, y, _ in dests} for index, dests in destinations.items()}
         self._anchors.update(
-            ((int(index), (x, y)), anchor) for index, dests in destinations.items() for x, y, anchor in dests
+            ((int(index), (x, y)), anchor)
+            for index, dests in destinations.items()
+            for x, y, anchor in dests
+            if anchor is not None
         )
+
+    def collect_page(self, page):
+        """Keeps the ids of a converted page for `resolve_deferred_links()`, its lines are built already."""
+        if self._deferred:
+            anchors = [[*location, page.anchor_at(*location)] for location in self.destinations.get(page.index, ())]
+            self._collected[page.index] = {"anchors": anchors, "named": sorted(page.named_ids)}
+
+    def save_collected(self, path: Path):
+        if self._deferred:
+            Path(path).write_text(json.dumps(self._collected))
 
     def _named_ids(self, index: int) -> set[str]:
         if index not in self._named:
@@ -151,6 +171,11 @@ class Document(PdfDocument):
         """
         if link.page_index < 0:
             return link.url
+        if self._deferred:
+            # Resolved once all chapters are converted, the text decides about a named target already
+            match = re.match(r"(Section|Table|Figure)\s+(\d+(?:\.\d+)*)\b", text)
+            named = f"{match.group(1).lower()}{match.group(2)}" if match else ""
+            return f"@{link.page_index}:{link.location[0]!r}:{link.location[1]!r}:{named}"
         filename = next((f for p0, p1, f in self.chapters if p0 <= link.page_index < p1), "")
         key = (link.page_index, link.location)
         if key not in self._anchors:
@@ -193,3 +218,44 @@ def _init_worker(path, destinations):
 
 def _resolve_page(index: int) -> tuple[int, dict, set]:
     return index, *_worker_document._page_anchors(index)
+
+
+def resolve_deferred_links(doc: "Document", paths: list[Path], collected: list[Path]):
+    """
+    Replaces the link placeholders of the chapters with the same targets that
+    `Document.link_target()` gives, from the ids the chapters collected of
+    their own pages. Links whose id is missing keep their fallback for
+    `resolve_link_fallbacks()`.
+    """
+    anchors, named = {}, {}
+    for path in collected:
+        for index, data in json.loads(Path(path).read_text()).items():
+            for x, y, anchor in data["anchors"]:
+                anchors[(int(index), (x, y))] = anchor
+            named[int(index)] = set(data["named"])
+
+    def _file(index):
+        return next((f for p0, p1, f in doc.chapters if p0 <= index < p1), "")
+
+    def _value(text):
+        return None if text == "None" else float(text)
+
+    def _target(match):
+        index, x, y, name = int(match.group(1)), _value(match.group(2)), _value(match.group(3)), match.group(4)
+        anchor = anchors.get((index, (x, y)), f"page{index + 1}")
+        target = f"{_file(index)}#{anchor}"
+        fallback = target if anchor.startswith("page") else f"{_file(index)}#page{index + 1}"
+        if name:
+            for other in (index, index + 1):
+                if name in named.get(other, ()):
+                    return f'href="{_file(other)}#{name}" data-fallback="{fallback}"'
+        if target == fallback:
+            return f'href="{target}"'
+        return f'href="{target}" data-fallback="{fallback}"'
+
+    for path in map(Path, paths):
+        if path.exists():
+            text = path.read_text()
+            new = re.sub(r'href="@(\d+):([^:]+):([^:]+):([^"]*)"', _target, text)
+            if new != text:
+                path.write_text(new)

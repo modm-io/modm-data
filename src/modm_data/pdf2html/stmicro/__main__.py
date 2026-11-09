@@ -9,6 +9,7 @@ from pathlib import Path
 from multiprocessing.pool import ThreadPool
 
 from .. import convert, patch, resolve_link_fallbacks
+from .document import resolve_deferred_links
 
 
 def main():
@@ -64,7 +65,7 @@ def main():
                     print(toc.page_index, toc.title, file=logfile)
             # The links into a chapter mostly come from other chapters, so they are searched only once
             destinations = log.with_suffix(".destinations.json")
-            doc.save_destinations(destinations)
+            doc.save_destinations(destinations, resolve=False)
             calls = []
             for p0, p1, filename in doc.chapters:
                 call = (
@@ -84,7 +85,11 @@ def main():
             from . import data
 
             # The ids of all chapters are only known now
-            resolve_link_fallbacks(output_dir / filename for _, _, filename in doc.chapters)
+            chapters = [output_dir / filename for _, _, filename in doc.chapters]
+            resolve_deferred_links(doc, chapters, [path.with_suffix(".ids.json") for path in chapters])
+            resolve_link_fallbacks(chapters)
+            for path in chapters:
+                path.with_suffix(".ids.json").unlink(missing_ok=True)
 
             return patch(doc, data, output_dir)
         return False
@@ -105,6 +110,7 @@ def main():
         show_tree=args.tree,
         show_tags=args.tags,
     )
+    doc.save_collected(output_path.with_suffix(".ids.json"))
     # A chapter of a parallel conversion keeps the fallbacks of its links until all chapters are written
     if args.html and not args.destinations:
         resolve_link_fallbacks(output_path.glob("chapter_*.html") if args.chapters else [output_path])
