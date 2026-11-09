@@ -156,17 +156,23 @@ class Document(PdfDocument):
         if key not in self._anchors:
             # All destinations of the page at once, so that the page is loaded only once
             self._add_page_anchors(link.page_index, *self._page_anchors(link.page_index))
+        if (anchor := self._anchors.get(key)) is None:
+            anchor = self._anchors[key] = self.page(link.page_index).anchor_at(*link.location)
+        target = f"{filename}#{anchor}"
+        # The page or line of the destination always has an id, a heading, table or figure may be missing when
+        # pdf2html did not detect it, see `resolve_link_fallbacks()`.
+        fallback = target if anchor.startswith("page") else f"{filename}#page{link.page_index + 1}"
         # A link named after a table, figure or section goes to it, if it is on the destination page or the next.
         # The destination position alone often lands on the heading above a caption or between both.
         if match := re.match(r"(Section|Table|Figure)\s+(\d+(?:\.\d+)*)\b", text):
             named = f"{match.group(1).lower()}{match.group(2)}"
             for index in (link.page_index, link.page_index + 1):
                 if index < self.page_count and named in self._named_ids(index):
-                    filename = next((f for p0, p1, f in self.chapters if p0 <= index < p1), "")
-                    return f"{filename}#{named}"
-        if (anchor := self._anchors.get(key)) is None:
-            anchor = self._anchors[key] = self.page(link.page_index).anchor_at(*link.location)
-        return f"{filename}#{anchor}"
+                    named_file = next((f for p0, p1, f in self.chapters if p0 <= index < p1), "")
+                    return f"{named_file}#{named} {fallback}"
+        if target == fallback:
+            return target
+        return f"{target} {fallback}"
 
     def page(self, index: int) -> StmPage:
         assert index < self.page_count

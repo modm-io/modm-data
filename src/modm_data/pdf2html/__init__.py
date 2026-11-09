@@ -7,7 +7,7 @@
 
 from .render import annotate_debug_info
 from .convert import convert, patch
-from .html import format_document, write_html
+from .html import format_document, write_html, resolve_link_fallbacks
 
 __all__ = [
     "stmicro",
@@ -15,6 +15,7 @@ __all__ = [
     "annotate_debug_info",
     "format_document",
     "write_html",
+    "resolve_link_fallbacks",
     "patch",
     "ast",
     "cell",

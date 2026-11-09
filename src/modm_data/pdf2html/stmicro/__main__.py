@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 from multiprocessing.pool import ThreadPool
 
-from .. import convert, patch
+from .. import convert, patch, resolve_link_fallbacks
 
 
 def main():
@@ -83,13 +83,16 @@ def main():
         if all(r.returncode == 0 for r in retvals):
             from . import data
 
+            # The ids of all chapters are only known now
+            resolve_link_fallbacks(output_dir / filename for _, _, filename in doc.chapters)
+
             return patch(doc, data, output_dir)
         return False
 
     if args.destinations:
         doc.load_destinations(args.destinations)
 
-    return convert(
+    result = convert(
         doc,
         page_range,
         output_path,
@@ -102,6 +105,10 @@ def main():
         show_tree=args.tree,
         show_tags=args.tags,
     )
+    # A chapter of a parallel conversion keeps the fallbacks of its links until all chapters are written
+    if args.html and not args.destinations:
+        resolve_link_fallbacks(output_path.glob("chapter_*.html") if args.chapters else [output_path])
+    return result
 
 
 # The worker processes resolving the link destinations import this module again

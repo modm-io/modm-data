@@ -1,7 +1,9 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
+import re
 import logging
+from pathlib import Path
 from lxml import etree
 import anytree
 from ..utils import list_strip
@@ -238,7 +240,11 @@ def _format_html_fmt(xmlnode, treenode, tail=False):
             xmlnode = xmlnode.getparent()
         subnode = etree.SubElement(xmlnode, CONV[treenode.name])
         if treenode.name == "link":
-            subnode.set("href", treenode.value)
+            # A link to a named target carries its destination position, see `resolve_link_fallbacks()`
+            href, _, fallback = treenode.value.partition(" ")
+            subnode.set("href", href)
+            if fallback:
+                subnode.set("data-fallback", fallback)
         if treenode.name == "overline":
             # HTML has no overline element, style.css draws it for this class
             subnode.set("class", "ov")
@@ -363,3 +369,27 @@ def format_document(document):
 def write_html(html, path, pretty=True):
     with open(path, "wb") as f:
         html.write(f, pretty_print=pretty, doctype="<!DOCTYPE html>")
+
+
+def resolve_link_fallbacks(paths: list[Path]):
+    """
+    Links to a table, figure or section go to its id, which pdf2html may not
+    have written when it did not detect that table or figure. These links fall
+    back to their destination position, once all chapters of the document are
+    written. Links into files that are not in `paths` keep their id.
+    """
+    paths = [path for path in map(Path, paths) if path.exists()]
+    contents = {path.name: path.read_text() for path in paths}
+    ids = {name: set(re.findall(r'\bid="([^"]+)"', text)) for name, text in contents.items()}
+
+    def _resolve(match):
+        href, fallback = match.group(1), match.group(2)
+        name, _, anchor = href.partition("#")
+        if name in ids and anchor not in ids[name]:
+            href = fallback
+        return f'<a href="{href}"'
+
+    for path in paths:
+        text = re.sub(r'<a href="([^"]*)" data-fallback="([^"]*)"', _resolve, contents[path.name])
+        if text != contents[path.name]:
+            path.write_text(text)
