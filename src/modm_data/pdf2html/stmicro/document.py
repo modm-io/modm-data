@@ -10,6 +10,7 @@ from anytree import RenderTree
 from .page import Page as StmPage
 from collections import defaultdict
 import ctypes
+import multiprocessing
 import pypdfium2 as pp
 from ...pdf import Document as PdfDocument
 from ...pdf.link import link_destination
@@ -55,6 +56,7 @@ def _normalize_document(document):
 class Document(PdfDocument):
     def __init__(self, path: str):
         super().__init__(path)
+        self._path = path
         self._normalize = _normalize_document
         self._anchors = {}
 
@@ -90,14 +92,41 @@ class Document(PdfDocument):
             pp.raw.FPDF_ClosePage(page)
         return destinations
 
+    def _page_anchors(self, index: int) -> dict[tuple, str]:
+        """The ids of all link destinations on one page, which is loaded only once for them."""
+        page = self.page(index)
+        return {location: page.anchor_at(*location) for location in self.destinations.get(index, ())}
+
+    def resolve_anchors(self, processes: int = None):
+        """Resolves the ids of all link destinations in parallel, each page is loaded only once."""
+        indices = [
+            index
+            for index in self.destinations
+            if not all((index, d) in self._anchors for d in self.destinations[index])
+        ]
+        with multiprocessing.Pool(processes, _init_worker, (self._path, self.destinations)) as pool:
+            for index, anchors in pool.imap_unordered(_resolve_page, indices, chunksize=4):
+                self._anchors.update(((index, location), anchor) for location, anchor in anchors.items())
+
     def save_destinations(self, path: Path):
-        """Saves the link destinations, so that the conversions of the chapters do not search them again."""
-        Path(path).write_text(json.dumps({index: sorted(d, key=str) for index, d in self.destinations.items()}))
+        """
+        Saves the link destinations and their ids, so that the conversions of
+        the chapters neither search nor resolve them again.
+        """
+        self.resolve_anchors()
+        destinations = {
+            index: [[*location, self._anchors[(index, location)]] for location in sorted(dests, key=str)]
+            for index, dests in self.destinations.items()
+        }
+        Path(path).write_text(json.dumps(destinations))
 
     def load_destinations(self, path: Path):
-        """Loads the link destinations saved by `save_destinations()`."""
+        """Loads the link destinations and their ids saved by `save_destinations()`."""
         destinations = json.loads(Path(path).read_text())
-        self.destinations = {int(index): {tuple(d) for d in dests} for index, dests in destinations.items()}
+        self.destinations = {int(index): {(x, y) for x, y, _ in dests} for index, dests in destinations.items()}
+        self._anchors.update(
+            ((int(index), (x, y)), anchor) for index, dests in destinations.items() for x, y, anchor in dests
+        )
 
     def link_target(self, link) -> str | None:
         """
@@ -109,6 +138,9 @@ class Document(PdfDocument):
             return link.url
         filename = next((f for p0, p1, f in self.chapters if p0 <= link.page_index < p1), "")
         key = (link.page_index, link.location)
+        if key not in self._anchors:
+            # All destinations of the page at once, so that the page is loaded only once
+            self._anchors.update(((link.page_index, d), a) for d, a in self._page_anchors(link.page_index).items())
         if (anchor := self._anchors.get(key)) is None:
             anchor = self._anchors[key] = self.page(link.page_index).anchor_at(*link.location)
         return f"{filename}#{anchor}"
@@ -119,3 +151,16 @@ class Document(PdfDocument):
 
     def __repr__(self) -> str:
         return f"STMicroDoc({self.name})"
+
+
+_worker_document = None
+
+
+def _init_worker(path, destinations):
+    global _worker_document
+    _worker_document = Document(path)
+    _worker_document.destinations = destinations
+
+
+def _resolve_page(index: int) -> tuple[int, dict]:
+    return index, _worker_document._page_anchors(index)

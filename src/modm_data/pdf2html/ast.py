@@ -167,7 +167,9 @@ def normalize_toc(document: Node) -> Node:
             for child in first.children:
                 child.parent = last
             first.parent = None
-        previous.children += toc.children
+        # Reassigning all children would detach and attach them all again for every page
+        for entry in toc.children:
+            entry.parent = previous
         toc.parent = None
     return document
 

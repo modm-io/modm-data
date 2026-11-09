@@ -365,12 +365,7 @@ class Page(BasePage):
             return (f"page{self.number}", None)
         x_em, y_em = self._spacing["x_em"], self._spacing["y_em"]
         # The destination is usually at the top of the line, sometimes a little above or below
-        lines = [
-            line
-            for area in self._areas["content"]
-            for line in self.charlines_in_area(area)
-            if line.content.strip() and abs(line.bbox.top - ypos) <= 2 * y_em
-        ]
+        lines = [line for line in self._content_lines if abs(line.bbox.top - ypos) <= 2 * y_em]
         lines.sort(key=lambda line: abs(line.bbox.top - ypos))
         for line in lines:
             content, bold = line.content, "Bold" in line.chars[0].font
@@ -386,6 +381,13 @@ class Page(BasePage):
         if lines:
             return (f"page{self.number}-{round(lines[0].bbox.top)}", lines[0])
         return (f"page{self.number}", None)
+
+    @cached_property
+    def _content_lines(self) -> list[CharLine]:
+        # A page has many link destinations, its lines are only searched once
+        return [
+            line for area in self._areas["content"] for line in self.charlines_in_area(area) if line.content.strip()
+        ]
 
     @cached_property
     def _line_anchors(self) -> dict[int, str]:
