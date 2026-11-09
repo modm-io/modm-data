@@ -129,6 +129,7 @@ def _format_char(node, state, chars, ignore):
         "italic": False,
         "bold": False,
         "link": None,
+        "overline": False,
     }
     if state is None:
         state = NOFMT
@@ -189,7 +190,7 @@ def _format_chars(chars, ignore):
     # otherwise "<b>NAME </b>Text" becomes "NAMEText" when the tags are stripped
     for prev, char, succ in zip(chars, chars[1:], chars[2:]):
         if char["char"] == " ":
-            for key in ("superscript", "subscript", "bold", "italic"):
+            for key in ("superscript", "subscript", "bold", "italic", "overline"):
                 char[key] = prev[key] and succ[key] and succ["char"] != "\n"
             # Only the same link continues across the space
             if not (prev["link"] == succ["link"] and succ["char"] != "\n"):
@@ -210,6 +211,7 @@ def _format_html_fmt(xmlnode, treenode, tail=False):
         "italic": "i",
         "bold": "b",
         "link": "a",
+        "overline": "span",
         "newline": "br",
     }
     # print(xmlnode, treenode)
@@ -227,6 +229,9 @@ def _format_html_fmt(xmlnode, treenode, tail=False):
         subnode = etree.SubElement(xmlnode, CONV[treenode.name])
         if treenode.name == "link":
             subnode.set("href", treenode.value)
+        if treenode.name == "overline":
+            # HTML has no overline element, style.css draws it for this class
+            subnode.set("class", "ov")
         tail = False
         iternode = subnode
         for child in treenode.children:

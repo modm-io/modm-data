@@ -93,6 +93,43 @@ class Page(PdfPage):
             scaled_areas[name] = [_s(r) for r in area] if isinstance(area, list) else _s(area)
         return scaled_areas
 
+    @cached_property
+    def _overlines(self) -> list[Rectangle]:
+        """Thin horizontal paths that start and end on the glyphs directly below them, like negated signal names."""
+        overlines = []
+        boxes = [p.bbox for p in self.paths]
+        verticals = [b for b in boxes if b.height > b.width]
+
+        def _touches_vertical(x, y):
+            # Table borders and other rules end at a vertical line, overlines end at nothing
+            return any(v.left - 1 < x < v.right + 1 and v.bottom - 1 < y < v.top + 1 for v in verticals)
+
+        for bbox in boxes:
+            if not (0 < bbox.height < 1.5 and bbox.width > 1):
+                continue
+            if _touches_vertical(bbox.left, bbox.y) or _touches_vertical(bbox.right, bbox.y):
+                continue
+            area = Rectangle(bbox.left - 1, bbox.bottom - self._spacing["y_em"], bbox.right + 1, bbox.bottom)
+            # The overline may end on a trailing space
+            chars = [c for c in self.chars_in_area(area) if c.unicode not in {0xA, 0xD}]
+            glyphs = [c for c in chars if c.unicode != 0x20]
+            if not glyphs:
+                continue
+            # The overline sits right above the glyphs, a rule above text has a larger gap
+            if bbox.bottom - max(c.bbox.top for c in glyphs) > 0.25 * max(c.bbox.height for c in glyphs):
+                continue
+            if any(abs(c.bbox.left - bbox.left) < 1 for c in chars) and any(
+                abs(c.bbox.right - bbox.right) < 1 for c in chars
+            ):
+                overlines.append(bbox)
+        return overlines
+
+    def _is_overlined(self, char) -> bool:
+        mx = char.bbox.midpoint.x
+        return any(
+            o.left < mx < o.right and 0 <= o.bottom - char.bbox.top < self._spacing["y_em"] / 2 for o in self._overlines
+        )
+
     def _char_properties(self, line, char):
         cp = {
             "superscript": False,
@@ -100,6 +137,7 @@ class Page(PdfPage):
             "bold": any(frag in char.font for frag in {"Bold"}),
             "italic": any(frag in char.font for frag in {"Italic", "Oblique"}),
             "link": self._link_target(char),
+            "overline": self._is_overlined(char),
             "size": round(line.height),
             "relsize": self._line_size(line),
             "char": chr(char.unicode),

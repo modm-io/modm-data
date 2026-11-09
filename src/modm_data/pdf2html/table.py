@@ -22,6 +22,26 @@ class Table:
         self._type = "table"
         self._bit_headers = None
 
+        if not is_register:
+            # Overlines of negated values are horizontal lines inside a cell that end on the glyphs below them.
+            # A cell border ends at a vertical line, or on nothing when the table is missing a border.
+            def _touches(x, y):
+                if abs(x - bbox.left) < 1 or abs(x - bbox.right) < 1:
+                    return True
+                return any(abs(x - v.p0.x) < 1 and v.p0.y - 1 < y < v.p1.y + 1 for v in xlines)
+
+            def _is_overline(line):
+                if _touches(line.p0.x, line.p0.y) or _touches(line.p1.x, line.p0.y):
+                    return False
+                return any(
+                    abs(o.left - line.p0.x) < 1
+                    and abs(o.right - line.p1.x) < 1
+                    and o.bottom - 1 < line.p0.y < o.top + 1
+                    for o in page._overlines
+                )
+
+            ylines = [line for line in ylines if not _is_overline(line)]
+
         # Coalesce the vertical lines to detect the grid
         def _cluster(lines, key):
             atol = min(self._spacing["y_em"], self._spacing["x_em"]) / 4
