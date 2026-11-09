@@ -86,7 +86,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          for check in tables toc figures; do
+          for check in tables links toc figures; do
             python3 test/html_check_${check}.py ext/stmicro/html-archive log/check/${check}
           done
 
