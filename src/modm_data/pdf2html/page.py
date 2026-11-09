@@ -227,6 +227,11 @@ class Page(PdfPage):
             # Ignore all characters we don't want
             if predicate is not None and not predicate(char):
                 continue
+            # A watermark like "Obsolete Product(s)" is faint text written diagonally across the page
+            if 1 < char.rotation % 90 < 89:
+                rgb = [(char.fill >> shift) & 0xFF for shift in (24, 16, 8)]
+                if (char.fill & 0xFF) < 0x80 or min(rgb) > 0xC0:
+                    continue
             cunicode = self._unicode_filter(char.unicode)
             if cunicode is None:
                 continue
