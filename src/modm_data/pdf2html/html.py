@@ -10,7 +10,15 @@ from .ast import normalize_lines, normalize_lists, normalize_paragraphs
 _LOGGER = logging.getLogger(__name__)
 
 
+# The ids written into the current document, a link destination on a line that spans several table cells would
+# otherwise give each cell the same id
+_ids = set()
+
+
 def _format_html_id(xmlnode, anchor):
+    if anchor in _ids:
+        return
+    _ids.add(anchor)
     # Elements with an id get an empty anchor in front of them instead
     if xmlnode.get("id") is None:
         xmlnode.set("id", anchor)
@@ -36,7 +44,8 @@ def _format_html_figure(xmlnode, figurenode):
 
     captionnode = next((c for c in figurenode.children if c.name == "caption"), None)
     if captionnode is not None:
-        tnode.set("id", f"figure{captionnode.number}")
+        # The id follows the caption, a figure drawn as table is still a figure
+        _format_html_id(tnode, f"{captionnode._type}{captionnode.number}")
         caption = etree.Element("caption")
         tnode.append(caption)
         _format_html(caption, captionnode, with_newlines=True)
@@ -67,7 +76,8 @@ def _format_html_table(xmlnode, tablenode):
     # Format the caption
     captionnode = next((c for c in tablenode.children if c.name == "caption"), None)
     if captionnode is not None:
-        tnode.set("id", f"table{captionnode.number}")
+        # The id follows the caption, a table drawn as figure is still a table
+        _format_html_id(tnode, f"{captionnode._type}{captionnode.number}")
         caption = etree.Element("caption")
         tnode.append(caption)
         _format_html(caption, captionnode, with_newlines=True)
@@ -261,7 +271,7 @@ def _format_html(xmlnode, treenode, ignore_formatting=None, with_newlines=False,
     if treenode.name.startswith("head"):
         current = etree.Element(f"h{treenode.name[4]}")
         if treenode.marker:
-            current.set("id", f"section{treenode.marker}")
+            _format_html_id(current, f"section{treenode.marker}")
         xmlnode.append(current)
         ignore_formatting = ignore_formatting | {"bold", "italic", "link"}
 
@@ -330,6 +340,7 @@ def _format_html(xmlnode, treenode, ignore_formatting=None, with_newlines=False,
 
 
 def format_document(document):
+    _ids.clear()
     html = etree.Element("html")
 
     head = etree.Element("head")
