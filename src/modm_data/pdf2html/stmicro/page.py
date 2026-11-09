@@ -343,8 +343,11 @@ class Page(BasePage):
         return _TOC_PAGE.fullmatch(self.top.strip()) is not None
 
     def _link_target(self, char) -> str | None:
-        if char.objlink is not None and (target := self.pdf.link_target(char.objlink)):
-            return target
+        if char.objlink is not None:
+            # Cells of tables merged across pages keep the characters of their own page
+            text = char._page._link_texts.get(id(char.objlink), "")
+            if target := self.pdf.link_target(char.objlink, text):
+                return target
         return None if char.weblink is None else char.weblink.url
 
     def anchor_at(self, xpos: float | None, ypos: float | None) -> str:
@@ -363,24 +366,54 @@ class Page(BasePage):
             ypos = None if xpos is None else self.height - xpos
         if ypos is None:
             return (f"page{self.number}", None)
-        x_em, y_em = self._spacing["x_em"], self._spacing["y_em"]
+        y_em = self._spacing["y_em"]
         # The destination is usually at the top of the line, sometimes a little above or below
         lines = [line for line in self._content_lines if abs(line.bbox.top - ypos) <= 2 * y_em]
         lines.sort(key=lambda line: abs(line.bbox.top - ypos))
         for line in lines:
-            content, bold = line.content, "Bold" in line.chars[0].font
-            linesize = self._line_size(line)
-            # The same heading and caption detection as in ast_in_area
-            if linesize.startswith("h1") or (
-                linesize.startswith("h") and line.bbox.left < (self._spacing["x_content"] + 2 * x_em) and bold
-            ):
-                if (match := re.match(r"^ *(\d+(\.\d+)?(\.\d+)?) *", content)) is not None:
-                    return (f"section{match.group(1)}", None)
-            elif bold and (match := re.match(r" *([Tt]able|[Ff]igure) ?(\d+)\.? ?", content)) is not None:
-                return (f"{match.group(1).lower()}{match.group(2)}", None)
+            if (anchor := self._line_id(line)) is not None:
+                return (anchor, None)
         if lines:
             return (f"page{self.number}-{round(lines[0].bbox.top)}", lines[0])
         return (f"page{self.number}", None)
+
+    def _line_id(self, line: CharLine) -> str | None:
+        """The id of a heading, table or figure starting with this line."""
+        content, bold = line.content, "Bold" in line.chars[0].font
+        linesize = self._line_size(line)
+        # The same heading and caption detection as in ast_in_area
+        if linesize.startswith("h1") or (
+            linesize.startswith("h")
+            and line.bbox.left < (self._spacing["x_content"] + 2 * self._spacing["x_em"])
+            and bold
+        ):
+            if (match := re.match(r"^ *(\d+(\.\d+)?(\.\d+)?) *", content)) is not None:
+                return f"section{match.group(1)}"
+        elif bold and (match := re.match(r" *([Tt]able|[Ff]igure) ?(\d+)\.? ?", content)) is not None:
+            return f"{match.group(1).lower()}{match.group(2)}"
+        return None
+
+    @cached_property
+    def named_ids(self) -> set[str]:
+        """The ids of all headings, tables and figures starting on this page."""
+        return {anchor for line in self._content_lines if (anchor := self._line_id(line)) is not None}
+
+    @cached_property
+    def _link_texts(self) -> dict[int, str]:
+        """The text of each link on this page."""
+        self._link_characters()
+        texts = defaultdict(str)
+        for char in self.chars:
+            if char.objlink is not None:
+                texts[id(char.objlink)] += chr(char.unicode)
+        texts = {key: " ".join(text.split()) for key, text in texts.items()}
+        # The lists of tables and figures only link the title and page, the number is in front of it on the line
+        for link in self.objlinks:
+            if not re.match(r"(Section|Table|Figure)\s+\d", texts.get(id(link), "")):
+                line = Rectangle(0, link.bbox.bottom, self.width, link.bbox.top)
+                if match := re.match(r" *((?:Table|Figure)\s+\d+)\.\s", self.text_in_area(line)):
+                    texts[id(link)] = match.group(1)
+        return texts
 
     @cached_property
     def _content_lines(self) -> list[CharLine]:

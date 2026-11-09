@@ -59,6 +59,8 @@ class Document(PdfDocument):
         self._path = path
         self._normalize = _normalize_document
         self._anchors = {}
+        # The ids of the headings, tables and figures on each page
+        self._named = {}
 
     @cached_property
     def chapters(self) -> list[tuple[int, int, str]]:
@@ -92,21 +94,26 @@ class Document(PdfDocument):
             pp.raw.FPDF_ClosePage(page)
         return destinations
 
-    def _page_anchors(self, index: int) -> dict[tuple, str]:
-        """The ids of all link destinations on one page, which is loaded only once for them."""
+    def _page_anchors(self, index: int) -> tuple[dict[tuple, str], set[str]]:
+        """
+        The ids of all link destinations on one page and of all its headings,
+        tables and figures. The page is loaded only once for them.
+        """
         page = self.page(index)
-        return {location: page.anchor_at(*location) for location in self.destinations.get(index, ())}
+        return {location: page.anchor_at(*location) for location in self.destinations.get(index, ())}, page.named_ids
+
+    def _add_page_anchors(self, index: int, anchors: dict, named: set):
+        self._anchors.update(((index, location), anchor) for location, anchor in anchors.items())
+        self._named[index] = set(named)
 
     def resolve_anchors(self, processes: int = None):
         """Resolves the ids of all link destinations in parallel, each page is loaded only once."""
-        indices = [
-            index
-            for index in self.destinations
-            if not all((index, d) in self._anchors for d in self.destinations[index])
-        ]
+        # A caption may start on the page after the destination
+        pages = {i for index in self.destinations for i in (index, index + 1) if i < self.page_count}
+        indices = sorted(index for index in pages if index not in self._named)
         with multiprocessing.Pool(processes, _init_worker, (self._path, self.destinations)) as pool:
-            for index, anchors in pool.imap_unordered(_resolve_page, indices, chunksize=4):
-                self._anchors.update(((index, location), anchor) for location, anchor in anchors.items())
+            for index, anchors, named in pool.imap_unordered(_resolve_page, indices, chunksize=4):
+                self._add_page_anchors(index, anchors, named)
 
     def save_destinations(self, path: Path):
         """
@@ -118,17 +125,25 @@ class Document(PdfDocument):
             index: [[*location, self._anchors[(index, location)]] for location in sorted(dests, key=str)]
             for index, dests in self.destinations.items()
         }
-        Path(path).write_text(json.dumps(destinations))
+        named = {index: sorted(ids) for index, ids in self._named.items()}
+        Path(path).write_text(json.dumps({"destinations": destinations, "named": named}))
 
     def load_destinations(self, path: Path):
         """Loads the link destinations and their ids saved by `save_destinations()`."""
-        destinations = json.loads(Path(path).read_text())
+        data = json.loads(Path(path).read_text())
+        destinations = data["destinations"]
+        self._named.update((int(index), set(ids)) for index, ids in data["named"].items())
         self.destinations = {int(index): {(x, y) for x, y, _ in dests} for index, dests in destinations.items()}
         self._anchors.update(
             ((int(index), (x, y)), anchor) for index, dests in destinations.items() for x, y, anchor in dests
         )
 
-    def link_target(self, link) -> str | None:
+    def _named_ids(self, index: int) -> set[str]:
+        if index not in self._named:
+            self._add_page_anchors(index, *self._page_anchors(index))
+        return self._named[index]
+
+    def link_target(self, link, text: str = "") -> str | None:
         """
         The URL of an external link, or the chapter file of the HTML archive
         and the id of the heading, table or figure at the link destination.
@@ -140,7 +155,15 @@ class Document(PdfDocument):
         key = (link.page_index, link.location)
         if key not in self._anchors:
             # All destinations of the page at once, so that the page is loaded only once
-            self._anchors.update(((link.page_index, d), a) for d, a in self._page_anchors(link.page_index).items())
+            self._add_page_anchors(link.page_index, *self._page_anchors(link.page_index))
+        # A link named after a table, figure or section goes to it, if it is on the destination page or the next.
+        # The destination position alone often lands on the heading above a caption or between both.
+        if match := re.match(r"(Section|Table|Figure)\s+(\d+(?:\.\d+)*)\b", text):
+            named = f"{match.group(1).lower()}{match.group(2)}"
+            for index in (link.page_index, link.page_index + 1):
+                if index < self.page_count and named in self._named_ids(index):
+                    filename = next((f for p0, p1, f in self.chapters if p0 <= index < p1), "")
+                    return f"{filename}#{named}"
         if (anchor := self._anchors.get(key)) is None:
             anchor = self._anchors[key] = self.page(link.page_index).anchor_at(*link.location)
         return f"{filename}#{anchor}"
@@ -162,5 +185,5 @@ def _init_worker(path, destinations):
     _worker_document.destinations = destinations
 
 
-def _resolve_page(index: int) -> tuple[int, dict]:
-    return index, _worker_document._page_anchors(index)
+def _resolve_page(index: int) -> tuple[int, dict, set]:
+    return index, *_worker_document._page_anchors(index)
