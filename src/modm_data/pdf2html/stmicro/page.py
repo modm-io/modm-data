@@ -617,6 +617,9 @@ class Page(BasePage):
                             yhlines.append(line)
 
                     elif self._template == "black_white":
+                        # Cell borders are lines and rectangles, glyph outlines of a watermark are not
+                        if path.count > 6:
+                            continue
                         bbox = path.bbox
                         is_vertical = bbox.width < bbox.height
                         width = bbox.width if is_vertical else bbox.height
