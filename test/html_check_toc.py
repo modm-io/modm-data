@@ -21,10 +21,10 @@ page. Counts per document, `<list>` is `contents`, `tables` or `figures`:
 - `contents_order`: a section number smaller than the previous one.
 - `<list>_gap`: a table or figure number missing in the list.
 - `heading_not_in_contents`: a numbered heading that no contents entry links
-  to, mostly a heading pdf2html detected that is no heading.
+  to, mostly a heading pdf2html detected that is no heading. Only documents
+  with contents count it, and only up to the deepest level the contents list.
 
-Documents without contents only count `heading_not_in_contents` when they have
-contents. See `html_check.py` for the output.
+See `html_check.py` for the output.
 
     python3 test/html_check_toc.py ext/stmicro/html-archive log/check/toc
 """
@@ -43,7 +43,7 @@ def similar(a: str, b: str) -> bool:
 def check(document) -> tuple[dict, dict]:
     problems = Problems()
     index = Index(document, problems)
-    linked_headings = set()
+    linked_headings, depth = set(), 0
 
     for name, tree in index.trees.items():
         for table in (t for t in tree.iter("table") if t.get("class") == "toc"):
@@ -78,6 +78,7 @@ def check(document) -> tuple[dict, dict]:
                 target, _, anchor = link.get("href").partition("#")
                 if kind == "contents":
                     linked_headings.add((target, anchor))
+                    depth = max(depth, anchor.count(".") + 1)
                     if (heading := index.headings.get((target, anchor))) is None:
                         problems(f"{kind}_target", f"{number} {title[:40]!r} -> {anchor}")
                     elif not similar(heading, f"{number} {title}"):
@@ -94,7 +95,8 @@ def check(document) -> tuple[dict, dict]:
 
     if linked_headings:
         for (name, anchor), heading in index.headings.items():
-            if (name, anchor) not in linked_headings:
+            # The contents only list a few levels, deeper headings are never in them
+            if (name, anchor) not in linked_headings and anchor.count(".") + 1 <= depth:
                 problems("heading_not_in_contents", f"{name}#{anchor} {heading[:50]!r}")
     return problems.result()
 
