@@ -239,6 +239,9 @@ def normalize_registers(document: Node) -> Node:
     for bits in bits_list:
         cells = []
         for ypos, bit in enumerate(bits.children):
+            # The pages starting in a bit description now start at the table
+            for page in anytree.search.findall(bit, filter_=lambda n: n.name == "page"):
+                page.parent = bits
             bit.parent = None
             # The top is the first line, the bottom by the last line
             top = next(c.obj.bbox.top for c in bit.descendants if c.name == "line")
