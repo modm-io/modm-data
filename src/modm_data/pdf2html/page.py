@@ -155,6 +155,9 @@ class Page(PdfPage):
             "subscript": False,
             "bold": any(frag in char.font for frag in {"Bold"}),
             "italic": any(frag in char.font for frag in {"Italic", "Oblique"}),
+            # Code is set in a monospaced font like Courier, the text never is. Not by the fixed pitch flag of the
+            # font, which some PDFs also set for Arial, Times New Roman and symbol fonts
+            "code": any(frag in char.font.lower() for frag in ("courier", "mono", "consol")),
             "link": self._link_target(char),
             "overline": self._is_overlined(char),
             "size": round(line.height),
