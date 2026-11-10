@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import re
+from html import unescape
 import logging
 from pathlib import Path
 from lxml import etree
@@ -385,6 +386,8 @@ def resolve_link_fallbacks(paths: list[Path]):
     def _resolve(match):
         href, fallback = match.group(1), match.group(2)
         name, _, anchor = href.partition("#")
+        # File names with other than ASCII characters are written as character references
+        name = unescape(name)
         if name in ids and anchor not in ids[name]:
             href = fallback
         return f'<a href="{href}"'

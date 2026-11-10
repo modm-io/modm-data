@@ -235,7 +235,9 @@ def resolve_deferred_links(doc: "Document", paths: list[Path], collected: list[P
             named[int(index)] = set(data["named"])
 
     def _file(index):
-        return next((f for p0, p1, f in doc.chapters if p0 <= index < p1), "")
+        # The HTML has no charset, so its file names are character references like the ones lxml writes
+        name = next((f for p0, p1, f in doc.chapters if p0 <= index < p1), "")
+        return name.encode("ascii", "xmlcharrefreplace").decode()
 
     def _value(text):
         return None if text == "None" else float(text)
