@@ -42,7 +42,6 @@ def _format_html_page(xmlnode, pagenode):
 
 def _format_html_figure(xmlnode, figurenode):
     tnode = etree.Element("table")
-    tnode.set("width", f"{int(figurenode._width * 50)}%")
     xmlnode.append(tnode)
 
     captionnode = next((c for c in figurenode.children if c.name == "caption"), None)

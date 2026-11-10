@@ -225,7 +225,7 @@ def normalize_registers(document: Node) -> Node:
             if child.name == "bit":
                 # Insert a new bits group node and redirect all children to it
                 if bits is None or bits._page != child._page:
-                    bits = Node("table", xpos=child.xpos, obj=None, _type="bits", _width=1, _page=child._page)
+                    bits = Node("table", xpos=child.xpos, obj=None, _type="bits", _page=child._page)
                     new_children.append(bits)
                     bits_list.append(bits)
                 child.parent = bits

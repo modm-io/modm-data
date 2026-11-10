@@ -836,7 +836,6 @@ class Page(BasePage):
                     obj=obj,
                     xpos=xpos,
                     number=-1,
-                    _width=obj.bbox.width / area.width,
                     _type=obj._type,
                 )
                 ypos = obj.bbox.bottom
