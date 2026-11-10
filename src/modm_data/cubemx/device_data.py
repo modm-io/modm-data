@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 import os
+from pathlib import Path
 import re
 import logging
 from functools import cache
@@ -20,6 +21,7 @@ from ..cubehal.remaps import read_afio_remap_macros
 from . import peripherals
 from .dma_remap import dma_remaps
 from .memories import memories as device_memories
+from ..cubeprog import flash_layouts
 from ..header2svd.stmicro import Header
 
 LOGGER = logging.getLogger(__file__)
@@ -231,6 +233,24 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         if "gfx" not in m.get("name", m.get("id")).lower()
     }
     p["memories"] = device_memories(did, memories, stm_header, p["die"])
+
+    # The flash organization, checked against the flash algorithms of the main flash.
+    # The DFP size is wrong for some devices (2x 245759 bytes for the STM32G473xEZ),
+    # the CubeMX size for others (4096 KB for the STM32H5E4/F4 with 3 MB).
+    flash = [m for m in p["memories"] if m["name"].startswith("flash") and not m["name"].endswith("_s")]
+    flash = [m for m in flash if not m.get("alias")] or flash
+    if flash:
+        start = min(m["start"] for m in flash)
+        size = sum(m["size"] for m in flash)
+        if size % 1024 and (sizes := device_file.query("//Flash/text()")):
+            size = max(int(s) for s in sizes) * 1024
+        algorithms = [
+            Path(_EXT_PATH, dfp_folder, a.get("name"))
+            for a in dfp_findall("algorithm")
+            if int(a.get("start"), 0) == start and a.get("name", "").upper().endswith(".FLM")
+        ]
+        regions = tuple(sorted((m["start"], m["size"]) for m in flash))
+        p["flash_layouts"] = flash_layouts(p["die"], size, tuple(a for a in algorithms if a.exists()), regions)
 
     # packaging
     package = device_file.query("//@Package")[0]
