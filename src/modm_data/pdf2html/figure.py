@@ -3,6 +3,7 @@
 
 import math
 import ctypes
+import pypdfium2 as pp
 from lxml import etree
 from ..utils import Rectangle, Point
 from ..pdf import Path, Image
@@ -70,13 +71,71 @@ class Figure:
                 node.set("stroke-linejoin", path.join.name.lower())
         return node
 
+    def _svg_slanted_texts(self, chars):
+        """Text at an angle that is no multiple of 90°, like the labels along a 45° line"""
+        # The lines of characters drop the spaces, every character on a slanted line is a line of its own
+        spaces = [c for c in self._page.chars_in_area(self.bbox) if 1 < c.rotation % 90 < 89 and c.unicode == 0x20]
+        chars = list({(c._index, c.unicode): c for c in chars + spaces}.values())
+        runs = []
+        for char in chars:
+            m = pp.raw.FS_MATRIX()
+            pp.raw.FPDFText_GetMatrix(char._text, char._index, m)
+            scale = math.hypot(m.a, m.b)
+            # The font size is split between the text matrix and the font
+            size = math.sqrt(abs(m.a * m.d - m.b * m.c)) * char.size
+            if not scale or not size:
+                continue
+            ux, uy = m.a / scale, m.b / scale
+            along = char.origin.x * ux + char.origin.y * uy
+            normal = char.origin.y * ux - char.origin.x * uy
+            runs.append((char.font, round(math.degrees(math.atan2(uy, ux))), normal, along, size, char))
+        # Characters on the same baseline are one line, split into texts at gaps
+        groups = []
+        runs.sort(key=lambda r: (r[0], r[1], r[2]))
+        lines = []
+        for run in runs:
+            last = lines[-1][-1] if lines else None
+            if last and last[:2] == run[:2] and run[2] - last[2] < 0.2 * run[4]:
+                lines[-1].append(run)
+            else:
+                lines.append([run])
+        for line in lines:
+            line.sort(key=lambda r: r[3])
+            for font, angle, _, along, size, char in line:
+                if groups and groups[-1]["line"] is line and along - groups[-1]["along"] < 1.5 * size:
+                    groups[-1]["chars"].append(char)
+                else:
+                    groups.append({"line": line, "key": (font, angle), "chars": [char], "size": size})
+                groups[-1]["along"] = along
+        for group in groups:
+            (font, angle), chars = group["key"], group["chars"]
+            text = "".join(c.char for c in chars)
+            if not text.strip():
+                continue
+            node = etree.Element("text")
+            node.text = text.strip()
+            node.set("font-size", _n(group["size"]))
+            if "Bold" in font:
+                node.set("font-weight", "bold")
+            if "Italic" in font or "Oblique" in font:
+                node.set("font-style", "italic")
+            first = next(c for c in chars if c.char.strip())
+            if first.fill != 0xFF:
+                _color(node, "fill", first.fill)
+            node.set("transform", f"translate({self._xy(first.origin)}) rotate({-angle})")
+            yield node
+
     def _svg_texts(self):
+        slanted = []
         for line in self._page.charlines_in_area(self.bbox):
             horizontal = not line.rotation
             # Split the line into runs of the same font, size and baseline, and
             # at gaps, since labels in figures are unrelated to each other
             runs, last = [], None
             for char in line.chars:
+                if 1 < char.rotation % 90 < 89:
+                    slanted.append(char)
+                    continue
                 if horizontal:
                     baseline, start, stop = char.origin.y, char.bbox.left, char.bbox.right
                 elif line.rotation == 90:
@@ -121,6 +180,7 @@ class Figure:
                 if len(chars) > 1 and length > 0:
                     node.set("textLength", _n(abs(length)))
                 yield node
+        yield from self._svg_slanted_texts(slanted)
 
     def _in_bbox(self, objects: list) -> list:
         box = self.bbox
