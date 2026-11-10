@@ -179,6 +179,11 @@ class Figure:
                 # Keeps the layout intact when rendered with another font
                 if len(chars) > 1 and length > 0:
                     node.set("textLength", _n(abs(length)))
+                    # Condensed text squeezes the glyphs, not only the space between them, otherwise they overlap
+                    m = pp.raw.FS_MATRIX()
+                    pp.raw.FPDFText_GetMatrix(chars[0]._text, chars[0]._index, m)
+                    if math.hypot(m.a, m.b) < 0.9 * math.hypot(m.c, m.d):
+                        node.set("lengthAdjust", "spacingAndGlyphs")
                 yield node
         yield from self._svg_slanted_texts(slanted)
 
