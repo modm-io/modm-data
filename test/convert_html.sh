@@ -38,8 +38,8 @@ python3 -m modm_data.pdf2html.stmicro --html --page 893 \
 python3 -m modm_data.pdf2html.stmicro --html --range 773:773 \
 	--document ext/test/regression/stmicro/RM0360-v4.pdf --output test/data/html/stmicro/RM0360-v4.html &
 
-# Heading 4 does not get recognized
-python3 -m modm_data.pdf2html.stmicro --html --range 180:180 \
+# Heading 4 does not get recognized, code blocks with lines positioned instead of indented
+python3 -m modm_data.pdf2html.stmicro --html --range 180:180 --page 974 \
 	--document ext/test/regression/stmicro/RM0367-v8.pdf --output test/data/html/stmicro/RM0367-v8.html &
 
 # Broken table header line, with partial boldness, double header line

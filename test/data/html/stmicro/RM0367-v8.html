@@ -23,5 +23,45 @@
     <p>The internal 48MHz RC oscillator is mainly dedicated to provide a high precision clock to the <br/>USB peripheral by means of a special Clock Recovery System (CRS) circuitry. The CRS <br/>can use the USB SOF signal, the LSE or an external signal to automatically and quickly <br/>adjust the oscillator frequency on-fly. It is disabled as soon as the system enters Stop or <br/>Standby mode. When the CRS is not used, the HSI48 RC oscillator runs on its default <br/>frequency which is subject to manufacturing process variations.</p>
     <p>For more details on how to configure and use the CRS peripheral please refer to <i><a href="chapter_8_clock_recovery_system_crs.html#section8">Section 8:</a></i> <a href="chapter_8_clock_recovery_system_crs.html#section8"><br/><i>Clock recovery system (CRS)</i></a><i>.</i></p>
     <p>The HSI48 requires VREFINT and its buffer with 48 MHz RC to be enabled (see</p>
+    <pre>{
+  /* For robust implementation, add here time-out management */
+}
+if ((FLASH-&gt;PECR &amp; FLASH_PECR_PELOCK) == 0) /* (2) */
+{
+  if ((FLASH-&gt;PECR &amp; FLASH_PECR_PRGLOCK) != 0) /* (3) */
+  {
+    FLASH-&gt;PRGKEYR = FLASH_PRGKEY1; /* (4) */
+    FLASH-&gt;PRGKEYR = FLASH_PRGKEY2;
+  }
+}</pre>
+    <h4 id="page974-586">A.3.4 Unlocking the option bytes area code example</h4>
+    <pre>/* (1) Wait till no operation is on going */
+/* (2) Check that the PELOCK is unlocked */
+/* (3) Check if the OPTLOCK is unlocked */
+/* (4) Perform unlock sequence */
+while ((FLASH-&gt;SR &amp; FLASH_SR_BSY) != 0) /* (1) */
+{
+  /* For robust implementation, add here time-out management */
+}
+if ((FLASH-&gt;PECR &amp; FLASH_PECR_PELOCK) == 0) /* (2) */
+{
+  if ((FLASH-&gt;PECR &amp; FLASH_PECR_OPTLOCK) != 0) /* (2) */
+  {
+    FLASH-&gt;OPTKEYR = FLASH_OPTKEY1; /* (3) */
+    FLASH-&gt;OPTKEYR = FLASH_OPTKEY2;
+  }
+}</pre>
+    <h4 id="page974-330">A.3.5 Write to data EEPROM code example</h4>
+    <pre>*(uint8_t *)(DATA_E2_ADDR+i) = DATA_BYTE;
+*(uint16_t *)(DATA_E2_ADDR+j) = DATA_16B_WORD;
+*(uint32_t *)(DATA_E2_ADDR) = DATA_32B_WORD;</pre>
+    <p>DATA_E2_ADDR is an aligned address in the data EEPROM area.</p>
+    <p>i can be any integer.</p>
+    <p>j must be an even integer.</p>
+    <h4 id="page974-202">A.3.6 Erase to data EEPROM code example</h4>
+    <pre>/* (1) Set the ERASE and DATA bits in the FLASH_PECR register
+       to enable page erasing */
+/* (2) Write a 32-bit word value at the desired address
+       to start the erase sequence */</pre>
   </body>
 </html>
