@@ -122,6 +122,14 @@ _CALIBRI = [
     917,
 ]
 _TABLES = {"Calibri": {glyph: 0x20 + ii for ii, glyph in enumerate(_CALIBRI)}}
+# The glyphs after ASCII of Microsoft TrueType fonts, in the standard Macintosh glyph order without the
+# non-breaking space and the Apple logo, starting at glyph index 98
+_MICROSOFT = (
+    "ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß"
+    "®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»…ÀÃÕŒœ–"
+    "—“”‘’÷◊ÿŸ⁄¤‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘"
+    "˙˚¸˝˛ˇŁłŠšŽž¦ÐðÝýÞþ−×¹²³½¼¾₣ĞğİŞşĆćČčđ"
+)
 _FONTS = (b"Helvetica", b"Helvetica-Oblique", b"Times-Roman", b"Times-Italic", b"Courier")
 
 
@@ -132,6 +140,11 @@ def _image(bitmap, left, top, right, bottom) -> list[float] | None:
     y0, y1 = max(int(top) - 1, 0), math.ceil(bottom) + 1
     rows = [[255 - v for v in pixels[y * stride + x0 : y * stride + x1]] for y in range(y0, y1)]
     rows = [row for row in rows if row]
+    # Light colored text has less ink, so the ink is relative to the darkest pixel
+    ink = max((max(row) for row in rows), default=0)
+    if ink < 16:
+        return None
+    rows = [[v * 255 // ink for v in row] for row in rows]
     ys = [y for y, row in enumerate(rows) if max(row) > 64]
     xs = [x for x in range(len(rows[0]) if rows else 0) if any(row[x] > 64 for row in rows)]
     if not xs or not ys:
@@ -214,6 +227,23 @@ def _font(textpage, index) -> str:
     return font.value.decode("utf-8", errors="replace")
 
 
+def _by_offset(offset: int | None, code: int) -> int | None:
+    # Only the ASCII glyphs are in the order of the character codes, Microsoft fonts continue in the standard
+    # Macintosh glyph order
+    if offset is None:
+        return None
+    if 0x20 <= code + offset < 0x7F:
+        return code + offset
+    if offset == 29 and 0 <= code - 98 < len(_MICROSOFT):
+        return ord(_MICROSOFT[code - 98])
+    return None
+
+
+def _inkless(textpage, index) -> bool:
+    left, bottom, right, top = textpage.get_charbox(index)
+    return right - left < 0.01 or top - bottom < 0.01
+
+
 def decode_glyphs(page: "modm_data.pdf.page.Page") -> dict[tuple[str, int], int]:  # noqa: F821
     """
     :return: The unicode values of all characters of the page without unicode
@@ -246,13 +276,19 @@ def decode_glyphs(page: "modm_data.pdf.page.Page") -> dict[tuple[str, int], int]
             elif votes and (vote := max((votes[o], o) for o in _OFFSETS))[0] >= max(2, 0.5 * votes.total()):
                 # Similar looking glyphs of other fonts often miss the exact glyph
                 offsets[font] = vote[1]
+        if font not in offsets and not table:
+            # Without glyphs to compare, like on rotated pages or for rotated text, the glyph index of the space
+            # tells the glyph order, since it is the only glyph without ink
+            spaces = {code for code, index in indices.items() if _inkless(textpage, index)}
+            if len(spaces) == 1 and (offset := 0x20 - spaces.pop()) in _OFFSETS:
+                offsets[font] = offset
         for code, index in indices.items():
-            left, bottom, right, top = textpage.get_charbox(index)
-            if right - left < 0.01 or top - bottom < 0.01:
+            if _inkless(textpage, index):
                 # Glyphs without ink are spaces
                 unicodes[font, code] = 0x20
-            elif font in offsets and code + offsets[font] >= 0x20:
-                unicodes[font, code] = code + offsets[font]
+            elif font in offsets:
+                # The references are only ASCII, other glyphs would match a lookalike, like "µ" a "p"
+                unicodes[font, code] = _by_offset(offsets[font], code) or 0xFFFD
             elif code in matches:
                 unicodes[font, code] = ord(matches[code])
     return unicodes
