@@ -1,15 +1,53 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
+import os
+import time
 import tqdm
+import fcntl
 import logging
 import argparse
+import tempfile
 import subprocess
+from contextlib import contextmanager
 from pathlib import Path
 from multiprocessing.pool import ThreadPool
 
 from .. import convert, patch, resolve_link_fallbacks
 from .document import resolve_deferred_links
+
+
+@contextmanager
+def _chapter_slot(jobs: int):
+    """
+    Waits for one of `jobs` slots shared by all documents converted at once, so
+    that a fixed number of chapters are converted while the documents start
+    and finish at different times. Each slot is a lock file that the OS
+    releases when its process ends.
+    """
+    folder = Path(tempfile.gettempdir()) / "modm-data-pdf2html-jobs"
+    folder.mkdir(exist_ok=True)
+    while True:
+        for slot in range(jobs):
+            file = (folder / str(slot)).open("w")
+            try:
+                fcntl.flock(file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                file.close()
+                continue
+            try:
+                yield
+            finally:
+                file.close()
+            return
+        time.sleep(0.2)
+
+
+def _run(call: str, jobs: int):
+    if not jobs:
+        return subprocess.run(call, shell=True)
+    with _chapter_slot(jobs):
+        return subprocess.run(call, shell=True)
 
 
 def main():
@@ -25,6 +63,8 @@ def main():
     parser.add_argument("--tree", action="store_true")
     parser.add_argument("--html", action="store_true")
     parser.add_argument("--parallel", action="store_true")
+    # The chapters converted at once by all documents together, without it by each document on its own
+    parser.add_argument("--jobs", type=int, default=int(os.environ.get("PDF2HTML_JOBS", 0)))
     parser.add_argument("--figures", type=Path)
     parser.add_argument("--destinations", type=Path)
     parser.add_argument("--chapters", action="store_true")
@@ -76,8 +116,8 @@ def main():
                 )
                 calls.append(call + f" >> {log} 2>&1")
                 print(call, file=logfile)
-        with ThreadPool() as pool:
-            retvals = list(tqdm.tqdm(pool.imap(lambda c: subprocess.run(c, shell=True), calls), total=len(calls)))
+        with ThreadPool(args.jobs or None) as pool:
+            retvals = list(tqdm.tqdm(pool.imap(lambda c: _run(c, args.jobs), calls), total=len(calls)))
         for retval, call in zip(retvals, calls):
             if retval.returncode != 0:
                 print(call)
