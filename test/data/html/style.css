@@ -1,50 +1,146 @@
+/* Layout of the ST PDF documents: Arial, section numbers in the left margin, body text indented */
+:root {
+  --indent: 7rem;
+  --fg: #000;
+  --bg: #fff;
+  --line: #000;
+  --muted: #999;
+  --link: #1a4fd8;
+}
 @media (prefers-color-scheme: dark) {
-  body {
-    background-color: #1B1B1B;
-    color: #E7E8EB;
+  :root {
+    --fg: #e7e8eb;
+    --bg: #1b1b1b;
+    --line: #8a8a8a;
+    --muted: #777;
+    --link: #8ab4ff;
   }
 }
-ol ol { list-style-type: lower-alpha; }
-ul ol { list-style-type: lower-alpha; }
+/* The text keeps the line breaks of the PDF, so the column is as wide as the PDF text column, otherwise the
+   centered tables and figures sit right of the text */
+body {
+  font: 10pt/1.25 Arial, Helvetica, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  max-width: 44em;
+  margin: 2em auto;
+  padding: 0 1.5em 0 calc(var(--indent) + 1.5em);
+}
+a:link, a:visited { color: var(--link); font-style: italic; }
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 1.4em 0 0.6em calc(-1 * var(--indent));
+  font-weight: bold;
+  line-height: 1.2;
+}
+h1, h2 { font-size: 18pt; }
+h3 { font-size: 14pt; }
+h4 { font-size: 12pt; }
+h5, h6 { font-size: 10pt; }
+
+p { margin: 0 0 0.5em; }
+/* Negated signals, HTML has no overline element */
+.ov { text-decoration: overline; }
+ul, ol { margin: 0 0 0.5em; padding-left: 1.8em; }
+li { margin: 0.15em 0; padding-left: 0.4em; }
+ul ul { list-style-type: "\2013"; }
+ol ol, ul ol { list-style-type: lower-alpha; }
+
+/* Notes are already italic in the markup, "Caution:" starts in the margin like in the PDF */
+.nt { margin: 0.5em 0; }
+.nt p:last-child { margin-bottom: 0; }
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  margin: 0.8em auto 1em;
+  font-size: 9pt;
+}
+/* Centered on the text column even when wider than it, like in the PDF, instead of overflowing to the right only */
+body > table:not(.bt, .rt, .toc, :has(.tv)) {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-left: 0;
+  margin-right: 0;
+}
+caption {
+  font-weight: bold;
+  font-size: 10pt;
+  padding-bottom: 0.3em;
+}
 td, th {
-  border: 1px solid;
+  border: 1px solid var(--line);
   text-align: center;
-  vertical-align: center;
-  padding: 5px;
+  vertical-align: middle;
+  padding: 2px 5px;
 }
-.rt tr:first-child td {
-  border: none;
-  white-space: nowrap;
-}
-.bt { margin-left: 10em; }
-.bt td {
-  border: none;
-  text-align: left;
-  vertical-align: top;
-}
-.bt td:first-child { white-space: nowrap; }
-.thb { border-bottom: 3px solid; }
+th { font-weight: bold; }
+td p, th p { margin: 0; }
 .tl { text-align: left; }
+.thb { border-bottom: 2px solid var(--line); }
+/* Register maps have rotated headers and many columns, they use the whole page width */
+table:has(.tv) { font-size: 7pt; margin-left: calc(-1 * var(--indent)); }
+table:has(.tv) td, table:has(.tv) th { padding: 1px 2px; }
 .tv {
   writing-mode: vertical-rl;
   white-space: nowrap;
   transform: rotate(180deg);
   min-width: 1em;
 }
-table {
-  border-collapse: collapse;
-  margin: 1em;
-  margin-left: 3em;
+
+/* Register layouts span the page: bit numbers without frame, small access row */
+.rt {
+  width: calc(100% + var(--indent));
+  margin-left: calc(-1 * var(--indent));
+  table-layout: fixed;
+  font-size: 7pt;
 }
-.nt {
-  border: 1px solid;
-  border-radius: 10px;
-  padding: 5px;
+.rt td { padding: 1px; overflow-wrap: anywhere; }
+.rt tr:nth-child(3n+1) td { border: none; font-size: 7.5pt; padding-top: 0.6em; }
+.rt tr:first-child td { padding-top: 0; }
+
+/* Bit descriptions: "Bit 23" right-aligned in the margin, description at the text indent */
+.bt {
+  margin: 0.8em 0 1em calc(-1 * var(--indent));
+  font-size: 10pt;
 }
-.nt p:last-child { margin-bottom: 0; }
-body > .nt { display: table; padding-left: 3em; }
-body > .nt p:first-child { text-indent: -2.5em; }
-body > ul { padding-left: 4em; }
-body > ol { padding-left: 4em; }
-body > p { padding-left: 3em; }
-p { margin-top: 0; }
+.bt td {
+  border: none;
+  text-align: left;
+  vertical-align: top;
+  padding: 0 0 0.6em;
+}
+.bt td:first-child {
+  white-space: nowrap;
+  text-align: right;
+  min-width: calc(var(--indent) - 0.8em);
+  padding-right: 0.8em;
+}
+.bt td p { margin: 0 0 0.15em; }
+.bt td p:first-child { margin-bottom: 0.1em; }
+/* Values and notes below the field name are indented */
+.bt td.tl > :not(:first-child) { margin-left: 1.1em; }
+
+/* Figures: no frame, white background so black drawings stay visible in dark mode */
+table:has(object, img) td { border: none; padding: 0; }
+/* Figures keep their PDF size in points relative to the text and are at most as wide as the text column; a percentage
+   would shrink them to the caption, since the table takes its width from its content */
+object, td > img { max-width: min(440pt, 100vw - 2rem); height: auto; background: #fff; }
+
+/* Table of contents: number, title, page number */
+.toc { margin: 0.5em 0 0 calc(-1 * var(--indent)); width: calc(100% + var(--indent)); font-size: 10pt; }
+.toc td { border: none; text-align: left; padding: 1px 4px; }
+.toc td:first-child { white-space: nowrap; width: 4em; }
+.toc td:last-child { text-align: right; width: 3em; }
+.toc a:link, .toc a:visited { color: inherit; font-style: normal; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+/* Narrow screens: no margin for the section numbers, wide tables scroll */
+@media (max-width: 48em) {
+  :root { --indent: 0px; }
+  body { padding: 0 1em; margin: 1em auto; }
+  .bt td:first-child { min-width: 0; }
+  table { max-width: 100%; display: block; overflow-x: auto; }
+  body > table:not(.bt, .rt, .toc, :has(.tv)) { left: 0; transform: none; }
+}
