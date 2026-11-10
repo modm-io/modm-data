@@ -183,8 +183,9 @@ class Figure:
 
         svg = etree.Element("svg", xmlns="http://www.w3.org/2000/svg")
         svg.set("viewBox", f"0 0 {_n(self.bbox.width)} {_n(self.bbox.height)}")
-        svg.set("width", _n(self.bbox.width))
-        svg.set("height", _n(self.bbox.height))
+        # In points like the text of the HTML, so that the figures keep their size relative to the text
+        svg.set("width", f"{_n(self.bbox.width)}pt")
+        svg.set("height", f"{_n(self.bbox.height)}pt")
         svg.set("font-family", "Arial, Helvetica, sans-serif")
         svg.extend(nodes)
         return svg
