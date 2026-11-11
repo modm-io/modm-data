@@ -18,6 +18,19 @@ jobs:
           repository: modm-ext/modm-data-test-docs
           path: ext/test/regression
 
+      # This archive is private, so pull requests from forks skip the CubeProg tests
+      - name: Check out STMicro CubeProg Archive
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: actions/checkout@v4
+        with:
+          repository: modm-ext/archive-stmicro-cubeprog
+          path: ext/stmicro/cubeprog
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_CUBEPROG }}
+
+      - name: Check out STMicro STM32F4 DFP
+        run: |
+          make ext/stmicro/STM32F4xx_DFP
+
       - name: Setup Python 3.12
         uses: actions/setup-python@v4
         with:
@@ -25,7 +38,7 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          pip3 install -r tools/requirements.txt .
+          pip3 install -r tools/requirements.txt -e .
 
       - name: Run Regression Tests
         run: |
