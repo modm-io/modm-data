@@ -4,132 +4,32 @@
 """
 Some PDFs embed fonts with an identity encoding and without a unicode mapping,
 so that pdfium only knows the glyph index of a character, which as unicode is
-nonsense. We recover the characters by rendering their glyphs and comparing
-them to the glyphs of a reference font. Since the glyph index is usually the
-character code plus a constant offset, a majority vote over all glyphs of a
-font also corrects the similar looking glyphs, like `l`, `I` and `1`.
+nonsense. The glyph index is the one of the original font, so the reverse of
+its cmap decodes the characters, see `tools/scripts/glyph_tables.py`.
+
+We first find the glyph order of a font by rendering its glyphs and comparing
+them to the ASCII glyphs of a reference font. Since the glyph index of ASCII
+characters is the character code plus a constant offset, a majority vote over
+all glyphs of a font also corrects the similar looking glyphs, like `l`, `I`
+and `1`. The offset then selects the table of the font: Microsoft fonts by
+their name, Adobe fonts by the predefined ISOAdobe charset of CFF.
 """
 
 import re
 import ctypes
+import gzip
+import json
 import math
 from collections import Counter, defaultdict
 from functools import cache
+from pathlib import Path
 import pypdfium2 as pp
 
 _SCALE = 6
 _SIZE = 12
-# The glyph order of Microsoft TrueType fonts, Myriad and the Mac Helvetica
+# The glyph order of Microsoft TrueType fonts and of Adobe fonts with and without .notdef
 _OFFSETS = (29, 31, 32)
 _SYMBOLS = re.compile(r"Symbol|Wingdings|Dingbats|Webdings", re.I)
-# The glyph indices of the printable ASCII characters of all Calibri styles,
-# whose glyph order has no offset
-_CALIBRI = [
-    3,
-    842,
-    919,
-    951,
-    936,
-    1081,
-    920,
-    918,
-    894,
-    895,
-    910,
-    1085,
-    853,
-    882,
-    856,
-    876,
-    1004,
-    1005,
-    1006,
-    1007,
-    1008,
-    1009,
-    1010,
-    1011,
-    1012,
-    1013,
-    855,
-    854,
-    1092,
-    1089,
-    1093,
-    845,
-    923,
-    4,
-    17,
-    18,
-    24,
-    28,
-    38,
-    39,
-    44,
-    47,
-    58,
-    60,
-    62,
-    68,
-    69,
-    75,
-    87,
-    89,
-    90,
-    94,
-    100,
-    104,
-    115,
-    116,
-    121,
-    122,
-    127,
-    896,
-    880,
-    897,
-    916,
-    890,
-    493,
-    258,
-    271,
-    272,
-    282,
-    286,
-    296,
-    336,
-    346,
-    349,
-    361,
-    364,
-    367,
-    373,
-    374,
-    381,
-    393,
-    395,
-    396,
-    400,
-    410,
-    437,
-    448,
-    449,
-    454,
-    455,
-    460,
-    898,
-    878,
-    899,
-    917,
-]
-_TABLES = {"Calibri": {glyph: 0x20 + ii for ii, glyph in enumerate(_CALIBRI)}}
-# The glyphs after ASCII of Microsoft TrueType fonts, in the standard Macintosh glyph order without the
-# non-breaking space and the Apple logo, starting at glyph index 98
-_MICROSOFT = (
-    "ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß"
-    "®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»…ÀÃÕŒœ–"
-    "—“”‘’÷◊ÿŸ⁄¤‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘"
-    "˙˚¸˝˛ˇŁłŠšŽž¦ÐðÝýÞþ−×¹²³½¼¾₣ĞğİŞşĆćČčđ"
-)
 _FONTS = (b"Helvetica", b"Helvetica-Oblique", b"Times-Roman", b"Times-Italic", b"Courier")
 
 
@@ -227,15 +127,42 @@ def _font(textpage, index) -> str:
     return font.value.decode("utf-8", errors="replace")
 
 
-def _by_offset(offset: int | None, code: int) -> int | None:
-    # Only the ASCII glyphs are in the order of the character codes, Microsoft fonts continue in the standard
-    # Macintosh glyph order
-    if offset is None:
-        return None
-    if 0x20 <= code + offset < 0x7F:
+@cache
+def _tables() -> dict[str, list[int]]:
+    with gzip.open(Path(__file__).with_name("data") / "glyphs.json.gz") as file:
+        return json.load(file)
+
+
+def _family(name: str) -> str:
+    """The family of a font name with its style, like `arial-bold` for `ABCDEF+Arial,Bold` or `Arial-BoldMT`"""
+    name = name.split("+")[-1].replace("#20", "").lower()
+    style = "-".join(s for s in ("bold", "italic") if s in name or (s == "italic" and "oblique" in name))
+    base = re.sub(r"(bold|italic|oblique|regular|[^a-z])", "", name)
+    base = re.sub(r"(ps)?(mt)?$", "", base)
+    return f"{base}-{style}" if style else base
+
+
+def _order(font: str, offset: int | None) -> tuple[list[int], int] | None:
+    """The unicode values of the glyph order of a font and the shift of the glyph index into them"""
+    tables = _tables()
+    if (family := _family(font)).startswith("calibri"):
+        # Calibri has no offset, the ASCII glyphs are spread over the font
+        return tables.get(family, tables["calibri"]), 0
+    if offset == 29:
+        # Microsoft fonts share the glyph order up to index 256, the glyphs after it depend on the font
+        return (table, 0) if (table := tables.get(family)) else (tables["arial"][:256], 0)
+    if offset in (31, 32):
+        return tables["isoadobe"], offset - 31
+    return None
+
+
+def _decode(order: tuple[list[int], int] | None, offset: int | None, code: int) -> int | None:
+    if order:
+        table, shift = order
+        return table[code + shift] if 0 <= code + shift < len(table) and table[code + shift] else None
+    # Only the ASCII glyphs of other glyph orders are known
+    if offset is not None and 0x20 <= code + offset < 0x7F:
         return code + offset
-    if offset == 29 and 0 <= code - 98 < len(_MICROSOFT):
-        return ord(_MICROSOFT[code - 98])
     return None
 
 
@@ -262,10 +189,8 @@ def decode_glyphs(page: "modm_data.pdf.page.Page") -> dict[tuple[str, int], int]
     bitmap = None
     for font, indices in codes.items():
         matches = {}
-        table = next((t for name, t in _TABLES.items() if font.split("+")[-1].startswith(name)), None)
-        if table:
-            matches = {code: chr(table[code]) for code in indices if code in table}
-        elif font not in offsets and not page.rotation:
+        calibri = _family(font).startswith("calibri")
+        if not calibri and font not in offsets and not page.rotation:
             bitmap = bitmap or _render(page)
             for code, index in indices.items():
                 if features := _features(textpage, bitmap, page.get_cropbox(), index):
@@ -276,19 +201,20 @@ def decode_glyphs(page: "modm_data.pdf.page.Page") -> dict[tuple[str, int], int]
             elif votes and (vote := max((votes[o], o) for o in _OFFSETS))[0] >= max(2, 0.5 * votes.total()):
                 # Similar looking glyphs of other fonts often miss the exact glyph
                 offsets[font] = vote[1]
-        if font not in offsets and not table:
+        if not calibri and font not in offsets:
             # Without glyphs to compare, like on rotated pages or for rotated text, the glyph index of the space
             # tells the glyph order, since it is the only glyph without ink
             spaces = {code for code, index in indices.items() if _inkless(textpage, index)}
             if len(spaces) == 1 and (offset := 0x20 - spaces.pop()) in _OFFSETS:
                 offsets[font] = offset
+        order = _order(font, offsets.get(font))
         for code, index in indices.items():
             if _inkless(textpage, index):
                 # Glyphs without ink are spaces
                 unicodes[font, code] = 0x20
-            elif font in offsets:
+            elif order or font in offsets:
                 # The references are only ASCII, other glyphs would match a lookalike, like "µ" a "p"
-                unicodes[font, code] = _by_offset(offsets[font], code) or 0xFFFD
+                unicodes[font, code] = _decode(order, offsets.get(font), code) or 0xFFFD
             elif code in matches:
                 unicodes[font, code] = ord(matches[code])
     return unicodes
