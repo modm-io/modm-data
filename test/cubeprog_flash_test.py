@@ -15,6 +15,11 @@ def banks(layout):
 
 
 class TestCubeProgFlash(unittest.TestCase):
+    def setUp(self):
+        # The CubeProgrammer archive is private, the CI does not check it out
+        if not ext_path("stmicro/cubeprog/Data_Base").exists() or not F4_FLASH.exists():
+            self.skipTest("no CubeProgrammer database or STM32F4 DFP")
+
     def test_option_bits(self):
         # RM0440: Category 3 devices have 4 KB pages in single-bank and 2 KB pages in dual-bank mode
         single, dual = flash_layouts("DIE469", 512 * KiB)
