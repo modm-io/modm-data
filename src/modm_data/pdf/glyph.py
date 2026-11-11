@@ -31,6 +31,12 @@ _SIZE = 12
 _OFFSETS = (29, 31, 32)
 _SYMBOLS = re.compile(r"Symbol|Wingdings|Dingbats|Webdings", re.I)
 _FONTS = (b"Helvetica", b"Helvetica-Oblique", b"Times-Roman", b"Times-Italic", b"Courier")
+# The font names with the same glyph order in all ST documents, others like "Arial" or "Helvetica" have several
+_HINTS = {
+    29: re.compile(r"(PS)?MT$|^(Verdana|Tahoma|CourierNew|CenturyGothic|OCRAExtended)"),
+    31: re.compile(r"^(MyriadPro|OCRAStd|CourierStd)"),
+    32: re.compile(r"^(Helvetica-Bold|Helvetica-Narrow|Times-Bold)"),
+}
 
 
 def _image(bitmap, left, top, right, bottom) -> list[float] | None:
@@ -190,6 +196,11 @@ def decode_glyphs(page: "modm_data.pdf.page.Page") -> dict[tuple[str, int], int]
     for font, indices in codes.items():
         matches = {}
         calibri = _family(font).startswith("calibri")
+        if font not in offsets and "+" in font:
+            # Known names of embedded subsets need no rendering, complete fonts may have another encoding
+            name = font.split("+")[-1]
+            if hint := next((offset for offset, pattern in _HINTS.items() if pattern.search(name)), None):
+                offsets[font] = hint
         if not calibri and font not in offsets and not page.rotation:
             bitmap = bitmap or _render(page)
             for code, index in indices.items():
