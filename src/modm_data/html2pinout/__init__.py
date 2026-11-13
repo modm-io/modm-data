@@ -19,7 +19,7 @@ __all__ = ["board_pinouts_from_user_manual", "board_bridges_from_user_manual", "
 
 LOGGER = logging.getLogger(__name__)
 
-_TABLES = r"morpho|arduino|zio|stmod|pmod|mikrobus|extension"
+_TABLES = r"morpho|zio|arduino|stmod|pmod|mikrobus|extension"
 # The daughterboard connectors of the evaluation boards are unique to each board
 _SKIPPED = r"daughter ?board|shield"
 _NUMBER = re.compile(r"^(zio|connector)?pin(number|no\.?|nbr)?(\((cn|p)\d+\))?$")
@@ -252,12 +252,11 @@ def board_pinouts_from_user_manual(document: Document) -> dict[str, dict[str, di
     for chapter in chapters:
         for table in chapter.tables():
             # Not all tables have a caption, but then their heading describes them
-            kind = re.search(_TABLES, table.caption(), re.IGNORECASE) or re.search(
-                _TABLES, table.heading(), re.IGNORECASE
-            )
+            text = table.caption() if re.search(_TABLES, table.caption(), re.IGNORECASE) else table.heading()
+            # The Zio connectors include the ARDUINO ones, so a caption naming both describes a Zio connector
+            kind = next((k for k in _TABLES.split("|") if re.search(k, text, re.IGNORECASE)), None)
             if not kind or re.search(_SKIPPED, table.caption() + table.heading(), re.IGNORECASE):
                 continue
-            kind = kind.group(0).lower()
             if pinout := _device_table_pinout(table):
                 kind = "extension"
             elif not (pinout := _table_pinout(table, kind)):
