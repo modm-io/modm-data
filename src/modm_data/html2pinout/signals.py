@@ -47,11 +47,12 @@ def device_for_board(board: str) -> tuple[str, str] | None:
     :param board: A board name like `NUCLEO-L452RE-P`.
     :return: The name of the mounted device and of its CubeMX description, or `None` if unknown.
     """
+    # The board file names the mounted device with its package, the names of the boards at most without
+    mcu = dict(re.findall(r"^Mcu\.(Name|UserName)=(.*)$", _board_file(board), re.MULTILINE))
+    if mcu and (_mcu_path() / f"{mcu['Name']}.xml").exists():
+        return mcu["UserName"], mcu["Name"]
     if not (match := re.fullmatch(r"NUCLEO-(\w+?)(?:-([PQ]))?", board)):
-        # The names of the other boards do not contain the whole device name, but their board file does
-        mcu = dict(re.findall(r"^Mcu\.(Name|UserName)=(.*)$", _board_file(board), re.MULTILINE))
-        exists = mcu and (_mcu_path() / f"{mcu['Name']}.xml").exists()
-        return (mcu["UserName"], mcu["Name"]) if exists else None
+        return None
     smps = match.group(2) or ""
     # Some board names end in a revision digit, which is not part of the device name
     for part in ("STM32" + match.group(1), "STM32" + match.group(1)[:-1]):
