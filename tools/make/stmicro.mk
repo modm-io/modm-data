@@ -28,6 +28,10 @@ ext/stmicro/STM32F1xx_DFP:
 ext/stmicro/STM32%_DFP:
 	@git clone --depth=1 https://github.com/Open-CMSIS-Pack/$(@:ext/stmicro/%=%).git $@
 
+# The STM32 series with HAL2 are not in CubeMX, their device data is in the DFP
+ext/stmicro/hal2/%:
+	@git clone --depth=1 https://github.com/STMicroelectronics/$(@:ext/stmicro/hal2/%=%).git $@
+
 .PHONY: clone-sources-stmicro
 ## Clone all STMicro related repositories into /ext/stmicro.
 clone-sources-stmicro: clone-sources-arm ext/stmicro/cubehal/ ext/stmicro/header/ ext/stmicro/svd/ \
@@ -39,7 +43,8 @@ clone-sources-stmicro: clone-sources-arm ext/stmicro/cubehal/ ext/stmicro/header
 					   ext/stmicro/STM32L5xx_DFP ext/stmicro/STM32N6xx_DFP ext/stmicro/STM32U0xx_DFP \
 					   ext/stmicro/STM32U3xx_DFP ext/stmicro/STM32U5xx_DFP ext/stmicro/STM32WB0x_DFP \
 					   ext/stmicro/STM32WBAxx_DFP ext/stmicro/STM32WBxx_DFP ext/stmicro/STM32WL3x_DFP \
-					   ext/stmicro/STM32WLxx_DFP
+					   ext/stmicro/STM32WLxx_DFP ext/stmicro/hal2/stm32c5xx-dfp \
+					   ext/stmicro/hal2/stm32g5xx-dfp ext/stmicro/hal2/stm32h7pxx-dfp
 
 .PHONY: update-sources-stmicro
 ## Update all STMicro related repositories to the latest version.
@@ -55,7 +60,9 @@ update-sources-stmicro: update-sources-arm update-ext/stmicro/cubehal update-ext
 						update-ext/stmicro/STM32U0xx_DFP update-ext/stmicro/STM32U3xx_DFP \
 						update-ext/stmicro/STM32U5xx_DFP update-ext/stmicro/STM32WB0x_DFP \
 						update-ext/stmicro/STM32WBAxx_DFP update-ext/stmicro/STM32WBxx_DFP \
-						update-ext/stmicro/STM32WL3x_DFP update-ext/stmicro/STM32WLxx_DFP
+						update-ext/stmicro/STM32WL3x_DFP update-ext/stmicro/STM32WLxx_DFP \
+						update-ext/stmicro/hal2/stm32c5xx-dfp update-ext/stmicro/hal2/stm32g5xx-dfp \
+						update-ext/stmicro/hal2/stm32h7pxx-dfp
 	@(cd ext/stmicro/header && git fetch && git reset --hard origin/master) &
 	@(cd ext/stmicro/svd-archive && git fetch && git reset --hard origin/master) &
 	@(rm -r ext/stmicro/STM32F1xx_DFP && $(MAKE) ext/stmicro/STM32F1xx_DFP) &
