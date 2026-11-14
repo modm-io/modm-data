@@ -318,18 +318,8 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
     if not hasFlashModule:
         modules.append(("flash", "flash", "v1.0"))
 
-    # CubeMX lists some peripherals that do not exist, for example, TIM5 on the STM32G471,
-    # so numbered instances must also be defined in the CMSIS header.
-    def defined_in_header(name, instance):
-        if name in ("dma", "i2s") or not re.fullmatch(rf"{name}\d+", instance):
-            return True  # DMA channels and I2S instances use different names
-        names = [instance.upper()] + ([name.upper()] if instance.endswith(name + "1") else [])
-        return any(p == n or p.startswith(n + "_") for p in stm_header.peripherals for n in names)
-
-    for module in [m for m in modules if not defined_in_header(m[0], m[1])]:
-        LOGGER.info(f"Removing {module[1]} for {did.string}, since it is not defined in the CMSIS header")
-        modules.remove(module)
-    modules = [m + peripherals.getPeripheralData(did, m, stm_header) for m in modules]
+    # CubeMX lists some peripherals that do not exist, for example, TIM5 on the STM32G471
+    modules = header_modules(did, modules, stm_header)
 
     p["modules"] = modules
     LOGGER.debug("Available Modules are:\n" + _modulesToString(modules))
@@ -604,21 +594,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
 
     # The linked-list DMA controllers have no request data in CubeMX, only in the CubeHAL
     for controller in sorted({m[0] for m in modules if m[0] in ("gpdma", "hpdma", "lpdma")}):
-        requests = defaultdict(list)
-        for rname, number in dma3_request_map(did, controller).items():
-            name = rname.lower().replace("spdif_rx", "spdifrx")
-            if len(name.split("_")) < 2:
-                name = f"{name}_default"
-            driver, inst, name = split_dma_signal(name, modules)
-            if driver is None:  # peripheral is not part of this device
-                LOGGER.debug(f"{controller.upper()}#{number}: dumping {rname}")
-                continue
-            signal = {"driver": driver, "name": None if name == "default" else name}
-            if inst:
-                signal["instance"] = inst
-            if signal not in requests[number]:
-                requests[number].append(signal)
-        p[controller] = {0: {0: requests}}
+        p[controller] = {0: {0: dma3_requests(dma3_request_map(did, controller), modules, controller)}}
         p[controller + "_naming"] = (None, "request", "signal")
 
     if did.family == "f1":
@@ -746,6 +722,51 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
     p["signals"] = signals
 
     return p
+
+
+def header_modules(did, modules: list[tuple], header) -> list[tuple]:
+    """
+    Removes the numbered instances that are not defined in the CMSIS header and
+    appends the peripheral type and features to each module.
+
+    :return: A list of (name, instance, version, type, features) tuples.
+    """
+
+    def defined_in_header(name, instance):
+        if name in ("dma", "i2s") or not re.fullmatch(rf"{name}\d+", instance):
+            return True  # DMA channels and I2S instances use different names
+        names = [instance.upper()] + ([name.upper()] if instance.endswith(name + "1") else [])
+        return any(p == n or p.startswith(n + "_") for p in header.peripherals for n in names)
+
+    for module in [m for m in modules if not defined_in_header(m[0], m[1])]:
+        LOGGER.info(f"Removing {module[1]} for {did.string}, since it is not defined in the CMSIS header")
+        modules.remove(module)
+    return [m + peripherals.getPeripheralData(did, m, header) for m in modules]
+
+
+def dma3_requests(request_map: dict[str, int], modules: list[tuple], controller: str) -> dict[int, list[dict]]:
+    """
+    Converts the request map of a linked-list DMA controller (GPDMA, HPDMA, LPDMA)
+    into the signals of each request number, without the peripherals that are
+    not part of the device.
+
+    :return: A dictionary of request number to a list of signals.
+    """
+    requests = defaultdict(list)
+    for rname, number in request_map.items():
+        name = rname.lower().replace("spdif_rx", "spdifrx")
+        if len(name.split("_")) < 2:
+            name = f"{name}_default"
+        driver, inst, name = split_dma_signal(name, modules)
+        if driver is None:  # peripheral is not part of this device
+            LOGGER.debug(f"{controller.upper()}#{number}: dumping {rname}")
+            continue
+        signal = {"driver": driver, "name": None if name == "default" else name}
+        if inst:
+            signal["instance"] = inst
+        if signal not in requests[number]:
+            requests[number].append(signal)
+    return requests
 
 
 def split_signal(signal: str, modules: list[tuple]) -> tuple[str, str, str]:
