@@ -47,7 +47,7 @@ jobs:
       - name: Run Unit Tests
         if: always()
         run: |
-          python3 -m unittest discover -s test -p "*_test.py"
+          python3 -m pytest test
 
       - name: Run Ruff Formatter
         if: always()

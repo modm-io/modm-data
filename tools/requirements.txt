@@ -9,6 +9,7 @@ CppHeaderParser==2.7.4
 cxxheaderparser==1.9.2
 ghp-import==2.1.0
 idna==3.11
+iniconfig==2.3.1
 Jinja2==3.1.6
 kuzu==0.11.3
 lxml==5.4.0
@@ -24,10 +25,12 @@ paginate==0.5.7
 pathspec==0.12.1
 pdoc==14.7.0
 platformdirs==4.5.1
+pluggy==1.7.0
 ply==3.11
 Pygments==2.19.2
 pymdown-extensions==10.20
 pypdfium2==5.14.0
+pytest==9.2.0
 python-dateutil==2.9.0.post0
 PyYAML==6.0.3
 pyyaml_env_tag==1.1
