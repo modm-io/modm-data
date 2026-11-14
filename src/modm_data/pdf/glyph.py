@@ -72,9 +72,9 @@ def _features(textpage, bitmap, cropbox, index) -> tuple[list[float], tuple[floa
     if not pp.raw.FPDFText_GetMatrix(textpage, index, m) or abs(m.b) > 1e-3 or abs(m.c) > 1e-3 or m.d <= 0:
         return None
     em = pp.raw.FPDFText_GetFontSize(textpage, index) * m.d
-    left, bottom, right, top = textpage.get_charbox(index)
-    if not em or right - left < 0.01 or top - bottom < 0.01:
+    if not em or _inkless(textpage, index):
         return None
+    left, bottom, right, top = textpage.get_charbox(index)
     x, y = ctypes.c_double(), ctypes.c_double()
     pp.raw.FPDFText_GetCharOrigin(textpage, index, x, y)
     cleft, _, _, ctop = cropbox
@@ -174,7 +174,8 @@ def _decode(order: tuple[list[int], int] | None, offset: int | None, code: int) 
 
 def _inkless(textpage, index) -> bool:
     left, bottom, right, top = textpage.get_charbox(index)
-    return right - left < 0.01 or top - bottom < 0.01
+    # Spaces may have a box of a hundredth of a point, which only covers the edges of the neighboring glyphs
+    return right - left < 1 / _SCALE or top - bottom < 1 / _SCALE
 
 
 def decode_glyphs(page: "modm_data.pdf.page.Page") -> dict[tuple[str, int], int]:  # noqa: F821
