@@ -39,6 +39,13 @@ def _family_file() -> XmlReader:
     return _FAMILY_FILE
 
 
+def _hal2():
+    # The STM32 series with HAL2 are not in CubeMX, the import is deferred, since it uses this module
+    from .. import hal2
+
+    return hal2
+
+
 # ============================= MULTIPLE DEVICES ==============================
 def _format_raw_devices(rawDevices):
     return list(sorted(set(d.get("RefName") for d in rawDevices)))
@@ -50,7 +57,7 @@ def devices_from_family(family: str) -> list[str]:
     :return: A list of device names belonging to a STM32 family.
     """
     devices = _family_file().query(f'//Family[@Name="{family.upper()}"]/SubFamily/Mcu/@RefName')
-    devices = _format_raw_devices(devices)
+    devices = _format_raw_devices(devices) + _hal2().devices_from_prefix(f"STM32{family}")
     LOGGER.info("Found devices of family '{}': {}".format(family, ", ".join(devices)))
     return devices
 
@@ -62,7 +69,7 @@ def devices_from_prefix(prefix: str) -> list[str]:
     """
     devices = _family_file().query(f'//Family/SubFamily/Mcu[starts-with(@RefName,"{prefix.upper()}")]')
     devices = _format_raw_devices(devices)
-    devices = [d for d in devices if not stm32_data.ignoreDevice(d)]
+    devices = [d for d in devices if not stm32_data.ignoreDevice(d)] + _hal2().devices_from_prefix(prefix)
     LOGGER.info("Found devices for prefix '{}': {}".format(prefix, ", ".join(devices)))
     return list(sorted(devices))
 
@@ -79,6 +86,8 @@ def temperature_codes(partname: str) -> list[str]:
     :param partname: A STM32 device name with temperature placeholder.
     :return: A sorted list of temperature codes, for example, `["3", "6", "7"]`.
     """
+    if _hal2().is_hal2_device(partname):
+        return _hal2().temperature_codes(partname)
     codes = set()
     for device in _family_file().query(f'//Family/SubFamily/Mcu[@RefName="{partname}"]'):
         temp_max = device.find("Temperature")
@@ -131,6 +140,8 @@ def devices_from_partname(partname: str) -> list[dict[str]]:
     :param partname: A full STM32 device name.
     :return: a list of dictionaries containing a device specific data structure.
     """
+    if _hal2().is_hal2_device(partname):
+        return _hal2().devices_from_partname(partname)
     deviceNames = _family_file().query(f'//Family/SubFamily/Mcu[starts-with(@RefName,"{partname}")]')
     comboDeviceName = sorted([d.get("Name") for d in deviceNames])[0]
     device_file = XmlReader(os.path.join(_MCU_PATH, comboDeviceName + ".xml"))
