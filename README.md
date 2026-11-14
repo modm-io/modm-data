@@ -63,11 +63,13 @@ flowchart LR
     I(Open Pin Data) -->|cubemx| C
     G(CubeMX) -->|cubemx| C
     H(CubeHAL) -->|cubehal| C
+    P(HAL2 DFP) -->|hal2| C
     J -->|dl| A
     J -->|dl| F
     J -->|dl| G
     J -->|dl| H
     J -->|dl| I
+    J -->|dl| P
     J[STMicro] -->|dl| D
     L(Microchip ATDF) -->|atdf| C
     M(nrfx MDK) -->|nrfx| C
@@ -101,6 +103,7 @@ licenses whenever possible:
 - [STM32 CMSIS header files](https://github.com/modm-io/cmsis-header-stm32): BSD-3-Clause.
 - [STM32 Open Pin Data](https://github.com/STMicroelectronics/STM32_open_pin_data): BSD-3-Clause.
 - [STM32 CMSIS-SVD files](https://github.com/modm-io/cmsis-svd-stm32): Apache-2.0.
+- [STM32 HAL2 device family packs](https://github.com/STMicroelectronics/STM32Cube_MCU_Overall_Offer#hal2-based-software): BSD-3-Clause.
 - STMicro CubeMX database: ST SLA.
 - STMicro PDF technical documentation: ST SLA.
 - [Microchip SAM device packs](https://packs.download.microchip.com): Apache-2.0.

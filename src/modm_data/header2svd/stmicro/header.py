@@ -90,7 +90,8 @@ class Header(CmsisHeader):
             content = (self.cmsis_folder / self.family_header_file).read_text(encoding="utf-8", errors="replace")
             defines = []
             for include in re.findall(r'#include +"(stm32.*?(?<!_hal))\.h"', content):
-                define = re.search(rf"defined *\( *({include}) *\)", content, flags=re.IGNORECASE)
-                defines.append(define.group(1))
+                # HAL2 headers also include other headers, for example, `stm32_external_env.h`
+                if define := re.search(rf"defined *\( *({include}) *\)", content, flags=re.IGNORECASE):
+                    defines.append(define.group(1))
             Header._CACHE_FAMILY[self.family_folder]["family_defines"] = defines
         return Header._CACHE_FAMILY[self.family_folder]["family_defines"]

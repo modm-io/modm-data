@@ -9,7 +9,11 @@ from .model import Device, Peripheral, Register, BitField, EnumeratedValue
 def _int(node, tag, default=None):
     if (text := node.findtext(tag)) is None:
         return default
-    return int(text.strip().replace("#", "0b"), 0)
+    text = text.strip()
+    if text.startswith("#"):
+        return int(text[1:], 2)
+    # Decimal numbers can have leading zeros, for example, `072` in the STM32H5 SVD files
+    return int(text, 0) if text[:2].lower() in ("0x", "0b") else int(text, 10)
 
 
 def _text(node, tag) -> str | None:

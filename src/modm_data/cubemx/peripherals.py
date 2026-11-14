@@ -27,6 +27,7 @@ _TYPES = {
         ("SR CR1", "stm32"),
         ("VERSION_ID", "stm32-wb0"),
         ("CFGR1 OFCFGR1", "stm32-u3"),
+        ("CFGR1 OFCFGR GCOMP", "stm32-c5"),
         ("CFGR1 PWRR", "stm32-u5"),
         ("CFGR1 TR CALFACT", "stm32-l0"),
         ("CFGR1 TR", "stm32-f0"),

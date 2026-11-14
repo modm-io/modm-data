@@ -38,6 +38,8 @@ _RENAMES = {
     "axi_sram": "d1_sram",
     "ahb_sram": "d2_sram1",
     "ccm_ram": "ccm",
+    "ccm_sram1": "ccm",
+    "ccm_sram1_s": "ccm_s",
     "dtcmram": "dtcm",
     "dtcm_ram": "dtcm",
     "itcm_ram": "itcm",
