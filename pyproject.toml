@@ -51,7 +51,8 @@ docs = [
     "mkdocs>=1.5,<2",
     "mkdocs-material>=9.5,<10",
 ]
-all = ["modm_data[docs]"]
+test = ["pytest>=9,<10"]
+all = ["modm_data[docs,test]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -69,6 +70,9 @@ modm_data = ["*.md", "*/*.md", "*/*/*.md", "*/*/*/*.md"]
 
 [tool.setuptools-git-versioning]
 version_file = "VERSION"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
 
 [tool.ruff]
 exclude = [".venv/", "ext/", "build/", "log/"]
