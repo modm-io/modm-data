@@ -311,6 +311,8 @@ def _static(tree: dict) -> dict:
             for flag in set(tree["options"]) | set(tree.get("derived", {}))
             if (m := _PLL_USED.fullmatch(flag))
         ],  # fmt: skip
+        # The factors that only work with one input frequency, the STM32C5 PSI per reference
+        "inputs": [n for n, node in nodes.items() if any("input" in d for d in node.get("domain", ()))],
     }
     if len(_STATIC) > 64:
         _STATIC.clear()
@@ -520,6 +522,15 @@ def evaluate(tree: dict, config: dict[str, str] | None = None, use: set[str] | N
         if node["kind"] in ("fixed", "varied", "output"):
             check(name, freq, node, node.get("limits", ()), "")
         check(name, freq, node, node.get("out_limits", ()), "out_")
+
+    for name in static["inputs"]:
+        if not result[name]["used"] or not nodes[name]["inputs"]:
+            continue
+        option = next((d for d in nodes[name]["domain"] if d["factor"] == result[name]["setting"]), {})
+        freq = result[nodes[name]["inputs"][0]["from"]]["freq"]
+        if "input" in option and (freq is None or abs(freq - option["input"]) > 1e-3):
+            error = f"{option['macro']} needs an input of {option['input']:g}, not {freq or 0:g}"
+            result[name]["errors"].append(error)
 
     # The ratios a mux input needs, for example, PLLQ an integer multiple of PCLK for the U0 TIM1
     for constraint in tree.get("constraints", ()):

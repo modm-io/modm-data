@@ -33,7 +33,7 @@ from functools import cache
 from ..utils import XmlReader
 from . import conditions
 from ..clocks.evaluate import _number, evaluate  # noqa: F401
-from .device_data import _MCU_PATH, _device_file, header_from_partname
+from .device_data import _MCU_PATH, _device_file, _hal2, header_from_partname
 from .clock_corrections import correct
 from .clock_parameters import _default, limits, read_parameters, select
 from .clock_peripherals import attach_peripherals, base_buses, header_buses, peripherals_of
@@ -396,6 +396,10 @@ def clock_tree_from_partname(partname: str) -> dict:
     :return: The nodes of the tree with the peripherals attached to them, or
              None if the device has no clock tree in the database.
     """
+    if _hal2().is_hal2_device(partname):
+        from ..hal2.clock_tree import clock_tree_from_partname as hal2_clock_tree
+
+        return hal2_clock_tree(partname)
     device_file = _device_file(partname)
     drawing = device_file.tree.get("ClockTree")
     rcc = next((ip.get("Version") for ip in device_file.query('//IP[@Name="RCC"]')), None)
