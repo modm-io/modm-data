@@ -34,6 +34,7 @@ from ..utils import XmlReader
 from . import conditions
 from ..clocks.evaluate import _number, evaluate  # noqa: F401
 from .device_data import _MCU_PATH, _device_file, header_from_partname
+from .clock_corrections import correct
 from .clock_parameters import _default, limits, read_parameters, select
 from .clock_peripherals import attach_peripherals, base_buses, header_buses, peripherals_of
 from .clock_scales import add_scale_limits, flash_latency, manual_flash_latency, scale_limits
@@ -421,6 +422,7 @@ def clock_tree_from_partname(partname: str) -> dict:
     add_scale_limits(nodes, scale_limits(parameters, context))
     latencies = manual_flash_latency(partname, parameters) or flash_latency(parameters, context)
     options = _options(nodes, parameters, semaphores, latencies)
+    constraints = correct(nodes, options, partname)
     # A limit an output of a fixed source always meets says nothing, the STM32G4 IWDG runs at LSI, not up to 170 MHz
     for node in nodes.values():
         sources = [nodes.get(i["from"], {}) for i in node["inputs"]]
@@ -447,6 +449,7 @@ def clock_tree_from_partname(partname: str) -> dict:
         },
         "modes": read_modes(rcc, context),
         "flash": latencies,
+        "constraints": constraints,
         "clocks": attached,
         "unattached": sorted(instances - set(attached)),
     }

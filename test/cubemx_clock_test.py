@@ -5,6 +5,7 @@ import unittest
 
 from modm_data.cubemx import conditions
 from modm_data.clocks.evaluate import _STATIC, _in_use
+from modm_data.cubemx.clock_corrections import correct
 from modm_data.cubemx.clock_parameters import limits, select
 from modm_data.cubemx.clock_peripherals import _spellings, attach_peripherals, base_buses, header_buses
 from modm_data.cubemx.clock_scales import manual_flash_latency, scale_limits
@@ -433,6 +434,33 @@ class CubeMxClockTest(unittest.TestCase):
         # I2SUsed_ForRCC stands for any I2S, parameters and semaphores are no usage flags
         self.assertTrue(_in_use("I2SUsed_ForRCC", use))
         self.assertFalse(any(_in_use(flag, use) for flag in ("USART2Enable", "PLLUsed", "scale1", "USE_ADC2")))
+
+    def test_corrections(self):
+        nodes = {"AHBOutput": {"kind": "output", "max": 64e6}, "PLLR": {"kind": "div", "out_max": 64e6}}
+        options = {"FamilyName": "TM"}
+        correct(nodes, options, "STM32G071RBTx")
+        # Range 2 caps HCLK at 16 MHz, RM0444 4.1.4
+        scale2 = ["eq", "PWR_Regulator_Voltage_Scale", "PWR_REGULATOR_VOLTAGE_SCALE2"]
+        self.assertEqual(nodes["AHBOutput"]["limits"], [{"max": 16e6, "when": scale2}, {"max": 64e6}])
+        self.assertEqual(nodes["AHBOutput"]["max"], 64e6)
+        self.assertEqual(options, {"FamilyName": "M"})
+        # The STM32H7 LPUART1 runs from the D3 APB, not the D1 one the drawing shows
+        nodes = {
+            "D1PPRE": {"kind": "div", "inputs": [], "outputs": ["LPUART1Mult"]},
+            "D3PPRE": {"kind": "div", "inputs": [], "outputs": []},
+            "LPUART1Mult": {
+                "kind": "mux",
+                "inputs": [{"from": "D1PPRE", "macro": "RCC_LPUART1CLKSOURCE_D3PCLK1"}],
+                "outputs": [],
+            },
+        }
+        correct(nodes, {}, "STM32H743ZITx")
+        self.assertEqual(nodes["LPUART1Mult"]["inputs"][0]["from"], "D3PPRE")
+        self.assertEqual((nodes["D1PPRE"]["outputs"], nodes["D3PPRE"]["outputs"]), ([], ["LPUART1Mult"]))
+        # Another device keeps its limits
+        nodes = {"AHBOutput": {"kind": "output", "max": 64e6}}
+        correct(nodes, {}, "STM32C031C6Tx")
+        self.assertEqual(nodes, {"AHBOutput": {"kind": "output", "max": 64e6}})
 
     def test_scale_limits(self):
         macro = "PWR_REGULATOR_VOLTAGE_SCALE{}".format
