@@ -84,6 +84,33 @@ _json_short_urls = {
         "SC2157",
         "SC2156",
         "LN2411",
+        # The series, since the categories above miss some of their documents,
+        # for example, the datasheets of the STM32F3, STM32G4 and STM32G5
+        "SS2200",  # C0
+        "SS2361",  # C5
+        "SS1574",  # F0
+        "SS1031",  # F1
+        "SS1575",  # F2
+        "SS1576",  # F3
+        "SS1577",  # F4
+        "SS1858",  # F7
+        "SS1960",  # G0
+        "SS2024",  # G4
+        "SS2358",  # G5
+        "SS2186",  # H5
+        "SS1951",  # H7
+        "SS1817",  # L0
+        "SS1295",  # L1
+        "SS1580",  # L4
+        "SS2025",  # L5
+        "SS2328",  # N6
+        "SS2133",  # U0
+        "SS2327",  # U3
+        "SS2134",  # U5
+        "SS1961",  # WB
+        "SS2337",  # WB0
+        "SS2261",  # WBA
+        "SS2026",  # WL
     ],
     # Technical docs for STM32 development boards
     "boards": [
@@ -145,6 +172,8 @@ def load_remote_info(base_dir: Path, use_cached: bool = False) -> list[dict]:
         for urls in _json_urls.values():
             for url in urls:
                 docs.extend(_download_json(url)["rows"])
+        # The categories overlap, so most documents are listed several times
+        docs = list({json.dumps(d, sort_keys=True): d for d in docs}.values())
     missing = [d for d in docs if "title" not in d or "version" not in d]
     if missing:
         LOGGER.warning(
