@@ -5,6 +5,7 @@ import json
 import time
 import logging
 from pathlib import Path
+from multiprocessing.pool import ThreadPool
 from ..store import download_file, download_data
 
 LOGGER = logging.getLogger(__name__)
@@ -147,6 +148,9 @@ _json_urls = {
 }
 _remote_info = "remote.json"
 _local_info = "local.json"
+_device_info = "devices.json"
+# The parts of a series are listed in the product selector of st.com
+_parts_url = "https://www.st.com/bin/st/selectors/cxst/en.cxst-ps-grid.html/{}.json"
 
 
 def _download_json(url: str, tries: int = 5) -> dict:
@@ -187,6 +191,45 @@ def store_remote_info(base_dir: Path, docs: list[dict]):
     info = base_dir / _remote_info
     info.parent.mkdir(parents=True, exist_ok=True)
     info.write_text(json.dumps(sorted(docs, key=lambda d: (d["title"], d["version"])), indent=4, sort_keys=True))
+
+
+def load_device_info(base_dir: Path) -> dict[str, list[str]]:
+    """
+    Downloads the documents of every STM32 part number, since the document lists
+    of the categories do not say which parts a document applies to.
+
+    :return: The sorted document names of every part number, e.g. `stm32g474re`.
+    """
+    LOGGER.info("Downloading device info")
+    products = {}
+    # The categories miss some parts of their series and the other way around, the class has no list
+    for category in (c for c in _json_short_urls["stm32"] if not c.startswith("CL")):
+        for row in _download_json(_parts_url.format(category))["rows"]:
+            name = next(c["value"] for c in row["cells"] if c["columnId"] == "1")
+            products[name.lower()] = row["productId"]
+
+    def documents(product):
+        try:
+            rows = _download_json(_json_url_prefix + product + _json_url_suffix)["rows"]
+        except json.JSONDecodeError:
+            return None
+        return sorted({row["title"] for row in rows if "title" in row})
+
+    # The server answers with empty responses when asked too often
+    with ThreadPool(4) as pool:
+        docs = dict(zip(products, pool.map(documents, products.values())))
+    # A part whose documents fail to download keeps the documents of the last time
+    info = base_dir / _device_info
+    previous = json.loads(info.read_text()) if info.exists() else {}
+    if failed := [part for part, names in docs.items() if names is None]:
+        LOGGER.warning(f"No documents for {len(failed)} parts, keeping the previous ones: {failed}")
+    return {part: names if names is not None else previous.get(part, []) for part, names in docs.items()}
+
+
+def store_device_info(base_dir: Path, devices: dict[str, list[str]]):
+    info = base_dir / _device_info
+    info.parent.mkdir(parents=True, exist_ok=True)
+    info.write_text(json.dumps(devices, indent=4, sort_keys=True))
 
 
 def load_local_info(base_dir: Path) -> list[dict]:

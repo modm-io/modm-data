@@ -10,7 +10,7 @@ from pathlib import Path
 
 import modm_data.pdf
 from modm_data.dl.stmicro import download_cubemx, download_cubeprog, download_cubemx2
-from modm_data.dl.stmicro import load_remote_info, store_remote_info
+from modm_data.dl.stmicro import load_remote_info, store_remote_info, load_device_info, store_device_info
 from modm_data.dl.stmicro import load_local_info, store_local_info, Document
 
 import logging
@@ -22,6 +22,8 @@ LOGGER = logging.getLogger("update")
 def download_pdfs(base_dir, with_download, new_pdfs=None):
     remote_info = load_remote_info(base_dir, use_cached=not with_download)
     store_remote_info(base_dir, remote_info)
+    if with_download:
+        store_device_info(base_dir, load_device_info(base_dir))
 
     remote_docs = set(map(Document, remote_info))
     # for doc in sorted(remote_docs, key=lambda d: d.filename):
