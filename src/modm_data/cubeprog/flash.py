@@ -17,6 +17,9 @@ _DB_PATH = ext_path("stmicro/cubeprog/Data_Base")
 # The other conditions (readout protection, TrustZone, value line, ...) do not change it.
 _SIZE_CONDITIONS = {"flashsize"}
 _BANK_CONDITIONS = {"dbank", "dualbank", "db1m"}
+# Dies whose largest flash always runs in dual-bank mode, although the database also lists a
+# single-bank organization: RM0444 Table 12, the STM32G0B1/C1 with 512 KB ignores DUAL_BANK.
+_ALWAYS_DUAL = {("DIE467", 512 * 1024)}
 
 
 @dataclass(frozen=True)
@@ -107,6 +110,12 @@ def _int(value: str) -> int:
     return int(value.strip(), 0)
 
 
+def _register(value: str) -> int:
+    """Register values are hexadecimal, some without prefix, e.g. FLASHSIZE '200' for 512 KB."""
+    value = value.strip()
+    return int(value, 0 if value[:2].lower() == "0x" else 16)
+
+
 def _numbers(value: str | None) -> list[int]:
     return [_int(n) for n in re.split(r"[,\s]+", value or "") if n]
 
@@ -126,7 +135,7 @@ def _database_layouts(die: str) -> list[tuple[int, list[dict], FlashLayout]]:
                 continue
             for config in interface.findall("Configuration"):
                 conditions[_int(config.get("number"))] = {
-                    element.tag.lower(): tuple(_int(reg.get(k)) for k in ("address", "mask", "value"))
+                    element.tag.lower(): tuple(_register(reg.get(k)) for k in ("address", "mask", "value"))
                     for element in config
                     if (reg := element.find("ReadRegister")) is not None
                 }
@@ -135,14 +144,23 @@ def _database_layouts(die: str) -> list[tuple[int, list[dict], FlashLayout]]:
                 continue
             erased = _int(peripheral.findtext("ErasedValue", "0xFF"))
             for config in peripheral.findall("Configuration"):
-                banks = []
-                for bank in config.findall("Bank"):
-                    fields = [f.find("Parameters") for f in bank.findall("Field")]
-                    groups = tuple((_int(f.get("size")), _int(f.get("occurrence"))) for f in fields)
-                    banks.append((_int(fields[0].get("address")), groups))
-                layout = FlashLayout(tuple(banks), (), _int(config.findtext("Alignment", "0")), erased)
-                configs = [conditions.get(n, {}) for n in _numbers(config.get("config"))]
-                layouts.append((layout.size, configs, layout))
+                # Fields with a condition, e.g. 'NVM-512K', are alternatives for different devices
+                fields = [f for bank in config.findall("Bank") for f in bank.findall("Field")]
+                variants = list(dict.fromkeys(f.findtext("Condition", "").strip() for f in fields)) or [""]
+                for variant in variants:
+                    banks = []
+                    for bank in config.findall("Bank"):
+                        params = [
+                            f.find("Parameters")
+                            for f in bank.findall("Field")
+                            if f.findtext("Condition", "").strip() in ("", variant)
+                        ]
+                        if params:
+                            groups = tuple((_int(f.get("size")), _int(f.get("occurrence"))) for f in params)
+                            banks.append((_int(params[0].get("address")), groups))
+                    layout = FlashLayout(tuple(banks), (), _int(config.findtext("Alignment", "0")), erased)
+                    configs = [conditions.get(n, {}) for n in _numbers(config.get("config"))]
+                    layouts.append((layout.size, configs, layout))
     return layouts
 
 
@@ -155,7 +173,13 @@ def _options(configs: list[dict], size: int) -> set[tuple] | None:
         return set()
     options = set()
     for conditions in configs:
-        sizes = [(value & mask) * 1024 for name, (_, mask, value) in conditions.items() if name in _SIZE_CONDITIONS]
+        # FLASHSIZE counts KB, except on the STM32WB0 and WL3, where it counts words minus one
+        sizes = [
+            s
+            for name, (_, mask, value) in conditions.items()
+            if name in _SIZE_CONDITIONS and mask
+            for s in ((value & mask) * 1024, ((value & mask) + 1) * 4)
+        ]
         if sizes and size not in sizes:
             continue
         # A mask of zero matches any value
@@ -210,6 +234,8 @@ def flash_layouts(
         start = min(lay.banks[0][0] for lay in layouts)
         layouts = [lay for lay in layouts if lay.banks[0][0] == start]
     layouts = list(dict.fromkeys(layouts))
+    if (die.upper(), size) in _ALWAYS_DUAL:
+        layouts = [FlashLayout(lay.banks, (), lay.alignment, lay.erased) for lay in layouts if len(lay.banks) > 1]
     # A layout without options is redundant, if layouts with options exist
     if any(lay.options for lay in layouts):
         layouts = [lay for lay in layouts if lay.options]

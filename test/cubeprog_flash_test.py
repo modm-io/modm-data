@@ -29,6 +29,32 @@ class TestCubeProgFlash(unittest.TestCase):
         self.assertEqual(banks(dual), [(0x08000000, [(2 * KiB, 128)]), (0x08040000, [(2 * KiB, 128)])])
         self.assertEqual(dual.alignment, 8)
 
+    def test_hexadecimal_size(self):
+        # RM0444: the 512 KB devices always run in dual-bank mode, the 256 KB devices select it with
+        # DUAL_BANK. The database writes the FLASHSIZE condition without the hexadecimal prefix.
+        (dual,) = flash_layouts("DIE467", 512 * KiB)
+        self.assertEqual(dual.options, ())
+        self.assertEqual(banks(dual), [(0x08000000, [(2 * KiB, 128)]), (0x08040000, [(2 * KiB, 128)])])
+        self.assertEqual(dual.alignment, 8)
+        single, dual = flash_layouts("DIE467", 256 * KiB)
+        self.assertEqual(single.options, (("DUALBANK", 0x40022020, 0x200000, 0),))
+        self.assertEqual(banks(dual), [(0x08000000, [(2 * KiB, 64)]), (0x08020000, [(2 * KiB, 64)])])
+        (single,) = flash_layouts("DIE467", 128 * KiB)
+        self.assertEqual(banks(single), [(0x08000000, [(2 * KiB, 64)])])
+
+    def test_field_conditions(self):
+        # RM0481: the STM32H543/H553 always have two banks, the fields of every bank describe
+        # both flash sizes with the conditions NVM-1M and NVM-512K
+        (layout,) = flash_layouts("DIE47C", 1024 * KiB)
+        self.assertEqual(banks(layout), [(0x08000000, [(8 * KiB, 64)]), (0x08080000, [(8 * KiB, 64)])])
+        (layout,) = flash_layouts("DIE47C", 512 * KiB)
+        self.assertEqual(banks(layout), [(0x08000000, [(8 * KiB, 32)]), (0x08040000, [(8 * KiB, 32)])])
+
+    def test_size_in_words(self):
+        # RM0505: the FLASH_SIZE register of the STM32WB0 counts 32-bit words minus one
+        (layout,) = flash_layouts("DIE027", 256 * KiB)
+        self.assertEqual(banks(layout), [(0x10040000, [(2 * KiB, 128)])])
+
     def test_truncation(self):
         # The database only describes the largest size of the die
         (layout,) = flash_layouts("DIE413", 256 * KiB)
