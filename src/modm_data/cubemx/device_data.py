@@ -174,13 +174,13 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         LOGGER.error(f"No DFP device entry found for {did.string}: {partname}")
         return None
 
-    def dfp_findall(key, attribs=None):
+    def dfp_findall(key, attribs=None, all_cores=False):
         values = []
         node = dfp_node[0]
         while node.tag != "devices":
             values += node.findall(key)
             node = node.getparent()
-        if core := did.get("core"):
+        if (core := did.get("core")) and not all_cores:
             values = [v for v in values if core.upper() in v.get("Pname", core.upper())]
         if attribs is not None:
             # The attributes of the inner nodes take precedence over the outer nodes
@@ -222,22 +222,27 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
     p["max_frequency"] = max_frequency
 
     # Find all internal memories
-    memories = {
-        m.get("name", m.get("id")).lower(): {
-            "access": m.get("access", "rwx"),
-            "start": int(m.get("start"), 0),
-            "size": int(m.get("size"), 0),
-            "alias": m.get("alias", "").lower(),
+    def find_memories(all_cores=False):
+        return {
+            m.get("name", m.get("id")).lower(): {
+                "access": m.get("access", "rwx"),
+                "start": int(m.get("start"), 0),
+                "size": int(m.get("size"), 0),
+                "alias": m.get("alias", "").lower(),
+            }
+            for m in (dfp_findall("memory", all_cores=all_cores) + dfp_findall("algorithm", all_cores=all_cores))
+            if "gfx" not in m.get("name", m.get("id")).lower()
         }
-        for m in (dfp_findall("memory") + dfp_findall("algorithm"))
-        if "gfx" not in m.get("name", m.get("id")).lower()
-    }
-    p["memories"] = device_memories(did, memories, stm_header, p["die"])
+
+    p["memories"] = device_memories(did, find_memories(), stm_header, p["die"])
 
     # The flash organization, checked against the flash algorithms of the main flash.
     # The DFP size is wrong for some devices (2x 245759 bytes for the STM32G473xEZ),
     # the CubeMX size for others (4096 KB for the STM32H5E4/F4 with 3 MB).
-    flash = [m for m in p["memories"] if m["name"].startswith("flash") and not m["name"].endswith("_s")]
+    # The DFP assigns each bank of the dual-core STM32H745/H747 to one core, but both cores
+    # can erase and program both banks.
+    memories = device_memories(did, find_memories(True), stm_header, p["die"]) if did.get("core") else p["memories"]
+    flash = [m for m in memories if m["name"].startswith("flash") and not m["name"].endswith("_s")]
     flash = [m for m in flash if not m.get("alias")] or flash
     if flash:
         start = min(m["start"] for m in flash)
@@ -246,7 +251,7 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
             size = max(int(s) for s in sizes) * 1024
         algorithms = [
             Path(_EXT_PATH, dfp_folder, a.get("name"))
-            for a in dfp_findall("algorithm")
+            for a in dfp_findall("algorithm", all_cores=True)
             if int(a.get("start"), 0) == start and a.get("name", "").upper().endswith(".FLM")
         ]
         regions = tuple(sorted((m["start"], m["size"]) for m in flash))
