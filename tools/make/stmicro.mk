@@ -83,6 +83,11 @@ download-stmicro-cubemx:
 download-stmicro-cubeprog:
 	@python3 -m modm_data.dl.stmicro --directory ext/stmicro/cubeprog --download cubeprog
 
+.PHONY: download-stmicro-cubemx2
+## Download the device family and board packs of STM32CubeMX2 from ST's pack server.
+download-stmicro-cubemx2:
+	@python3 -m modm_data.dl.stmicro --directory ext/stmicro/cubemx2 --download cubemx2
+
 
 # ========================== Private Input Sources  ===========================
 # Please ping @salkinium for access.

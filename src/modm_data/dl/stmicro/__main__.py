@@ -9,7 +9,7 @@ import argparse
 from pathlib import Path
 
 import modm_data.pdf
-from modm_data.dl.stmicro import download_cubemx, download_cubeprog
+from modm_data.dl.stmicro import download_cubemx, download_cubeprog, download_cubemx2
 from modm_data.dl.stmicro import load_remote_info, store_remote_info
 from modm_data.dl.stmicro import load_local_info, store_local_info, Document
 
@@ -123,6 +123,9 @@ if __name__ == "__main__":
 
     subparsers.add_parser("cubeprog", help="CubeProg database.")
 
+    cubemx2_parser = subparsers.add_parser("cubemx2", help="CMSIS packs of STM32CubeMX2 from ST's pack server.")
+    cubemx2_parser.add_argument("--packs", default=None, help="Regex of the pack names to download.")
+
     subparsers.add_parser("markdown", help="Markdown versions of the PDF documents.")
 
     args = parser.parse_args()
@@ -134,6 +137,9 @@ if __name__ == "__main__":
             result = download_cubemx(args.directory, args.download, args.patch)
         case "cubeprog":
             result = download_cubeprog(args.directory, args.download)
+        case "cubemx2":
+            kwargs = {"packs": args.packs} if args.packs else {}
+            result = download_cubemx2(args.directory, args.download, **kwargs)
         case "markdown":
             result = download_markdown(args.directory, args.download)
 
