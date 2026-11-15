@@ -4,6 +4,8 @@ src/pinout/
 src/svd/
 src/variants/
 src/boards/
+# CubeMX derived (ST SLA), never commit
+src/clocks/
 src/index.md
 src/source/overview.md
 src/pipeline/overview.md

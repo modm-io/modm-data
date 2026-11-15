@@ -31,7 +31,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi
-          make clone-sources-arm ext/stmicro/header/ ext/stmicro/cubehal/
+          make clone-sources-arm ext/stmicro/header/ ext/stmicro/cubehal/ ext/stmicro/hal2/stm32c5xx-dfp \
+               ext/stmicro/hal2/stm32g5xx-dfp ext/stmicro/hal2/stm32h7pxx-dfp ext/modm
 
       - name: Download the device sources for the pinouts
         run: |
@@ -68,6 +69,10 @@ jobs:
           repository: modm-ext/modm-data-tools
           path: ext/modm-data-tools
 
+      - name: Install modm-data-tools for the clock solver page
+        run: |
+          pip3 install -e ext/modm-data-tools
+
 
       - name: Clone modm-ext/data.modm.dev repository
         if: startsWith(github.ref, 'refs/heads/main')
@@ -79,6 +84,8 @@ jobs:
 
 
       - name: Build Homepage
+        env:
+          MODM_REPO: ext/modm
         run: |
           make build-homepage
 

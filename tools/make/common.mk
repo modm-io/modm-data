@@ -54,6 +54,10 @@ format:
 # The pages of the homepage, see https://github.com/modm-ext/modm-data-tools
 MODM_DATA_TOOLS ?= ext/modm-data-tools
 
+# modm for the Rcc API of the clock solver page, lbuild needs all submodules
+ext/modm:
+	@git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/modm-io/modm.git $@
+
 .PHONY: build-homepage
 ## Generate the entire homepage to /docs.
 build-homepage:
@@ -66,8 +70,12 @@ build-homepage:
 	@python3 -m modm_data.svd2variants --all --input docs/src/svd/ --output docs/src/variants/
 	@python3 -m modm_data.html2pinout --output docs/src/boards/nucleo.json --pinout docs/src/pinout
 	@python3 -m modm_data.hal2pinout --merge --output docs/src/boards/nucleo.json --pinout docs/src/pinout
-	@for page in shared svd variants boards pinout tools; do cp -R $(MODM_DATA_TOOLS)/web/$$page docs/src/ || exit 1; done
+	@python3 -m modm_data.clocks --output docs/src/clocks/
+	@python3 -m modm_data_tools.clocks --output docs/src/clocks/
+	@for page in shared svd variants boards pinout clocks tools; do cp -R $(MODM_DATA_TOOLS)/web/$$page docs/src/ || exit 1; done
 	@(cd docs && mkdocs build)
+	@# GitHub Pages runs Jekyll, which drops files starting with _, e.g. the __init__.py of the clock solver page
+	@touch docs/data.modm.dev/docs/.nojekyll
 
 
 .PHONY: serve-api-docs
