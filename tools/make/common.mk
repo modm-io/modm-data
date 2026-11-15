@@ -51,6 +51,9 @@ format:
 	@ruff format src
 
 # =============================== Documentation ===============================
+# The pages of the homepage, see https://github.com/modm-ext/modm-data-tools
+MODM_DATA_TOOLS ?= ext/modm-data-tools
+
 .PHONY: build-homepage
 ## Generate the entire homepage to /docs.
 build-homepage:
@@ -60,17 +63,9 @@ build-homepage:
 	@pdoc --mermaid -o docs/src/api -t docs/pdoc modm_data
 	@modm_pinout --all -o docs/src/pinout/
 	@python3 -m modm_data.header2svd.stmicro --all --output docs/src/svd/
-	@curl -fsSL --create-dirs -o docs/src/svd/index.html \
-		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/index.html
-	@curl -fsSL --create-dirs -o ext/cache/svd2variants/feature-names-gemma.json \
-		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/feature-names-gemma.json || true
-	@python3 -m modm_data.svd2variants --all --input docs/src/svd/ \
-		--names ext/cache/svd2variants/feature-names-gemma.json --output docs/src/variants/
-	@curl -fsSL --create-dirs -o docs/src/variants/index.html \
-		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/variants.html
+	@python3 -m modm_data.svd2variants --all --input docs/src/svd/ --output docs/src/variants/
 	@python3 -m modm_data.html2pinout --output docs/src/boards/nucleo.json --pinout docs/src/pinout
-	@curl -fsSL --create-dirs -o docs/src/boards/index.html \
-		https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/boards.html
+	@for page in shared svd variants boards tools; do cp -R $(MODM_DATA_TOOLS)/web/$$page docs/src/ || exit 1; done
 	@(cd docs && mkdocs build)
 
 

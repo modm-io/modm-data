@@ -50,6 +50,12 @@ jobs:
           path: ext/stmicro/cubemx
           ssh-key: ${{ secrets.SSH_KEY_STMICRO_CUBEMX }}
 
+      - name: Clone the pages of the homepage
+        uses: actions/checkout@v4
+        with:
+          repository: modm-ext/modm-data-tools
+          path: ext/modm-data-tools
+
 
       - name: Clone modm-ext/data.modm.dev repository
         if: startsWith(github.ref, 'refs/heads/main')
