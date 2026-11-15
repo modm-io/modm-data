@@ -197,6 +197,9 @@ def devices_from_partname(partname: str) -> list[dict[str]]:
     # (RM0514 Section 2.1.1), which would overlap the sections placed into SRAM1
     memories.pop("ccm_sram1", None)
     memories.pop("ccm_sram1_s", None)
+    # The HSP_DATA_BRAM of the STM32H7P is not a separate memory, but an alias of the BRAM-A/B
+    # in AHBSRAM3 (RM0533 Section 2.4), which would overlap the sections placed into AHBSRAM3
+    memories.pop("hsp_data_bram", None)
     # The DFP lists some SRAMs twice, as a whole and as parts, for example, SRAM and SRAM2_3
     memories = {
         name: m
