@@ -20,6 +20,9 @@ _BANK_CONDITIONS = {"dbank", "dualbank", "db1m"}
 # Dies whose largest flash always runs in dual-bank mode, although the database also lists a
 # single-bank organization: RM0444 Table 12, the STM32G0B1/C1 with 512 KB ignores DUAL_BANK.
 _ALWAYS_DUAL = {("DIE467", 512 * 1024)}
+# Dies whose database checks the wrong option bit for the dual-bank mode: the STM32C5 reads
+# BOOT0 (bit 23 of FLASH_OPTSR_CUR) instead of SINGLE_BANK (bit 30), RM0522 Section 6.10.11.
+_SINGLE_BANK_BIT = {"44F": 1 << 30, "44E": 1 << 30, "45A": 1 << 30}
 
 
 @dataclass(frozen=True)
@@ -134,11 +137,14 @@ def _database_layouts(die: str) -> list[tuple[int, list[dict], FlashLayout]]:
             if interface.get("name") != "JTAG_SWD":
                 continue
             for config in interface.findall("Configuration"):
-                conditions[_int(config.get("number"))] = {
+                conditions[_int(config.get("number"))] = cond = {
                     element.tag.lower(): tuple(_register(reg.get(k)) for k in ("address", "mask", "value"))
                     for element in config
                     if (reg := element.find("ReadRegister")) is not None
                 }
+                if (bit := _SINGLE_BANK_BIT.get(did)) and "dbank" in cond:
+                    address, _, value = cond["dbank"]
+                    cond["dbank"] = (address, bit, bit if value else 0)
         for peripheral in device.iter("Peripheral"):
             if peripheral.findtext("Name") != "Embedded Flash":
                 continue
@@ -158,6 +164,9 @@ def _database_layouts(die: str) -> list[tuple[int, list[dict], FlashLayout]]:
                         if params:
                             groups = tuple((_int(f.get("size")), _int(f.get("occurrence"))) for f in params)
                             banks.append((_int(params[0].get("address")), groups))
+                    # Only the banks of the main flash, not the high-cycle data area of the STM32G5
+                    # at 0x09000000 (banks 3 and 4 of the database) in the next 16 MB
+                    banks = [b for b in banks if b[0] >> 24 == banks[0][0] >> 24] if banks else banks
                     layout = FlashLayout(tuple(banks), (), _int(config.findtext("Alignment", "0")), erased)
                     configs = [conditions.get(n, {}) for n in _numbers(config.get("config"))]
                     layouts.append((layout.size, configs, layout))
