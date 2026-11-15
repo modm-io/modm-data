@@ -26,13 +26,25 @@ jobs:
       - name: Install modm-data with docs dependencies
         run: |
           pip3 install -r tools/requirements.txt -e ".[docs]"
-          pip3 install git+https://github.com/modm-ext/modm-pinout.git@main
 
       - name: Install ARM toolchain and sources for the SVD files
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi
           make clone-sources-arm ext/stmicro/header/ ext/stmicro/cubehal/
+
+      - name: Download the device sources for the pinouts
+        run: |
+          make -j4 clone-sources-nordic download-sources-raspberrypi download-sources-microchip
+          make -j4 ext/stmicro/STM32C0xx_DFP ext/stmicro/STM32F0xx_DFP ext/stmicro/STM32F1xx_DFP \
+                   ext/stmicro/STM32F2xx_DFP ext/stmicro/STM32F3xx_DFP ext/stmicro/STM32F4xx_DFP \
+                   ext/stmicro/STM32F7xx_DFP ext/stmicro/STM32G0xx_DFP ext/stmicro/STM32G4xx_DFP \
+                   ext/stmicro/STM32H5xx_DFP ext/stmicro/STM32H7RSxx_DFP ext/stmicro/STM32H7xx_DFP \
+                   ext/stmicro/STM32L0xx_DFP ext/stmicro/STM32L1xx_DFP ext/stmicro/STM32L4xx_DFP \
+                   ext/stmicro/STM32L5xx_DFP ext/stmicro/STM32U0xx_DFP ext/stmicro/STM32U3xx_DFP \
+                   ext/stmicro/STM32U5xx_DFP ext/stmicro/STM32WBxx_DFP ext/stmicro/STM32WLxx_DFP \
+                   ext/stmicro/hal2/stm32c5xx-dfp ext/stmicro/hal2/stm32g5xx-dfp \
+                   ext/stmicro/hal2/stm32h7pxx-dfp
 
 
       # These archive repositories are private since copyright prevents republishing!

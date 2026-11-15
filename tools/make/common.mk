@@ -61,11 +61,11 @@ build-homepage:
 	@mkdir -p docs/data.modm.dev/docs/
 	@python3 tools/scripts/synchronize_docs.py
 	@pdoc --mermaid -o docs/src/api -t docs/pdoc modm_data
-	@modm_pinout --all -o docs/src/pinout/
+	@python3 -m modm_data.pinout --output docs/src/pinout/ --templates $(MODM_DATA_TOOLS)/templates/pinout/
 	@python3 -m modm_data.header2svd.stmicro --all --output docs/src/svd/
 	@python3 -m modm_data.svd2variants --all --input docs/src/svd/ --output docs/src/variants/
 	@python3 -m modm_data.html2pinout --output docs/src/boards/nucleo.json --pinout docs/src/pinout
-	@for page in shared svd variants boards tools; do cp -R $(MODM_DATA_TOOLS)/web/$$page docs/src/ || exit 1; done
+	@for page in shared svd variants boards pinout tools; do cp -R $(MODM_DATA_TOOLS)/web/$$page docs/src/ || exit 1; done
 	@(cd docs && mkdocs build)
 
 

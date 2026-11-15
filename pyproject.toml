@@ -44,8 +44,6 @@ dynamic = ["version"]
 "Changelog" = "https://github.com/modm-io/modm-data/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-# Note: modm-pinout is not declared here, since PyPI rejects packages with
-# direct URL dependencies. The docs workflow installs it separately.
 docs = [
     "pdoc>=14,<15",
     "mkdocs>=1.5,<2",

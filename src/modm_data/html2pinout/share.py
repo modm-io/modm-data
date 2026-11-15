@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 """
-Links a board to the page of its device in the pinout generator of `modm_pinout`,
+Links a board to the page of its device in the pinout generator of `modm_data.pinout`,
 so that the generator starts with what the board already uses the pins for.
 """
 
@@ -60,7 +60,7 @@ def share_state(rows: list[dict], connectors: dict, uses: dict) -> dict:
 
 def pinout_link(path: Path, device: str, connectors: dict, uses: dict) -> str | None:
     """
-    :param path: The output folder of `modm_pinout`.
+    :param path: The output folder of `modm_data.pinout`.
     :param device: The name of the device on the board like `STM32F429ZITx`.
     :return: The page of the device relative to the folder with the state of the board as shared URL, or `None`
              if the generator does not know the device.

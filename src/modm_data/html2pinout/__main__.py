@@ -26,7 +26,7 @@ def main():
     parser.add_argument("--document", type=Path, help="A single user manual, otherwise all are converted.")
     parser.add_argument("--input", type=Path, default=ext_path("stmicro/html-archive"))
     parser.add_argument("--output", type=Path, default=ext_path("stmicro/pinout/nucleo.json"))
-    parser.add_argument("--pinout", type=Path, help="The output folder of modm_pinout to link the boards to.")
+    parser.add_argument("--pinout", type=Path, help="The output folder of modm_data.pinout to link the boards to.")
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
 
