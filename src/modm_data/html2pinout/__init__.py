@@ -150,6 +150,7 @@ def _table_pinout(table, kind: str) -> dict[str, dict]:
     captions = set(_NAME.findall(table.caption()))
     pinout = defaultdict(dict)
     unnamed = 1
+    numbers = {int(t) for n in groups for y in rows if (t := _text(table.cell(n, y))).isdigit()}
 
     for number, columns in groups.items():
         # The connector is named in the header above, in its own column or in the caption
@@ -163,9 +164,15 @@ def _table_pinout(table, kind: str) -> dict[str, dict]:
         # The dedicated STM32 pin column is more trustworthy than free-form function columns
         columns = sorted(set(columns) - set(connector_columns), key=lambda c: (not _MCU.search(_key(header[c])), c))
 
+        last = None
         for y in rows:
             if not (pin := _text(table.cell(number, y))).isdigit():
                 continue
+            # Some manuals number two rows the same (AREF and D14 both as pin 8), the second one is the missing
+            # next pin. Rows repeated across a page break also repeat the number, but the next pin is not missing.
+            if pin == last and int(pin) + 1 not in numbers and int(pin) < max(numbers):
+                pin = str(int(pin) + 1)
+            last = pin
             for c in connector_columns:
                 if text := _text(table.cell(c, y)):
                     connector = next(iter(_CN.findall(text)), text)

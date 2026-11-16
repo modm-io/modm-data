@@ -144,3 +144,37 @@ def test_share_state():
         "selectedByRowId": {"1": ["SYS_JTMS/SYS_SWDIO"], "2": ["ETH_TXD0"]},
         "namesByRowId": {"0": "B1, CN7-1 (A0)", "1": "TMS", "2": "RMII_TXD0 [LAN8742]"},
     }
+
+
+def test_repeated_pin_numbers():
+    from modm_data.html2pinout import _table_pinout
+
+    class Cell:
+        def __init__(self, text):
+            self._text = text
+
+        def text(self, **kwargs):
+            return self._text
+
+    class Table:
+        def __init__(self, rows):
+            self._rows, self._hrows, self.rows, self.columns = rows, 1, len(rows), len(rows[0])
+
+        def cell(self, x, y):
+            return Cell(self._rows[y][x])
+
+        def caption(self):
+            return "ARDUINO connector (CN5) pinout"
+
+    header = [["Pin", "Pin name", "MCU pin"]]
+    # AREF and D14 are both numbered 8 in the manual, the second one is pin 9
+    pins = _table_pinout(
+        Table(header + [["7", "GND", "-"], ["8", "AREF", "-"], ["8", "D14", "PB7"], ["10", "D15", "PB6"]]), "arduino"
+    )
+    assert {n: p["signal"] for n, p in pins["CN5"].items()} == {7: "GND", 8: "AREF", 9: "PB7", 10: "PB6"}
+    # A row repeated after a page break and alternatives of the last pin keep their number
+    pins = _table_pinout(
+        Table(header + [["9", "D14", "PB7"], ["9", "D14", "PB7"], ["10", "D15", "PB6"], ["10", "D15", "PB13"]]),
+        "arduino",
+    )
+    assert sorted(pins["CN5"]) == [9, 10]
