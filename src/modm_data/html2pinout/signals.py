@@ -20,7 +20,7 @@ _NS = "{http://mcd.rou.st.com/modules.php?name=mcu}"
 _USES = {
     "debug": r"SW(DIO|CLK|O|0)|JT|^T(MS|CK|DI|DO)$|TRACE|DEBUG",
     "vcp": r"VCP|STLK|STLINK|^(LP)?US?ART\d*_[TR]X$",
-    "ethernet": r"RMII?_|^ETH",
+    "ethernet": r"RMII?[_.]|^ETH",
     "usb": r"USB|UCPD|VBUS",
     "clock": r"OSC|MCO",
     "led": r"^LD\d|LED",
