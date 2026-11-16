@@ -56,10 +56,7 @@ jobs:
 
       - name: Analyze Peripheral Variants
         run: |
-          curl -fsSL --create-dirs -o ext/cache/svd2variants/feature-names-gemma.json \
-            https://gist.githubusercontent.com/salkinium/12a18032caa303697c6583937f6fcd16/raw/feature-names-gemma.json || true
-          python3 -m modm_data.svd2variants --all --input svd-archive/ --names ext/cache/svd2variants/feature-names-gemma.json \
-            --no-generate --output variants-archive/
+          python3 -m modm_data.svd2variants --all --input svd-archive/ --output variants-archive/
 
       - name: Upload Variant Logs
         if: always()

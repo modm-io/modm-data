@@ -59,20 +59,13 @@ def _common_phrase(descriptions: list[str]) -> str:
     return " ".join(best).strip(" ,.:;-")
 
 
-def name_feature(elements: list[Element], names: dict[str, str] = None) -> str:
+def name_feature(elements: list[Element]) -> str:
     """
     :param elements: the elements of one feature.
-    :param names: the lookup table of generated names, see
-                  `modm_data.svd2variants.annotate`, which takes precedence.
     :return: a short human readable name, see the module documentation.
     """
     if not elements:
         return ""
-    if names:
-        from .annotate import feature_key
-
-        if generated := names.get(feature_key(elements)):
-            return generated
     names = [element[2] for element in elements]
     registers = sorted({element[1] for element in elements})
     descriptions = [element[3] for element in elements if element[3]]

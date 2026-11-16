@@ -102,7 +102,7 @@ class Variant:
                     )
         return described
 
-    def condense(self, mode: str = "binary", names: dict[str, str] = None):
+    def condense(self, mode: str = "binary"):
         """Splits the merged register map into the common core and the optional features."""
         presence = defaultdict(set)
         instances = defaultdict(int)
@@ -126,7 +126,7 @@ class Variant:
         described = self.described(mode)
         for feature in self.features:
             feature.elements = [described[ll] for ll in sorted(feature.locations) if ll in described]
-            feature.name = name_feature(feature.elements, names)
+            feature.name = name_feature(feature.elements)
 
 
 @dataclass
@@ -158,9 +158,7 @@ def _shapes(instances: list[Instance], ignored: re.Pattern = None) -> dict[Shape
     return dict(sorted(shapes.items(), key=lambda s: (-len(s[0]), -len(s[1]))))
 
 
-def variants_of(
-    name: str, instances: list[Instance], widening: bool = True, mode: str = "binary", names: dict[str, str] = None
-) -> Group:
+def variants_of(name: str, instances: list[Instance], widening: bool = True, mode: str = "binary") -> Group:
     """
     Merges all instances of a peripheral group into as few variants as possible.
 
@@ -175,8 +173,6 @@ def variants_of(
     :param mode: `binary` locates elements by register address, `source` by
                  register name, and `similar` also tolerates differences in the
                  documentation, see `modm_data.svd2variants.merge.scope_of`.
-    :param names: the lookup table of generated feature names, see
-                  `modm_data.svd2variants.annotate`.
     :return: the group with its variants.
     """
     group = Group(name, instances, mode=mode)
@@ -228,7 +224,7 @@ def variants_of(
                 break
 
     for variant in group.variants:
-        variant.condense(mode, names)
+        variant.condense(mode)
     group.variants.sort(key=lambda v: (-len(v.instances), -len(v.shapes)))
     return group
 

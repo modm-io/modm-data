@@ -130,40 +130,6 @@ of them do share something lexically, since ST names and documents related
 elements alike, so a name is derived from the shared name prefix, the shared
 description phrase or the registers involved, see `modm_data.svd2variants.naming`.
 
-That misses the semantics though: the seventeen bit fields of the first
-capture/compare channel of a timer share no name and no description, but they
-are obviously "Channel 1". A small language model names those much better, so
-the names are generated into a lookup table keyed by the *content* of the
-feature, see `modm_data.svd2variants.annotate`. The table is stable across
-runs, reviewable as a diff, and only features that actually changed need to be
-asked again. Every feature is named by the first of these that works:
-
-1. the lookup table of `--names`, which the homepage and the CI download from
-   the gist, so that they never need a model,
-2. a local model, by default Gemma 4 26B-A4B served by LM Studio at
-   `http://localhost:1234/v1`, which only new features are sent to,
-3. the heuristic.
-
-The prompt matters more than the size of the model. Keeping the numbers of
-similar elements as a range turns "High line interrupt masking" into "Lines 28
-to 30 interrupt masking", and asking for a different name per feature stops
-four ADC features from all becoming "Multimode and dual mode support".
-Conversely, naming the vague words to avoid produced *more* of them.
-
-```bash
-# Name the features that are missing from the table with a local model and update it
-python3 -m modm_data.svd2variants --all --names feature-names.json
-# Name them with the claude command line tool instead
-python3 -m modm_data.svd2variants --all --names feature-names.json --claude
-# Use another local model or server
-python3 -m modm_data.svd2variants --all --names feature-names.json \
-    --endpoint http://localhost:1234/v1 --model qwen/qwen3-4b-2507
-# Only use the table, as the CI does
-python3 -m modm_data.svd2variants --all --names feature-names.json --no-generate
-```
-
-The homepage and the CI workflow currently use the heuristic names only.
-
 ## Selective Analysis
 
 The reports are written to `log/stmicro/variants/<mode>/*.txt`.

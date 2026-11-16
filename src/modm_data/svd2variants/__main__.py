@@ -5,20 +5,10 @@ import re
 import logging
 import argparse
 from pathlib import Path
-from collections import defaultdict
 
 from modm_data.svd2variants import instances_of_svds, variants_of, conflicts_between
 from modm_data.svd2variants.merge import MODES
 from modm_data.svd2variants.write import write_variants
-from modm_data.svd2variants.annotate import (
-    LOCAL_MODEL,
-    MODEL,
-    feature_key,
-    generate_names,
-    local_endpoint,
-    read_names,
-    write_names,
-)
 from modm_data.utils import ext_path
 
 LOGGER = logging.getLogger("svd2variants")
@@ -89,37 +79,6 @@ def main():
         default="all",
         help="Locate elements by register address (binary), by register name (source), or by register name while tolerating differences in the documentation (similar).",
     )
-    parser.add_argument(
-        "--names",
-        type=Path,
-        default=None,
-        help="JSON lookup table of generated feature names, which takes precedence over the heuristic.",
-    )
-    parser.add_argument(
-        "--no-generate",
-        action="store_true",
-        default=False,
-        help="Only use the names of --names, even if a model is available to name the rest.",
-    )
-    parser.add_argument(
-        "--claude",
-        action="store_true",
-        default=False,
-        help="Name the missing features with the claude command line tool instead of a local server.",
-    )
-    parser.add_argument("--model", type=str, default=None, help="The model that names the features.")
-    parser.add_argument(
-        "--endpoint",
-        type=str,
-        default=None,
-        help=f"URL of an OpenAI compatible server, defaults to LM Studio serving {LOCAL_MODEL}.",
-    )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=None,
-        help="Number of concurrent requests, defaults to 6 for claude and 1 for a local server.",
-    )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     args = parser.parse_args()
     logging.basicConfig(level=[logging.WARNING, logging.INFO, logging.DEBUG][min(args.verbose, 2)])
@@ -134,50 +93,11 @@ def main():
         print("No matching peripheral groups found!")
         return False
 
-    table = read_names(args.names)
     modes = {
-        mode: [variants_of(name, instances[name], widening=not args.strict, mode=mode, names=table) for name in names]
+        mode: [variants_of(name, instances[name], widening=not args.strict, mode=mode) for name in names]
         for mode in (MODES if args.mode == "all" else [args.mode])
     }
 
-    if not args.no_generate:
-        jobs = defaultdict(list)
-        seen = set()
-        for groups in modes.values():
-            for group in groups:
-                for variant in group.variants:
-                    for feature in variant.features:
-                        key = feature_key(feature.elements)
-                        if key not in table and key not in seen:
-                            seen.add(key)
-                            jobs[group.name].append((key, feature.elements))
-        # The table of a previous run first, then a local model, then the heuristic
-        endpoint = None if args.claude else local_endpoint(args.endpoint, args.model or LOCAL_MODEL)
-        model = args.model or (MODEL if args.claude else LOCAL_MODEL)
-        if seen and (endpoint or args.claude):
-            print(f"Naming {len(seen)} features of {len(jobs)} peripheral groups with {model}...")
-
-            def progress(result, done, total):
-                table.update(result)
-                if args.names:
-                    write_names(table, args.names)
-                print(f"  batch {done}/{total}: {len(result)} names", flush=True)
-
-            workers = args.workers or (6 if args.claude else 1)
-            generated = generate_names(jobs, model, workers, progress, endpoint)
-            if args.names:
-                print(f"{len(table)} names in {args.names}")
-            # Name the features again, now that the table is filled
-            if generated:
-                modes = {
-                    mode: [
-                        variants_of(name, instances[name], widening=not args.strict, mode=mode, names=table)
-                        for name in names
-                    ]
-                    for mode in (MODES if args.mode == "all" else [args.mode])
-                }
-        elif seen:
-            print(f"{len(seen)} features are named by the heuristic, no model available to name them.")
     for mode, groups in modes.items():
         log_path = Path("log/stmicro/variants") / mode
         log_path.mkdir(exist_ok=True, parents=True)
