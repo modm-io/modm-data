@@ -17,14 +17,8 @@ from modm_data.pinout import payloads
 SCRIPTS = ["core", "persistence", "regex", "io", "table", "package", "package-renderers", "app", "loader"]
 
 
-def write_site(output: Path, templates: Path, payloads: list[dict]):
-    env = Environment(
-        loader=FileSystemLoader(templates),
-        autoescape=select_autoescape(enabled_extensions=("html", "xml", "j2")),
-        undefined=StrictUndefined,
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
+def write_site(output: Path, templates: Path | None, payloads: list[dict]):
+    """Writes the pin data of every source, and with templates the pages of every device."""
     generated_at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     def device(p):
@@ -46,6 +40,27 @@ def write_site(output: Path, templates: Path, payloads: list[dict]):
         dataset = {"generated_at": generated_at, "source": source, "devices": devices}
         path.write_text(json.dumps(dataset, indent=2, sort_keys=True) + "\n")
 
+    manifest = [
+        {
+            "chip_id": p["chip_id"],
+            "partname": p["partname"],
+            "source": p["source"],
+            "data": f"data/{p['source']}.json",
+            **({"page": f"{p['chip_id']}/index.html"} if templates else {}),
+        }
+        for p in payloads
+    ]
+    (output / "manifest.json").write_text(json.dumps({"devices": manifest}, indent=2, sort_keys=True) + "\n")
+    if not templates:
+        return
+
+    env = Environment(
+        loader=FileSystemLoader(templates),
+        autoescape=select_autoescape(enabled_extensions=("html", "xml", "j2")),
+        undefined=StrictUndefined,
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
     page = env.get_template("pinout.html.j2")
     for p in payloads:
         path = output / p["chip_id"] / "index.html"
@@ -87,30 +102,20 @@ def write_site(output: Path, templates: Path, payloads: list[dict]):
     )
     (output / "index.html").write_text(index)
 
-    manifest = [
-        {
-            "chip_id": p["chip_id"],
-            "partname": p["partname"],
-            "page": f"{p['chip_id']}/index.html",
-            "source": p["source"],
-            "data": f"data/{p['source']}.json",
-        }
-        for p in payloads
-    ]
-    (output / "manifest.json").write_text(json.dumps({"devices": manifest}, indent=2, sort_keys=True) + "\n")
-
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate the pin mapping pages of all devices.")
-    parser.add_argument("--output", type=Path, required=True, help="The folder of the pages.")
-    parser.add_argument("--templates", type=Path, required=True, help="The folder of the page templates.")
+    parser = argparse.ArgumentParser(description="Generate the pin data and the pin mapping pages of all devices.")
+    parser.add_argument("--output", type=Path, required=True, help="The folder of the data and the pages.")
+    parser.add_argument(
+        "--templates", type=Path, help="The folder of the page templates, without it only the data is written."
+    )
     parser.add_argument("--jobs", type=int, help="The number of processes for the STM32 devices.")
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR, format="%(levelname)s: %(message)s")
 
     devices = payloads(args.jobs)
     write_site(args.output, args.templates, devices)
-    print(f"Wrote {len(devices)} device pages to {args.output}")
+    print(f"Wrote {len(devices)} devices to {args.output}")
 
 
 if __name__ == "__main__":
