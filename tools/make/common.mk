@@ -65,6 +65,7 @@ build-homepage:
 	@python3 -m modm_data.header2svd.stmicro --all --output docs/src/svd/
 	@python3 -m modm_data.svd2variants --all --input docs/src/svd/ --output docs/src/variants/
 	@python3 -m modm_data.html2pinout --output docs/src/boards/nucleo.json --pinout docs/src/pinout
+	@python3 -m modm_data.hal2pinout --merge --output docs/src/boards/nucleo.json --pinout docs/src/pinout
 	@for page in shared svd variants boards pinout tools; do cp -R $(MODM_DATA_TOOLS)/web/$$page docs/src/ || exit 1; done
 	@(cd docs && mkdocs build)
 

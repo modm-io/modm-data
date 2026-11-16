@@ -35,7 +35,7 @@ jobs:
 
       - name: Download the device sources for the pinouts
         run: |
-          make -j4 clone-sources-nordic download-sources-raspberrypi download-sources-microchip
+          make -j4 clone-sources-nordic download-sources-raspberrypi download-sources-microchip download-stmicro-cubemx2
           make -j4 ext/stmicro/STM32C0xx_DFP ext/stmicro/STM32F0xx_DFP ext/stmicro/STM32F1xx_DFP \
                    ext/stmicro/STM32F2xx_DFP ext/stmicro/STM32F3xx_DFP ext/stmicro/STM32F4xx_DFP \
                    ext/stmicro/STM32F7xx_DFP ext/stmicro/STM32G0xx_DFP ext/stmicro/STM32G4xx_DFP \
