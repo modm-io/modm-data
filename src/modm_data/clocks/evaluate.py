@@ -82,6 +82,13 @@ def _test(gate: list, settings: dict, semaphores: dict) -> bool:
     return all(values) if kind == "and" else any(values)
 
 
+def _tests_usage(gate: list) -> bool:
+    """Whether a condition tests a usage flag, for example, ADCUsed_ForRCC or PLL1QUsed."""
+    if gate[0] in ("var", "eq", "cmp"):
+        return "Used" in gate[1]
+    return any(_tests_usage(g) for g in gate[1:] if isinstance(g, list))
+
+
 # A PLL output like 8 MHz / 7 * 210 / 2 is 120.00000001 MHz, within the rounding of a 120 MHz limit
 _CMP = {
     "<": float.__lt__,
@@ -499,15 +506,19 @@ def evaluate(tree: dict, config: dict[str, str] | None = None, use: set[str] | N
     derive(clocks)
 
     def check(name: str, freq: float, static: dict, variants: list, prefix: str):
-        bounds = static
+        bounds, usage = static, False
         for variant in variants:
             if "when" not in variant or _test(variant["when"], settings, semaphores):
-                # The fallback without limits stands for an element not in use,
-                # but this one is, for example, PLLP feeding the ADC on the STM32G0
-                # without the ADCUsed_ForRCC flag, so the static limits apply
                 if any(key in variant for key in (f"{prefix}min", f"{prefix}max")):
                     bounds = variant
+                # The fallback without limits stands for an element not in use, but this one
+                # is, for example, PLLP feeding the ADC on the STM32G0 without the ADCUsed_ForRCC
+                # flag, so the static limits apply. A condition on the configuration alone is
+                # decided though: the F7 RTC needs 1 MHz from the HSE, from the LSE it has no limit.
+                elif "when" not in variant and variants[:-1] and not usage:
+                    bounds = {}
                 break
+            usage = usage or _tests_usage(variant["when"])
         low, high = bounds.get(f"{prefix}min"), bounds.get(f"{prefix}max")
         # The limits that apply in this configuration
         result[name].setdefault("bounds", {})[prefix] = (low, high)

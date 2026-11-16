@@ -406,6 +406,43 @@ class CubeMxClockTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             evaluate(tree, {"Nope": "1"})
 
+    def test_fallback_limits(self):
+        source = lambda **kw: {"inputs": [], "outputs": [], "signals": [], **kw}
+        nodes = {
+            "LSE": source(kind="varied", param="LSE_VALUE", default=32768.0),
+            "HSE": source(kind="fixed", param="HSE_RTC", value=1e6),
+            "Mux": source(
+                kind="mux",
+                param="RTCSel",
+                default="RTC_HSE",
+                inputs=[
+                    {"from": "LSE", "signal": "LSE", "macro": "RTC_LSE"},
+                    {"from": "HSE", "signal": "HSE", "macro": "RTC_HSE"},
+                ],
+            ),
+            # The F7 RTC: 1 MHz from the HSE, no limit otherwise
+            "RTCOut": source(
+                kind="output",
+                inputs=[{"from": "Mux", "signal": "RTC"}],
+                min=1e6,
+                max=1e6,
+                limits=[{"min": 1e6, "max": 1e6, "when": ["not", ["eq", "RTCSel", "RTC_LSE"]]}, {}],
+            ),
+            # The G0 ADC: the static limit applies while it is in use without its usage flag
+            "ADCOut": source(
+                kind="output",
+                inputs=[{"from": "LSE", "signal": "ADC"}],
+                min=1e6,
+                limits=[{"min": 1e6, "when": ["var", "ADCUsed_ForRCC"]}, {}],
+            ),
+        }
+        tree = {"nodes": nodes, "options": {}, "semaphores": {}}
+        self.assertEqual(evaluate(tree)["RTCOut"]["errors"], [])
+        result = evaluate(tree, {"Mux": "RTC_LSE"})
+        self.assertEqual(result["RTCOut"]["freq"], 32768.0)
+        self.assertEqual(result["RTCOut"]["errors"], [])
+        self.assertEqual(result["ADCOut"]["errors"], ["32768 < 1e+06"])
+
     def test_manual_flash_latency(self):
         macro = "PWR_REGULATOR_VOLTAGE_SCALE{}".format
         scales = {
