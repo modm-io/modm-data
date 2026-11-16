@@ -14,7 +14,7 @@ from ..header2svd.stmicro import Header
 from ..cubemx import stm32_data
 from ..cubemx.memories import memories as device_memories
 from ..cubemx.device_data import header_modules, dma3_requests, split_signals
-from ..cubeprog import flash_layouts
+from ..cubeprog import flash_layouts, system_bootloader
 
 LOGGER = logging.getLogger(__file__)
 
@@ -233,6 +233,8 @@ def devices_from_partname(partname: str) -> list[dict[str]]:
     if flash := [m for m in p["memories"] if m["name"].startswith("flash") and not m.get("alias")]:
         regions = tuple(sorted((m["start"], m["size"]) for m in flash))
         p["flash_layouts"] = flash_layouts(p["die"], sum(m["size"] for m in flash), (), regions)
+
+    p["sysboot"] = system_bootloader(p["die"])
 
     p["package"] = pinout["characteristics"]["package_name"]
     p["pin-count"] = re.findall(r"[0-9]+", p["package"])[0]

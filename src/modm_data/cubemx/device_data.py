@@ -21,7 +21,7 @@ from ..cubehal.remaps import read_afio_remap_macros
 from . import peripherals
 from .dma_remap import dma_remaps
 from .memories import memories as device_memories
-from ..cubeprog import flash_layouts
+from ..cubeprog import flash_layouts, system_bootloader
 from ..header2svd.stmicro import Header
 
 LOGGER = logging.getLogger(__file__)
@@ -310,6 +310,8 @@ def _properties_from_id(partname, comboDeviceName, device_file, did, core):
         ]
         regions = tuple(sorted((m["start"], m["size"]) for m in flash))
         p["flash_layouts"] = flash_layouts(p["die"], size, tuple(a for a in algorithms if a.exists()), regions)
+
+    p["sysboot"] = system_bootloader(p["die"])
 
     # packaging
     package = device_file.query("//@Package")[0]
