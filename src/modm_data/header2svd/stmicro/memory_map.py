@@ -310,7 +310,8 @@ def _tokens(member: str, index: int = None, subtype: str = None, array_base: int
         tokens.append((re.sub(r"^(NS|SEC)", "", m), "reduced"))
     # Underscores at different positions, e.g. DBGMCU_APB1_FZ and SYSCFG_ITLINE0_SR
     squashed = m.replace("_", "")
-    for idx in indices:
+    # Only the index of the element itself, otherwise missing elements use the bit fields of the next one
+    for idx in indices[:1]:
         tokens += [(u, "indexed") for token in _indexed(squashed, idx) for u in _underscores(token)]
     tokens += [(u, "reduced") for u in _underscores(squashed)]
     return list(dict.fromkeys((token, kind) for token, kind in tokens if token))
@@ -366,16 +367,31 @@ class _Matcher:
         self.report = report
         self.instances = {_strip_security(name) for name in data.instances}
         self.members = {typedef: [m.name for m in members] for typedef, members in data.structs.items()}
+        self.uniform = {}
 
     def _heads(self, typedef, instance, parent, sub):
         heads = _instance_heads(sub or instance) + _type_heads(typedef, instance)
         return list(dict.fromkeys(heads + (_type_heads(parent) if parent else [])))
 
     def _array_base(self, heads, member):
+        # Underscores at different positions, e.g. SYSCFG_ITLINE0_SR for IT_LINE_SR[0]
+        tokens = _indexed(member, 0)
+        tokens += [u for token in _indexed(member.replace("_", ""), 0) for u in _underscores(token)]
         for head in heads:
-            if any(self.bitfields.has(head, token) for token in _indexed(member, 0)):
+            if any(self.bitfields.has(head, token) for token in tokens):
                 return 0
         return 1
+
+    def _claimed(self, typedef, member, head, token):
+        """:return: if the bit fields of the token belong to other members, e.g. USB_USBPHYC_CR for USBPHYC_TRIM1CR."""
+        if f"{head}_{token}" in self.bitfields.fields:
+            return False
+        others = tuple(
+            f"{head}_{other}_"
+            for other in self.members.get(typedef, [])
+            if other != member and other.startswith(f"{token}_")
+        )
+        return bool(others) and all(name.startswith(others) for name in self.bitfields._with_prefix(f"{head}_{token}_"))
 
     def _match(self, typedef, member, index, subindex, instance, parent, sub):
         abbreviation = ""
@@ -392,16 +408,30 @@ class _Matcher:
         for candidates in (specific, others):
             for token, kind in tokens:
                 for head in candidates:
+                    if kind == "reduced" and self._claimed(typedef, member, head, token):
+                        continue
                     if self.bitfields.has(head, token):
                         return _name(kind, token, member, index, subindex, abbreviation), self.bitfields.take(
                             head, token
                         )
         return _name("exact", member, member, index, subindex, abbreviation), {}
 
-    def match(self, typedef, member, index=None, subindex=None, instance=None, parent=None, sub=None):
+    def _uniform(self, typedef, member, length, subindex, instance, parent, sub):
+        """:return: if all elements of the array with bit fields have the same ones, unlike e.g. SYSCFG_ITLINE1_SR."""
+        key = (typedef, member, subindex, instance, parent, sub)
+        if key not in self.uniform:
+            layouts = set()
+            for index in range(length):
+                fields = self._match(typedef, member, index, subindex, instance, parent, sub)[1]
+                if fields:
+                    layouts.add(tuple(sorted((name, *self.bitfields.fields[macro]) for name, macro in fields.items())))
+            self.uniform[key] = len(layouts) < 2
+        return self.uniform[key]
+
+    def match(self, typedef, member, index=None, subindex=None, instance=None, parent=None, sub=None, length=0):
         """:return: the register name and its bit field macros by field name."""
         name, fields = self._match(typedef, member, index, subindex, instance, parent, sub)
-        if not fields and index:
+        if not fields and index and self._uniform(typedef, member, length, subindex, instance, parent, sub):
             # Arrays with bit fields only defined for the first element, e.g. CAN_F0R1 for all filter banks
             name0, fields0 = self._match(typedef, member, 0, subindex, instance, parent, sub)
             if fields0:
@@ -737,9 +767,16 @@ def memory_map(data: HeaderData, name: str = None, cubehal_path: Path = None) ->
             elif re.search(r"[A-Z]$", sub) and len(siblings[(pname, sub[:-1])]) > 1:
                 subindex = sub[-1]
         arrays = defaultdict(list)
-        for rtype, member, index, offset, size in _flatten(data, typedef, address - paddress):
+        flattened = _flatten(data, typedef, address - paddress)
+        lengths = defaultdict(int)
+        for rtype, member, index, _, _ in flattened:
+            if index is not None:
+                lengths[(rtype, member)] = max(lengths[(rtype, member)], index + 1)
+        for rtype, member, index, offset, size in flattened:
             parent = (ptype or None) if iname in parents else None
-            rname, fields = matcher.match(rtype, member, index, subindex, pname, parent, iname)
+            rname, fields = matcher.match(
+                rtype, member, index, subindex, pname, parent, iname, lengths[(rtype, member)]
+            )
             register = _Register(rname, offset, size, {}, sub, type=rtype, member=member)
             layers = _bit_fields(register, fields, bitfields, report)
             registers.append(register)

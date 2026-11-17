@@ -6,6 +6,8 @@
   set of binary, source and similar compatible variants and publish them with
   the Peripheral Variant Explorer.
 - Add the register access to the SVD files reconstructed from the CMSIS headers.
+- Fix the STM32 `SYSCFG_ITLINEx_SR` registers shifted by one and the `USBPHYC_CR`
+  bit fields assigned to the STM32N6 `USBPHYC_TRIMxCR` registers.
 - Upgrade to pypdfium2 v5 while keeping the HTML output identical by computing
   the loose character bounding boxes the way the previous pdfium did.
 
