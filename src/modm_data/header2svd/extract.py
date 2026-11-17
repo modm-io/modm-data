@@ -24,7 +24,7 @@ import logging
 import tempfile
 import subprocess
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from functools import cache
 
@@ -401,7 +401,8 @@ def extract_header(header: Path, defines: list[str] = None) -> HeaderData:
     key = hashlib.sha1(content + " ".join(defines).encode() + str(_VERSION).encode()).hexdigest()[:10]
     cache = _CACHE_PATH / f"{header.stem}_{key}.pkl"
     if cache.exists():
-        return pickle.loads(cache.read_bytes())
+        # the cache is keyed by content, another checkout may have written it with its own header path
+        return replace(pickle.loads(cache.read_bytes()), header=header)
     LOGGER.info(f"Extracting {header.name} with {defines}...")
     data = _extract(header, defines)
     cache.parent.mkdir(parents=True, exist_ok=True)
