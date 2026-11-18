@@ -32,7 +32,7 @@ from functools import cache
 
 from ..utils import XmlReader
 from . import conditions
-from ..clocks.evaluate import _number, evaluate  # noqa: F401
+from ..clocks.evaluate import _number, _test, evaluate  # noqa: F401
 from .device_data import _MCU_PATH, _device_file, _hal2, header_from_partname
 from .clock_corrections import correct
 from .clock_parameters import _default, limits, read_parameters, select
@@ -358,6 +358,32 @@ def _options(nodes: dict, parameters: dict, semaphores: dict, extra: list = ()) 
     return options
 
 
+def _enables(nodes: dict, parameters: dict, options: dict, semaphores: dict, context: dict) -> dict[str, str]:
+    """
+    The output enables that hold with no peripheral in use, so that evaluate()
+    counts their outputs as used. The STM32U5 gates its core clocks with one
+    that only the low-power background autonomous mode (LPBAM) clears:
+
+        <RefParameter Name="notInLPBAM" DefaultValue="false">
+            <Condition Expression="S_LPBAM_CONF"/>
+        <RefParameter Name="notInLPBAM" DefaultValue="true"/>
+
+    :return: The value of each such enable, the configuration may clear it.
+    """
+    enables = {e for node in nodes.values() if node["kind"] == "output" for e in node.get("enable", "").split(",")}
+    found = {}
+    for name in sorted(enables - set(options)):
+        for declaration in parameters.get(name, ()):
+            if not all(conditions.holds(g, context) for g in declaration["when"]):
+                continue
+            gates = [conditions.to_json(conditions.parse(g), context) for g in declaration["when"]]
+            if all(_test(g, options, semaphores) for g in gates):
+                if declaration["default"].lower() in ("1", "true"):
+                    found[name] = declaration["default"]
+                break
+    return found
+
+
 def _derived(options: dict, parameters: dict, context: dict) -> dict[str, list[dict]]:
     """
     Some options are derived from the configuration, the first declaration
@@ -426,6 +452,7 @@ def clock_tree_from_partname(partname: str) -> dict:
     add_scale_limits(nodes, scale_limits(parameters, context))
     latencies = manual_flash_latency(partname, parameters) or flash_latency(parameters, context)
     options = _options(nodes, parameters, semaphores, latencies)
+    options |= _enables(nodes, parameters, options, semaphores, context)
     constraints = correct(nodes, options, partname)
     # A limit an output of a fixed source always meets says nothing, the STM32G4 IWDG runs at LSI, not up to 170 MHz
     for node in nodes.values():

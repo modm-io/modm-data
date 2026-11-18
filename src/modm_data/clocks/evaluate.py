@@ -349,7 +349,8 @@ def evaluate(tree: dict, config: dict[str, str] | None = None, use: set[str] | N
                    and the oscillator modes, for example, `{"HSE": "ByPass"}`.
     :param use: The peripherals and features in use, for example, `{"USART1", "USB_OTG_FS", "MCO"}`.
                 It sets their usage flags, which some limits test, and only they,
-                the bus clocks and the outputs that need no enable count as used.
+                the bus clocks and the outputs that need no enable or one that the
+                configuration sets count as used, the STM32U5 notInLPBAM by default.
                 By default everything counts as used and no flag is set.
     :return: The `freq`uency in Hz of every node, None if it has none, its
              `setting`, whether it is `used` by an output through the chosen
@@ -468,7 +469,7 @@ def evaluate(tree: dict, config: dict[str, str] | None = None, use: set[str] | N
     else:
 
         def enabled(node):
-            return any(settings.get(e) == "1" for e in node.get("enable", "").split(",") if e)
+            return any(settings.get(e, "").lower() in ("1", "true") for e in node.get("enable", "").split(",") if e)
 
         stack = static["always"] + [n for n in static["gated"] if enabled(nodes[n])]
         stack += [static["peripherals"][u] for u in use if u in static["peripherals"]]
