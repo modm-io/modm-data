@@ -86,3 +86,45 @@ jobs:
           files: |
             svd-archive.zip
             variants-archive.zip
+
+  check-sensor-svd:
+    name: Check Sensor SVD Files
+    runs-on: ubuntu-latest
+    # The HTML archive is private, so pull requests from forks skip this job
+    if: ${{ !github.event.pull_request.head.repo.fork }}
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Python Dependencies
+        run: |
+          pip3 install -r tools/requirements.txt -e .
+
+      # Only the datasheets, the sensor SVDs are made from them
+      - name: Check out STMicro HTML Archive
+        uses: actions/checkout@v4
+        with:
+          repository: modm-ext/archive-stmicro-html
+          path: ext/stmicro/html-archive
+          ssh-key: ${{ secrets.SSH_KEY_STMICRO_HTML }}
+          sparse-checkout: /DS*
+          sparse-checkout-cone-mode: false
+
+      - name: Clone STMicro Sensor Drivers
+        run: |
+          make ext/stmicro/STMems_Standard_C_drivers
+
+      - name: Run Sensor SVD Tests
+        run: |
+          pytest test/sensor_svd_test.py
+
+      # Metrics of the register maps compared with the vendor drivers, see test/sensor_driver_check.py
+      - name: Compare Sensor SVDs with the Vendor Drivers
+        if: always()
+        run: |
+          python3 test/sensor_driver_check.py ext/stmicro/STMems_Standard_C_drivers
