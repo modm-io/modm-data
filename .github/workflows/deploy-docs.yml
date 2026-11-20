@@ -10,6 +10,13 @@ on:
 jobs:
   build-upload-docs:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/modm-ext/modm-build-cortex-m:2026-09-28
+    env:
+      # Install over the Python packages of the image instead of uninstalling the Debian ones,
+      # so install the editable modm-data together with packages that depend on it
+      PIP_BREAK_SYSTEM_PACKAGES: 1
+      PIP_IGNORE_INSTALLED: 1
     # Only one deployment at a time, otherwise the pushes to data.modm.dev race.
     concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -18,19 +25,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.12
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
+      - name: Fix Git permission/ownership problem
+        run: |
+          git config --global --add safe.directory '*'
 
       - name: Install modm-data with docs dependencies
         run: |
           pip3 install -r tools/requirements.txt -e ".[docs]"
 
-      - name: Install ARM toolchain and sources for the SVD files
+      - name: Clone sources for the SVD files
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi
           make clone-sources-arm ext/stmicro/header/ ext/stmicro/cubehal/ ext/stmicro/hal2/stm32c5xx-dfp \
                ext/stmicro/hal2/stm32g5xx-dfp ext/stmicro/hal2/stm32h7pxx-dfp ext/modm
 
@@ -71,7 +75,7 @@ jobs:
 
       - name: Install modm-data-tools for the clock solver page
         run: |
-          pip3 install -e ext/modm-data-tools
+          pip3 install -e . -e ext/modm-data-tools
 
 
       - name: Clone modm-ext/data.modm.dev repository

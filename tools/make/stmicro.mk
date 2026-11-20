@@ -22,7 +22,7 @@ ext/stmicro/svd-archive/:
 ext/stmicro/STM32F1xx_DFP:
 	@$(eval PACKURL=$(shell curl -s "https://www.keil.arm.com/packs/?q=$(@:ext/stmicro/%=%)" | grep -oE "https://www.keil.com/pack/.*?\.pack" | head -n 1))
 	@curl -Ls "${PACKURL}" -o $@.zip
-	@unzip -q $@.zip -d $@
+	@python3 -m zipfile -e $@.zip $@
 	@rm $@.zip
 
 ext/stmicro/STM32%_DFP:
