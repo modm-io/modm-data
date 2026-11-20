@@ -32,6 +32,13 @@ ext/stmicro/STM32%_DFP:
 ext/stmicro/hal2/%:
 	@git clone --depth=1 https://github.com/STMicroelectronics/$(@:ext/stmicro/hal2/%=%).git $@
 
+# The vendor drivers of the sensors for test/sensor_driver_check.py, one submodule per driver.
+# Some submodules point to ST's internal server, the same repositories are public on github.com.
+ext/stmicro/STMems_Standard_C_drivers:
+	@git -c url."https://github.com/STMicroelectronics/".insteadOf="https://github.st.com/mems-sw-oem-drivers-pid/" \
+		clone --depth=1 --recurse-submodules --shallow-submodules \
+		https://github.com/STMicroelectronics/STMems_Standard_C_drivers.git $@
+
 .PHONY: clone-sources-stmicro
 ## Clone all STMicro related repositories into /ext/stmicro.
 clone-sources-stmicro: clone-sources-arm ext/stmicro/cubehal/ ext/stmicro/header/ ext/stmicro/svd/ \

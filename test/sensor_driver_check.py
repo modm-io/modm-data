@@ -10,7 +10,8 @@ The enums of the driver API are mapped to the fields through the `*_set()`
 functions in the driver source, which assign the enum value to a field, for
 example `ctrl1_xl.odr_xl = (uint8_t)val & 0x0FU;`.
 
-    python test/sensor_driver_check.py path/to/STMems_Standard_C_drivers [-v]
+    make ext/stmicro/STMems_Standard_C_drivers
+    python test/sensor_driver_check.py ext/stmicro/STMems_Standard_C_drivers [-v]
 """
 
 import argparse
