@@ -14,15 +14,19 @@ def _add_element(node, tag, text=None):
 
 
 def _format_device(xmlnode, treenode):
-    _add_element(xmlnode, "name", str(treenode.name).upper().replace("X", "x"))
+    name = str(treenode.name)
+    if name.lower().startswith("stm32"):
+        name = name.upper().replace("X", "x")  # STM32F103xB
+    _add_element(xmlnode, "name", name)
     _add_element(xmlnode, "version", "1.0")
     descr = ",".join((d if isinstance(d, str) else d.string).upper() for d in (treenode.compatible or []))
     _add_element(xmlnode, "description", descr)
+    width = getattr(treenode, "width", None) or 32
     _add_element(xmlnode, "addressUnitBits", "8")
-    _add_element(xmlnode, "width", "32")
-    _add_element(xmlnode, "size", "0x20")
+    _add_element(xmlnode, "width", str(width))
+    _add_element(xmlnode, "size", hex(width))
     _add_element(xmlnode, "resetValue", "0")
-    _add_element(xmlnode, "resetMask", "0xFFFFFFFF")
+    _add_element(xmlnode, "resetMask", hex((1 << width) - 1))
     return _add_element(xmlnode, "peripherals")
 
 
@@ -66,6 +70,8 @@ def _format_register(xmlnode, treenode):
     _add_element(register, "size", hex(treenode.width * 8))
     if access := getattr(treenode, "access", None):
         _add_element(register, "access", access)
+    if (reset := getattr(treenode, "reset", None)) is not None:
+        _add_element(register, "resetValue", hex(reset))
     if treenode.children:
         return _add_element(register, "fields")
     else:
