@@ -93,14 +93,16 @@ def device_from_file(ld_path: Path) -> dict:
             name = match.group("name").lower()
             if "ext" in name:
                 continue
-            memories.append(
-                {
-                    "name": name.replace("code_ram", "code"),
-                    "access": match.group("access").lower(),
-                    "size": str(int(match.group("size").lower(), 16)),
-                    "start": match.group("start").lower(),
-                }
-            )
+            memory = {
+                "name": name.replace("code_ram", "code"),
+                "access": match.group("access").lower(),
+                "size": str(int(match.group("size").lower(), 16)),
+                "start": match.group("start").lower(),
+            }
+            # The code RAM at 0x0080_0000 is the data RAM seen through the code bus
+            if memory["name"] == "code":
+                memory["alias"] = "ram"
+            memories.append(memory)
     p["memories"] = memories
 
     # Signals
