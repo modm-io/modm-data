@@ -217,8 +217,7 @@ def rp_devices(prefixes: list[str]) -> list[tuple[str, str, dict]]:
 
     devices = []
     for prefix in prefixes:
-        for path in picosdk.device_files(prefix):
-            p = picosdk.device_from_file(path)
+        for p in (p for path in picosdk.device_files(prefix) for p in picosdk.device_from_file(path)):
             gpios = [
                 {
                     "port": pin["bank"],

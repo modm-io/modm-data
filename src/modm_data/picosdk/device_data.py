@@ -14,20 +14,50 @@ _SVD_PATH = ext_path("raspberrypi/svd")
 
 def did_from_string(string: str) -> DeviceIdentifier:
     """
-    Parses RP device strings, for example, `rp2040`, organized as
-    `{platform}{cores}{type}{ram}{flash}`.
+    Parses RP device strings, for example, `rp2040` or `rp2350a`, organized as
+    `{platform}{cores}{type}{ram}{flash}{package}`. The package letter only
+    exists for the RP2350 family: A is the QFN-60 with 30 GPIOs, B the QFN-80
+    with 48 GPIOs.
     """
     string = string.lower()
-    if not string.startswith("rp"):
+    if not string.startswith("rp") or len(string) not in (6, 7):
         raise ValueError(f"Unknown identifier '{string}'!")
-    i = DeviceIdentifier("{platform}{cores}{type}{ram}{flash}")
+    schema = "{platform}{cores}{type}{ram}{flash}"
+    if len(string) == 7:
+        schema += "{package}"
+    i = DeviceIdentifier(schema)
     i.set("platform", "rp")
     i.set("cores", string[2])
     i.set("type", string[3])
     i.set("ram", string[4])
     i.set("flash", string[5])
     i.set("family", string[2:4])
+    if len(string) == 7:
+        i.set("package", string[6])
     return i
+
+
+# The SVD files describe the largest package of a family, so the devices and
+# their package differences are listed here. RP2354 is the RP2350 with 2 MiB of
+# flash stacked in the package, connected to the QSPI pins.
+# Sources: RP2350 datasheet sections 1.2.3 (Pinout), 2.2 (Address map), 12.4.3
+# (ADC Channels), pico-sdk src/rp2350/hardware_regs/include/hardware/platform_defs.h
+_DEVICES = {
+    "rp2040": [{"name": "rp2040", "gpios": 30, "adc_pin": 26, "adc_channels": 4}],
+    "rp2350": [
+        {"name": f"rp235{flash}{package}", "gpios": gpios, "adc_pin": adc_pin, "adc_channels": channels}
+        for flash in "04"
+        for package, gpios, adc_pin, channels in (("a", 30, 26, 4), ("b", 48, 40, 8))
+    ],
+}
+
+# The SVD files do not describe memories. Main SRAM is striped over four (RP2040)
+# or eight (RP2350) banks, followed by two 4 kiB banks used as core-local memory
+# by the pico-sdk (SCRATCH_X for core 1, SCRATCH_Y for core 0).
+_MEMORIES = {
+    "20": (0x20000000, 0x40000),
+    "23": (0x20000000, 0x80000),
+}
 
 
 def device_files(prefix: str) -> list[Path]:
@@ -80,16 +110,36 @@ def _gpio_funcs(ctrl):
     ]
 
 
-def device_from_file(path: Path) -> dict:
+def device_from_file(path: Path) -> list[dict]:
     """
     Extracts the device data from an RP SVD file.
 
     :param path: Path to the SVD file.
-    :return: A dictionary of device properties.
+    :return: A list of device property dictionaries, one per device described
+             by the SVD file.
     """
     device_file = XmlReader(path)
-    p = {"id": (did := did_from_string(Path(path).stem))}
-    LOGGER.info("Parsing '%s'", did.string)
+    p = _device_from_svd(device_file, did_from_string(Path(path).stem))
+    devices = []
+    for variant in _DEVICES[Path(path).stem.lower()]:
+        d = dict(p)
+        d["id"] = did_from_string(variant["name"])
+        LOGGER.info("Parsing '%s'", d["id"].string)
+        d["gpios"] = [dict(g) for g in p["gpios"] if g["bank"] != "bank0" or g["idx"] < variant["gpios"]]
+        adc_pin, channels = variant["adc_pin"], variant["adc_channels"]
+        d["adc_channels"] = [{"id": c, "name": f"Ch{c}"} for c in range(channels)]
+        d["adc_channels"].append({"id": channels, "name": "Temperature"})
+        for gpio in d["gpios"]:
+            gpio["signals"] = [_func_to_signal(p["modules_map"], func) for func in gpio["funcs"]]
+            if gpio["bank"] == "bank0" and 0 <= gpio["idx"] - adc_pin < channels:
+                gpio["signals"].append({"driver": "adc", "name": f"in{gpio['idx'] - adc_pin}", "af": "-1"})
+        del d["modules_map"]
+        devices.append(d)
+    return devices
+
+
+def _device_from_svd(device_file, did) -> dict:
+    p = {}
 
     # information about the core and architecture
     core = device_file.query("//device/cpu/name")[0].text.lower().replace("cm", "cortex-m")
@@ -98,46 +148,46 @@ def device_from_file(path: Path) -> dict:
     p["core"] = core
     p["revision"] = device_file.query("//device/cpu/revision")[0].text
 
-    # TODO: Memories are not described in the SVD file
+    start, size = _MEMORIES[did.family]
     p["memories"] = [
-        {"name": "ram", "access": "rwx", "size": str(0x40000), "start": "0x20000000"},
-        {"name": "core1", "access": "rwx", "size": str(0x1000), "start": "0x20040000"},
-        {"name": "core0", "access": "rwx", "size": str(0x1000), "start": "0x20041000"},
+        {"name": "ram", "access": "rwx", "size": str(size), "start": hex(start)},
+        {"name": "core1", "access": "rwx", "size": str(0x1000), "start": hex(start + size)},
+        {"name": "core0", "access": "rwx", "size": str(0x1000), "start": hex(start + size + 0x1000)},
     ]
 
+    # Pin functions of modules without (an equally named) peripheral
     modules = [
         {"module": "jtag", "instance": "jtag"},
         {"module": "usb", "instance": "usb"},
         {"module": "xip", "instance": "xip"},
     ]
+    if did.family == "23":
+        modules += [
+            {"module": "hstx", "instance": "hstx"},
+            {"module": "coresight", "instance": "coresight"},
+        ]
     gpios = []
-    adc_channels = []
     dma_channels = []
     clocks = []
     for m in device_file.query("//peripherals/peripheral"):
         modulename = m.find("name").text
         if modulename == "IO_BANK0":
             for r in m.findall("./registers/register"):
-                if r.find("description") is not None and r.find("description").text == "GPIO status":
-                    name = re.search(r"^GPIO(?P<name>.*)_STATUS$", r.find("name").text).group("name").lower()
+                if match := re.search(r"^GPIO(?P<name>\d+)_STATUS$", r.find("name").text):
+                    name = match.group("name")
                     ctrl = m.find("./registers/register[name='GPIO" + name + "_CTRL']")
                     gpios.append({"name": name, "bank": "bank0", "idx": int(name), "funcs": _gpio_funcs(ctrl)})
         elif modulename == "IO_QSPI":
+            # The index into the io[] array of the QSPI bank, the RP2350 has two
+            # USB PHY pins before it, which are not GPIOs.
+            idx = 0
             for r in m.findall("./registers/register"):
-                if r.find("description") is not None and r.find("description").text == "GPIO status":
-                    name = re.search(r"^GPIO_QSPI_(?P<name>.*)_STATUS$", r.find("name").text).group("name").lower()
+                if match := re.search(r"^GPIO_QSPI_(?P<name>.*)_STATUS$", r.find("name").text):
+                    name = match.group("name").lower()
                     ctrl = m.find("./registers/register[name='GPIO_QSPI_" + name.upper() + "_CTRL']")
-                    idx = int(int(r.find("addressOffset").text[2:], 16) / 8)
                     gpios.append({"name": name, "idx": idx, "bank": "qspi", "funcs": _gpio_funcs(ctrl)})
+                    idx += 1
         elif modulename == "ADC":
-            # TODO: Find way to get ADC channels info
-            adc_channels = [
-                {"id": 0, "name": "Ch0"},
-                {"id": 1, "name": "Ch1"},
-                {"id": 2, "name": "Ch2"},
-                {"id": 3, "name": "Ch3"},
-                {"id": 4, "name": "Temperature"},
-            ]
             modules.append({"module": "adc", "instance": "adc"})
         elif modulename == "DMA":
             for r in m.findall("./registers/register"):
@@ -178,25 +228,12 @@ def device_from_file(path: Path) -> dict:
 
     p["modules"] = sorted(list(set([(m["module"], m["instance"]) for m in modules])))
     p["gpios"] = gpios
-    p["adc_channels"] = adc_channels
     p["dma_channels"] = dma_channels
     p["clocks"] = clocks
 
-    modules_map = {"clocks": {"module": "clocks", "instance": "clocks"}}
+    p["modules_map"] = {"clocks": {"module": "clocks", "instance": "clocks"}}
     for m in modules:
-        modules_map[m["instance"]] = m
-
-    # Manually patch this here instead of the SVD file
-    adc_map = {
-        "bank026": {"driver": "adc", "name": "in0", "af": "-1"},
-        "bank027": {"driver": "adc", "name": "in1", "af": "-1"},
-        "bank028": {"driver": "adc", "name": "in2", "af": "-1"},
-        "bank029": {"driver": "adc", "name": "in3", "af": "-1"},
-    }
-    for gpio in gpios:
-        gpio["signals"] = [_func_to_signal(modules_map, func) for func in gpio["funcs"]]
-        if adcsig := adc_map.get(gpio["bank"] + gpio["name"]):
-            gpio["signals"].append(adcsig)
+        p["modules_map"][m["instance"]] = m
 
     # Unique interrupts
     p["interrupts"] = []
