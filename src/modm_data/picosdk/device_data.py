@@ -78,14 +78,21 @@ def _func_to_signal(modules, func):
             raise ValueError(f"Not found module for func {func}")
         name = name + "_" + parts[idx]
     m = modules[name]
-    eidx = len(parts) - 1
-    while re.match(r"^(\d)+$", parts[eidx]) and eidx > idx:
-        eidx = eidx - 1
-    res = {"driver": m["module"], "name": "_".join(parts[idx + 1 : eidx + 1]), "af": func["value"]}
-    if res["name"] == "":
-        res["name"] = "pad"  # default name
+    res = {"driver": m["module"], "af": func["value"]}
     if m["module"] != m["instance"]:
         res["instance"] = m["instance"][len(m["module"]) :]
+    parts = parts[idx + 1 :]
+    # The trailing number is the GPIO number for SIO and PIO, the slice for PWM
+    # (pwm_a_5 is channel A of slice 5) and an index for everything else
+    # (clocks_gpout_0, xip_ss_n_1, coresight_tracedata_2, hstx_3 is bit 3).
+    number = parts.pop() if parts and parts[-1].isdigit() else ""
+    res["name"] = "_".join(parts)
+    if m["module"] == "pwm":
+        res["instance"] = number
+    elif m["module"] not in ("sio", "pio"):
+        res["name"] = (res["name"] or "bit") + number
+    if res["name"] == "":
+        res["name"] = "pad"  # default name
     return res
 
 
@@ -167,6 +174,7 @@ def _device_from_svd(device_file, did) -> dict:
             {"module": "coresight", "instance": "coresight"},
         ]
     gpios = []
+    pads_qspi = {}
     dma_channels = []
     clocks = []
     for m in device_file.query("//peripherals/peripheral"):
@@ -187,6 +195,16 @@ def _device_from_svd(device_file, did) -> dict:
                     ctrl = m.find("./registers/register[name='GPIO_QSPI_" + name.upper() + "_CTRL']")
                     gpios.append({"name": name, "idx": idx, "bank": "qspi", "funcs": _gpio_funcs(ctrl)})
                     idx += 1
+        elif modulename == "PADS_QSPI":
+            # The pads are ordered SCLK, SD0-3, SS, unlike the IO_QSPI and SIO bits
+            for r in m.findall("./registers/register"):
+                if match := re.search(r"^GPIO_QSPI_(?P<name>.*)$", r.find("name").text):
+                    pads_qspi[match.group("name").lower()] = int(r.find("addressOffset").text, 16) // 4 - 1
+            modules.append({"module": "pads_qspi", "instance": "pads_qspi"})
+        elif modulename == "PWM":
+            for r in m.findall("./registers/register"):
+                if match := re.search(r"^CH(?P<slice>\d+)_CSR$", r.find("name").text):
+                    modules.append({"module": "pwm", "instance": "pwm" + match.group("slice")})
         elif modulename == "ADC":
             modules.append({"module": "adc", "instance": "adc"})
         elif modulename == "DMA":
@@ -227,11 +245,16 @@ def _device_from_svd(device_file, did) -> dict:
             modules.append({"module": match.group("module").lower(), "instance": modulename.lower()})
 
     p["modules"] = sorted(list(set([(m["module"], m["instance"]) for m in modules])))
+    for gpio in gpios:
+        gpio["pad"] = pads_qspi[gpio["name"]] if gpio["bank"] == "qspi" else gpio["idx"]
     p["gpios"] = gpios
     p["dma_channels"] = dma_channels
     p["clocks"] = clocks
 
-    p["modules_map"] = {"clocks": {"module": "clocks", "instance": "clocks"}}
+    p["modules_map"] = {
+        "clocks": {"module": "clocks", "instance": "clocks"},
+        "pwm": {"module": "pwm", "instance": "pwm"},
+    }
     for m in modules:
         p["modules_map"][m["instance"]] = m
 

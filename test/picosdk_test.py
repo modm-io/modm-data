@@ -28,5 +28,21 @@ class PicoSdkTest(unittest.TestCase):
         gpios = {(g["bank"], g["name"]): g["signals"] for g in _devices()["rp2350b"]["gpios"]}
         self.assertIn({"driver": "adc", "name": "in7", "af": "-1"}, gpios[("bank0", "47")])
         self.assertIn({"driver": "uart", "name": "tx", "af": "11", "instance": "1"}, gpios[("bank0", "26")])
-        self.assertIn({"driver": "hstx", "name": "pad", "af": "0"}, gpios[("bank0", "12")])
+        self.assertIn({"driver": "hstx", "name": "bit0", "af": "0"}, gpios[("bank0", "12")])
         self.assertIn({"driver": "xip", "name": "sclk", "af": "0"}, gpios[("qspi", "sclk")])
+        self.assertIn({"driver": "pwm", "name": "b", "af": "4", "instance": "11"}, gpios[("bank0", "47")])
+        self.assertIn({"driver": "hstx", "name": "bit1", "af": "0"}, gpios[("bank0", "13")])
+        self.assertIn({"driver": "clocks", "name": "gpout0", "af": "9"}, gpios[("bank0", "13")])
+        self.assertIn({"driver": "sio", "name": "pad", "af": "5"}, gpios[("bank0", "13")])
+
+    def test_rp2040(self):
+        device = _devices()["rp2040"]
+        self.assertEqual([i for m, i in device["modules"] if m == "pwm"], [f"pwm{i}" for i in range(8)])
+        gpios = {(g["bank"], g["name"]): g for g in device["gpios"]}
+        self.assertIn({"driver": "pwm", "name": "a", "af": "4", "instance": "5"}, gpios[("bank0", "26")]["signals"])
+        # IO_QSPI order SCLK, SS, SD0-3, but PADS_QSPI order SCLK, SD0-3, SS
+        qspi = {name: (g["idx"], g["pad"]) for (bank, name), g in gpios.items() if bank == "qspi"}
+        self.assertEqual(
+            qspi, {"sclk": (0, 0), "ss": (1, 5), "sd0": (2, 1), "sd1": (3, 2), "sd2": (4, 3), "sd3": (5, 4)}
+        )
+        self.assertEqual(gpios[("bank0", "29")]["pad"], 29)
