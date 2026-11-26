@@ -1,6 +1,7 @@
 # Copyright 2022, Niklas Hauser
 # SPDX-License-Identifier: MPL-2.0
 
+import re
 import tqdm
 import argparse
 import subprocess
@@ -14,12 +15,38 @@ from modm_data.utils import ext_path
 from anytree import RenderTree
 
 
+def _sensor_datasheets() -> list[DatasheetSensor]:
+    """The latest version of every datasheet with register chapters that is not an STM32."""
+    latest = {}
+    for path in sorted(ext_path("stmicro/html-archive").glob("DS*-v*")):
+        name, version = path.name.split("-v", 1)
+        key = tuple(int(v) for v in re.findall(r"\d+", version))
+        if name not in latest or key > latest[name][0]:
+            latest[name] = (key, path)
+    docs = [DatasheetSensor(path) for _, path in latest.values()]
+    return [d for d in docs if d.chapters("regist") and "STM32" not in d.part.upper()]
+
+
+def _convert_sensors() -> bool:
+    for doc in tqdm.tqdm(_sensor_datasheets()):
+        for mmaptree in memory_map_from_datasheet(doc):
+            if not mmaptree.children:
+                continue
+            output_path = ext_path(f"stmicro/svd/html_{doc.name.lower()}_{mmaptree.name.lower()}.svd")
+            write_svd(format_svd(mmaptree), str(output_path))
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stm32", type=Path)
     parser.add_argument("--sensor", type=Path)
     parser.add_argument("--all", action="store_true", default=False)
+    parser.add_argument("--sensors", action="store_true", default=False, help="Convert all sensor datasheets")
     args = parser.parse_args()
+
+    if args.sensors:
+        return _convert_sensors()
 
     if args.all:
         docs = []
